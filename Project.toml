@@ -1,5 +1,5 @@
 name = "PowerModelsSecurityConstrained"
-uuid = "53333297-f92c-5019-980b-942fc744b406"
+uuid = "53333297-f92c-5019-980b-942fc744b407"
 authors = ["Carleton Coffrin"]
 repo = "https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl.git"
 version = "0.0.1"
