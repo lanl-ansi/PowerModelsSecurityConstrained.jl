@@ -1,4 +1,4 @@
-module GOC
+module PowerModelsSecurityConstrained
 
 using Distributed
 using SparseArrays
@@ -26,14 +26,26 @@ const qg_bound_tol = 1e-4
 const pg_loss_tol = 1e-6
 
 
-
-"Suppresses information and warning messages output by GOC, for fine grained control use the Memento package"
+"Suppresses information and warning messages output by PMSC, for fine grained control use the Memento package"
 function silence()
     Memento.info(LOGGER, "Suppressing information and warning messages for the rest of this session.  Use the Memento package for more fine-grained control of logging.")
     Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
     Memento.setlevel!(Memento.getlogger(PowerModels), "error")
-    Memento.setlevel!(Memento.getlogger(GOC), "error")
+    Memento.setlevel!(Memento.getlogger(PowerModelsSecurityConstrained), "error")
 end
 
+
+include("core/common.jl")
+
+include("io/parsers.jl")
+
+include("prob/opf.jl")
+include("prob/scopf.jl")
+include("prob/security-stage.jl")
+
+include("util/contingency-filters.jl")
+
+# this must come last to support automated export
+include("core/export.jl")
 
 end
