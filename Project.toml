@@ -1,7 +1,7 @@
-name = "GOC"
+name = "PowerModelsSecurityConstrained"
 uuid = "53333297-f92c-5019-980b-942fc744b406"
 authors = ["Carleton Coffrin"]
-repo = "."
+repo = "https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl.git"
 version = "0.0.1"
 
 [deps]
