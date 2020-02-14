@@ -5,7 +5,6 @@
 include("distributed.jl")
 
 include("second-stage-soft-fp.jl")
-include("scopf-main.jl")
 
 using Memento
 const LOGGER = Memento.getlogger(PowerModelsSecurityConstrained)
@@ -28,13 +27,13 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     time_start = time()
     info(LOGGER, "time remaining: $(time_limit)")
 
-    goc_data = PowerModelsSecurityConstrained.parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
-    network = PowerModelsSecurityConstrained.build_pm_model(goc_data)
+    goc_data = parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
+    network = build_pm_model(goc_data)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    PowerModelsSecurityConstrained.correct_network_solution!(network)
-    PowerModelsSecurityConstrained.write_solution1(network, output_dir=output_dir)
+    correct_network_solution!(network)
+    write_solution1(network, output_dir=output_dir)
 
     time_data = time() - time_start
 
@@ -56,11 +55,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     network_apo = deepcopy(network)
 
-    result = PowerModelsSecurityConstrained.run_opf_cheap_dc(network_apo, DCPPowerModel, lp_solver)
+    result = run_opf_cheap_dc(network_apo, DCPPowerModel, lp_solver)
     if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
         warn(LOGGER, "base case DC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
 
-        result = PowerModelsSecurityConstrained.run_opf_cheap_dc(network_apo, DCPPowerModel, qp_solver_relaxed)
+        result = run_opf_cheap_dc(network_apo, DCPPowerModel, qp_solver_relaxed)
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             warn(LOGGER, "relaxed base case DC-OPF solve failed with status $(result["termination_status"])")
         else
@@ -68,12 +67,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         end
     end
 
-    PowerModelsSecurityConstrained.update_active_power_data!(network_apo, result["solution"])
-    PowerModelsSecurityConstrained.write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
+    update_active_power_data!(network_apo, result["solution"])
+    write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
 
-    PowerModelsSecurityConstrained.update_active_power_data!(network, result["solution"])
-    PowerModelsSecurityConstrained.correct_network_solution!(network)
-    PowerModelsSecurityConstrained.write_solution1(network, output_dir=output_dir)
+    update_active_power_data!(network, result["solution"])
+    correct_network_solution!(network)
+    write_solution1(network, output_dir=output_dir)
 
     for (i,bus) in network["bus"]
         bus["vm"] = (bus["vmax"] + bus["vmin"])/2.0 + 0.04
@@ -100,22 +99,22 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     time_ac_opf_start = time()
 
-    #result = PowerModelsSecurityConstrained.run_opf_cheap(network, ACPPowerModel, nlp_solver)
+    #result = run_opf_cheap(network, ACPPowerModel, nlp_solver)
     # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED || result["termination_status"] == :Suboptimal)
     #     error(LOGGER, "voltage profile solver failed")
     # end
 
-    PowerModelsSecurityConstrained.deactivate_rate_a!(network)
-    PowerModelsSecurityConstrained.activate_rate_a_violations!(network)
+    deactivate_rate_a!(network)
+    activate_rate_a_violations!(network)
 
     line_flow_vio = true
     while line_flow_vio
 
-        result = PowerModelsSecurityConstrained.run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+        result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
             warn(LOGGER, "base case AC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
             break
-            # result = PowerModelsSecurityConstrained.run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed)
+            # result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed)
             # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
             #     break
@@ -136,17 +135,17 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             gen["qg_start"] = gen["qg"]
             gen["pg_start"] = gen["pg"]
         end
-        line_flow_vio = PowerModelsSecurityConstrained.activate_rate_a_violations!(network)
+        line_flow_vio = activate_rate_a_violations!(network)
     end
-    #PowerModelsSecurityConstrained.activate_rate_a!(network)
+    #activate_rate_a!(network)
 
-    balance = PowerModelsSecurityConstrained.compute_power_balance_deltas!(network)
+    balance = compute_power_balance_deltas!(network)
     info(LOGGER, "power balance cost: $(balance)")
 
 
     #PowerModels.update_data!(network, result["solution"])
-    PowerModelsSecurityConstrained.correct_network_solution!(network)
-    PowerModelsSecurityConstrained.write_solution1(network, output_dir=output_dir)
+    correct_network_solution!(network)
+    write_solution1(network, output_dir=output_dir)
 
     time_ac_opf = time() - time_ac_opf_start
     info(LOGGER, "ac opf phase time: $(time_ac_opf)")
@@ -170,7 +169,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     ###### Memory Check######
     scopf_comp = true
-    inverse_size = PowerModelsSecurityConstrained.compute_inverse_size(network)
+    inverse_size = compute_inverse_size(network)
     workers = Distributed.workers()
 
     if 2*length(workers)*inverse_size > Sys.total_memory()
@@ -194,7 +193,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         info(LOGGER, "start warmup on $(length(workers)) workers")
         worker_futures = []
         for wid in workers
-            future = remotecall(PowerModelsSecurityConstrained.load_network_global, wid, con_file, inl_file, raw_file, rop_file, scenario_id)
+            future = remotecall(load_network_global, wid, con_file, inl_file, raw_file, rop_file, scenario_id)
             push!(worker_futures, future)
         end
 
@@ -204,7 +203,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         cont_total = gen_cont_total + branch_cont_total
         cont_per_proc = cont_total/length(workers)
 
-        cont_order = PowerModelsSecurityConstrained.contingency_order(network)
+        cont_order = contingency_order(network)
         cont_range = []
         for p in 1:length(workers)
             cont_start = trunc(Int, ceil(1+(p-1)*cont_per_proc))
@@ -215,7 +214,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         for (i,rng) in enumerate(cont_range)
             info(LOGGER, "task $(i): $(length(rng)) / $(rng)")
         end
-        #pmap(PowerModelsSecurityConstrained.filter_network_global_contingencies, cont_range)
+        #pmap(filter_network_global_contingencies, cont_range)
         output_dirs = [output_dir for i in 1:length(workers)]
 
         info(LOGGER, "waiting for worker warmup to complete: $(time() - time_start)")
@@ -247,11 +246,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             iteration += 1
             info(LOGGER, "cut enumeration iteration: $(iteration)")
 
-            PowerModelsSecurityConstrained.write_active_flow_cuts(network_apo, output_dir=output_dir)
-            #cuts = pmap(PowerModelsSecurityConstrained.check_contingencies_branch_flow_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
-            #cuts = pmap(PowerModelsSecurityConstrained.check_contingencies_branch_flow_remote_nd, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
-            #cuts = pmap(PowerModelsSecurityConstrained.check_contingencies_branch_flow_remote_nd_first, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
-            cuts = pmap(PowerModelsSecurityConstrained.check_contingencies_branch_flow_remote_nd_first_lazy, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
+            write_active_flow_cuts(network_apo, output_dir=output_dir)
+            #cuts = pmap(check_contingencies_branch_flow_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
+            #cuts = pmap(check_contingencies_branch_flow_remote_nd, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
+            #cuts = pmap(check_contingencies_branch_flow_remote_nd_first, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
+            cuts = pmap(check_contingencies_branch_flow_remote_nd_first_lazy, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
             time_filter += time() - time_filter_start
 
             cuts_found = sum(length(c.gen_cuts)+length(c.branch_cuts) for c in cuts)
@@ -280,12 +279,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             #end
 
             time_solve_start = time()
-            #result = PowerModelsSecurityConstrained.run_scopf_cuts_dc_soft(network_apo, DCPPowerModel, qp_solver)
-            result = PowerModelsSecurityConstrained.run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver)
+            #result = run_scopf_cuts_dc_soft(network_apo, DCPPowerModel, qp_solver)
+            result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver)
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")
 
-                result = PowerModelsSecurityConstrained.run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
+                result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
                 if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                     warn(LOGGER, "relaxed scopf solve failed with status $(result["termination_status"])")
                     break
@@ -295,11 +294,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             end
             info(LOGGER, "objective: $(result["objective"])")
             time_solve += time() - time_solve_start
-            PowerModelsSecurityConstrained.update_active_power_data!(network_apo, result["solution"])
-            PowerModelsSecurityConstrained.update_active_power_data!(network, result["solution"])
-            PowerModelsSecurityConstrained.write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
+            update_active_power_data!(network_apo, result["solution"])
+            update_active_power_data!(network, result["solution"])
+            write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
 
-            balance = PowerModelsSecurityConstrained.compute_power_balance_deltas!(network)
+            balance = compute_power_balance_deltas!(network)
             info(LOGGER, "power balance cost: $(balance)")
 
             gen_cost = PowerModels.calc_gen_cost(network)
@@ -320,7 +319,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
         ###### AC OPF Recovery Solve ######
 
-        # result = PowerModelsSecurityConstrained.run_opf_cheap_target(network, ACPPowerModel, nlp_solver)
+        # result = run_opf_cheap_target(network, ACPPowerModel, nlp_solver)
         # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED || result["termination_status"] == :Suboptimal)
         #     error(LOGGER, "voltage profile solver failed")
         # end
@@ -329,12 +328,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
         line_flow_vio = true
         while line_flow_vio
-            result = PowerModelsSecurityConstrained.run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+            result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
 
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
                 warn(LOGGER, "base case AC polish solve failed with status $(result["termination_status"])")
                 break
-                # result = PowerModelsSecurityConstrained.run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed)
+                # result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed)
                 # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
                 #     break
@@ -355,17 +354,17 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
                 gen["qg_start"] = gen["qg"]
                 gen["pg_start"] = gen["pg"]
             end
-            line_flow_vio = PowerModelsSecurityConstrained.activate_rate_a_violations!(network)
+            line_flow_vio = activate_rate_a_violations!(network)
         end
 
-        balance = PowerModelsSecurityConstrained.compute_power_balance_deltas!(network)
+        balance = compute_power_balance_deltas!(network)
         info(LOGGER, "power balance cost: $(balance)")
 
         gen_cost = PowerModels.calc_gen_cost(network)
         info(LOGGER, "generation cost: $(gen_cost)")
 
-        PowerModelsSecurityConstrained.correct_network_solution!(network)
-        PowerModelsSecurityConstrained.write_solution1(network, output_dir=output_dir)
+        correct_network_solution!(network)
+        write_solution1(network, output_dir=output_dir)
     end
 
     ###### Results Summary ######
@@ -376,11 +375,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     total_cuts = length(network["gen_flow_cuts"]) + length(network["branch_flow_cuts"])
 
-    PowerModelsSecurityConstrained.write_contingencies(network, output_dir=output_dir)
+    write_contingencies(network, output_dir=output_dir)
 
-    PowerModelsSecurityConstrained.write_scopf_summary(goc_data.scenario, network, gen_cost, branch_flow_cuts=total_cuts, load_time=time_data, solve_time=time_solve, filter_time=time_filter, total_time = time() - time_start)
-end
-
-if isinteractive() == false
-    scopf_main(parse_scopf_commandline())
+    write_scopf_summary(goc_data.scenario, network, gen_cost, branch_flow_cuts=total_cuts, load_time=time_data, solve_time=time_solve, filter_time=time_filter, total_time = time() - time_start)
 end

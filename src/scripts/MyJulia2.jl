@@ -1,7 +1,7 @@
 start_init = time()
 
-include("lib/distributed.jl")
-add_procs()
+include("distributed.jl")
+#add_procs() #can be restored after package registration
 
 start_pkg = time()
 
@@ -17,8 +17,8 @@ start_pkg = time()
 @everywhere using Memento
 @everywhere const LOGGER = Memento.getlogger(PowerModelsSecurityConstrained)
 
-include("scopf-staged-solver-030.jl")
-include("lib/second-stage-solution1.jl")
+include("goc_challenge1_huristic.jl")
+include("second-stage-solution1.jl")
 
 println("package load time: $(time() - start_pkg)")
 

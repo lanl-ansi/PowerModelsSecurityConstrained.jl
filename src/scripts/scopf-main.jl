@@ -11,7 +11,7 @@ function scopf_main(parsed_args)
     skip_solution2 = parsed_args["skip-solution2"]
     remove_solutions = parsed_args["remove-solutions"]
 
-    files, scenario_id = PowerModelsSecurityConstrained.find_goc_files(ini_file, scenario_id=scenario)
+    files, scenario_id = find_goc_files(ini_file, scenario_id=scenario)
 
     ini_dir = dirname(ini_file)
     output_dir = joinpath(ini_dir, scenario_id)
@@ -27,8 +27,8 @@ function scopf_main(parsed_args)
     end
 
     if remove_solutions
-        PowerModelsSecurityConstrained.remove_solution_files(output_dir=output_dir)
-        PowerModelsSecurityConstrained.remove_detail_file(output_dir=output_dir)
+        remove_solution_files(output_dir=output_dir)
+        remove_detail_file(output_dir=output_dir)
     end
 end
 

@@ -1,7 +1,7 @@
 start_init = time()
 
 include("distributed.jl")
-add_procs()
+#add_procs() #can be restored after package registration
 
 start_pkg = time()
 
@@ -10,7 +10,7 @@ start_pkg = time()
 
 @everywhere using PowerModelsSecurityConstrained
 
-include("scopf-staged-solver-030.jl")
+include("goc_challenge1_huristic.jl")
 
 println("package load time: $(time() - start_pkg)")
 
