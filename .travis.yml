@@ -11,6 +11,12 @@ jobs:
   allow_failures:
     - julia: nightly
   include:
+    - stage: "Scripts"
+      julia: 1.3
+      os: linux
+      script:
+        - julia src/scripts/test-MyJulia.jl
+      after_success: skip
     - stage: "Documentation"
       julia: 1.3
       os: linux

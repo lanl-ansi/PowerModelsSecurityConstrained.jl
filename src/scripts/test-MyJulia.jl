@@ -1,9 +1,12 @@
 #!/usr/bin/env julia --project=.
 
-InFile1="../../test/data/scenario_01/case.con"
-InFile2="../../test/data/scenario_01/case.inl"
-InFile3="../../test/data/scenario_01/case.raw"
-InFile4="../../test/data/scenario_01/case.rop"
+using PowerModelsSecurityConstrained
+pmsc_path = joinpath(dirname(pathof(PowerModelsSecurityConstrained)), "..")
+
+InFile1=joinpath(pmsc_path, "test/data/scenario_01/case.con")
+InFile2=joinpath(pmsc_path, "test/data/scenario_01/case.inl")
+InFile3=joinpath(pmsc_path, "test/data/scenario_01/case.raw")
+InFile4=joinpath(pmsc_path, "test/data/scenario_01/case.rop")
 TimeLimitInSeconds=600
 ScoringMethod=2
 NetworkModel="IEEE 14"

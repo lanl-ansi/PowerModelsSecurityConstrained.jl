@@ -6,6 +6,7 @@ makedocs(
     authors = "Carleton Coffrin",
     pages = [
         "Home" => "index.md",
+        "Components" => "components.md",
     ]
 )
 
