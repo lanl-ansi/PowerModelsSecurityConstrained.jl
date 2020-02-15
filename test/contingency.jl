@@ -1,6 +1,6 @@
 
 
-@testset "pg response" for (i,network) in enumerate(networks)
+@testset "pg response - $(i)" for (i,network) in enumerate(networks)
 
     network = deepcopy(network)
     PowerModels.update_data!(network, solutions[i])

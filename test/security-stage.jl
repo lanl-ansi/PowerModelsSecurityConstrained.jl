@@ -1,7 +1,7 @@
 # Tests formulations in prob/security-stage
 
 
-@testset "pf soft rect" for (i,network) in enumerate(networks)
+@testset "pf soft rect - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["delta"] = 0.0
 
@@ -39,7 +39,7 @@
 end
 
 
-@testset "pf soft rect fixedpoint" for (i,network) in enumerate(networks)
+@testset "pf soft rect fixedpoint - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
 
     pg_lost = 0.0

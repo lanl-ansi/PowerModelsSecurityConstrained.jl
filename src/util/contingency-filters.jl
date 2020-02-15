@@ -277,9 +277,9 @@ function check_contingencies_branch_flow_ratec_nd_first_lazy(network;
 
 
     bus_idx2id, bus_id2idx = build_indices(network_ref[:bus])
-    @time b_base = compute_B_sparse(network_ref, bus_idx2id, bus_id2idx)
-    @time b_inv_base = compute_B_inverse(network_ref, bus_idx2id, bus_id2idx)
-    #@time branch_ptdf_base = compute_branch_ptdf(network_ref, b_inv_base, bus_id2idx)
+    b_base = compute_B_sparse(network_ref, bus_idx2id, bus_id2idx)
+    b_inv_base = compute_B_inverse(network_ref, bus_idx2id, bus_id2idx)
+    #branch_ptdf_base = compute_branch_ptdf(network_ref, b_inv_base, bus_id2idx)
     bus_inj_base = compute_bus_injections(network_ref, solution_base["gen"], load_setpoint, bus_idx2id)
 
     @assert length(network_ref[:ref_buses]) == 1

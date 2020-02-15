@@ -1,7 +1,7 @@
 # Tests formulations in prob/scopf
 
 scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
-@testset "scopf cuts dc soft 2, without cuts" for (i,network) in enumerate(networks)
+@testset "scopf cuts dc soft 2, without cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -13,7 +13,7 @@ scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
 end
 
 scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
-@testset "scopf cuts dc soft 2, with cuts" for (i,network) in enumerate(networks)
+@testset "scopf cuts dc soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []

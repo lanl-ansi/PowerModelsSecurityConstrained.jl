@@ -986,7 +986,7 @@ end
 
 
 "add start values to a data model"
-function set_start_values(network::Dict{String,<:Any}; branch_flow=false)
+function set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
     for (i,bus) in network["bus"]
         bus["va_start"] = bus["va"]
         bus["vm_start"] = bus["vm"]
@@ -1882,7 +1882,7 @@ end
 
 
 function _summary_changes(network, contingency, vm_changes, bs_changes, pg_changes, qg_changes)
-    println("")
+    #println("")
 
     data = [
         "----",
@@ -1904,7 +1904,7 @@ function _summary_changes(network, contingency, vm_changes, bs_changes, pg_chang
         "pg_mean",
         "qg_mean",
     ]
-    println(join(data, ", "))
+    info(LOGGER, join(data, ", "))
 
     data = [
         "DATA_CHANGES",
@@ -1926,7 +1926,7 @@ function _summary_changes(network, contingency, vm_changes, bs_changes, pg_chang
         mean(pg_changes),
         mean(qg_changes),
     ]
-    println(join(data, ", "))
+    info(LOGGER, join(data, ", "))
 end
 
 

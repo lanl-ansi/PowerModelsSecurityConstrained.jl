@@ -98,8 +98,10 @@ function parse_goc_files(con_file, inl_file, raw_file, rop_file; ini_file="", sc
     info(LOGGER, "skipping power models data warnings")
     pm_logger_level = getlevel(getlogger(PowerModels))
     setlevel!(getlogger(PowerModels), "error")
-    network_model = PowerModels.parse_file(files["raw"], import_all=true)
+    #network_model = PowerModels.parse_file(files["raw"], import_all=true)
+    network_model = parse_psse(files["raw"], import_all=true)
     #@time network_model = parse_psse(files["raw"], import_all=true)
+
     setlevel!(getlogger(PowerModels), pm_logger_level)
 
     gen_cost = parse_rop_file(files["rop"])

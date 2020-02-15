@@ -2,7 +2,7 @@ name = "PowerModelsSecurityConstrained"
 uuid = "53333297-f92c-5019-980b-942fc744b407"
 authors = ["Carleton Coffrin"]
 repo = "https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl.git"
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -32,4 +32,4 @@ Juniper = "2ddba703-00a4-53a7-87a5-e8b9971dde84"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test","Cbc","Ipopt"]
+test = ["Test", "Cbc", "Ipopt"]

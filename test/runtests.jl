@@ -24,9 +24,11 @@ case_02 = parse_goc_files(ini_file, scenario_id="scenario_02")
 cases = [case_01, case_02]
 
 networks = [build_pm_model(case) for case in cases]
-solutions = [build_pm_solution(networks[i], joinpath(dirname(case.files["raw"]), "solution1.txt")) for (i,case) in enumerate(cases)]
+solutions = [read_solution1(networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(cases)]
 
 @testset "PowerModelsSecurityConstrained" begin
+
+    include("common.jl")
 
     include("opf.jl")
 
