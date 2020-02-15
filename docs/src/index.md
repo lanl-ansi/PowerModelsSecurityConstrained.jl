@@ -6,6 +6,11 @@ CurrentModule = PowerModelsSecurityConstrained
 
 ## Overview
 
+This package provides an extension to PowerModels for Security-Constrained
+Optimization problems.  The original implementation developed an SCOPF solver
+that was used as the benchmark algorithm for ARPA-e's grid optimization
+competition challenge 1 in October 2019.
+
 
 ## Installation
 
