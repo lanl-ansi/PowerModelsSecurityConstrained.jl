@@ -1,5 +1,5 @@
 
-"simple DC SCOPF with flow cuts"
+"Simple DC SCOPF with flow cuts"
 function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_scopf_dc_cuts_soft_2; solution_builder=solution_goc!, kwargs...)
 end

@@ -1,4 +1,4 @@
-# PowerModelsSecurityConstrained.jl Documentation
+# PowerModelsSecurityConstrained Documentation
 
 ```@meta
 CurrentModule = PowerModelsSecurityConstrained
