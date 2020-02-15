@@ -1,36 +1,33 @@
 
 
-@testset "pg response" for case in cases
+@testset "pg response" for (i,network) in enumerate(networks)
 
-    network_s1 = build_pm_model(case)
-    solution1_file = joinpath(dirname(case.files["raw"]), "solution1.txt")
-    pm_sol = build_pm_solution(network_s1, solution1_file)
-    PowerModels.update_data!(network_s1, pm_sol)
+    network = deepcopy(network)
+    PowerModels.update_data!(network, solutions[i])
 
-
-    for (i,gen) in network_s1["gen"]
+    for (i,gen) in network["gen"]
         gen["pg_base"] = gen["pg"]
     end
 
     pg_target = 0.0
-    for (i,gen) in network_s1["gen"]
+    for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
             pg_target += gen["pg"]
         end
     end
 
 
-    for (i,gen) in network_s1["gen"]
+    for (i,gen) in network["gen"]
         if gen["gen_status"] == 0
             continue
         end
 
-        gen_bus = network_s1["bus"]["$(gen["gen_bus"])"]
-        area_gens = network_s1["area_gens"][gen_bus["area"]]
+        gen_bus = network["bus"]["$(gen["gen_bus"])"]
+        area_gens = network["area_gens"][gen_bus["area"]]
 
 
         # NOTE this is a slow operation
-        network_cont = deepcopy(network_s1)
+        network_cont = deepcopy(network)
 
         cont_gen = network_cont["gen"][i]
         cont_gen["gen_status"] = 0
