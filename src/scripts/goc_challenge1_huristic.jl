@@ -4,6 +4,7 @@
 
 include("distributed.jl")
 
+#include("second-stage-fp.jl")
 include("second-stage-soft-fp.jl")
 
 using Memento
