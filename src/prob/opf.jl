@@ -19,6 +19,106 @@ function solution_goc!(pm::GenericPowerModel, sol::Dict{String,Any})
 end
 
 
+function run_opf_shunt(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, post_opf_shunt; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
+end
+
+function post_opf_shunt(pm::GenericPowerModel)
+    PowerModels.variable_voltage(pm)
+    PowerModels.variable_generation(pm)
+    PowerModels.variable_branch_flow(pm)
+    PowerModels.variable_dcline_flow(pm)
+
+    variable_reactive_shunt(pm)
+
+    PowerModels.objective_min_fuel_cost(pm)
+
+    PowerModels.constraint_model_voltage(pm)
+
+    for i in ids(pm, :ref_buses)
+        PowerModels.constraint_theta_ref(pm, i)
+    end
+
+    for i in ids(pm, :bus)
+        constraint_power_balance_shunt_dispatch(pm, i)
+    end
+
+    for (i,branch) in ref(pm, :branch)
+        constraint_ohms_yt_from_goc(pm, i)
+        PowerModels.constraint_ohms_yt_to(pm, i)
+
+        PowerModels.constraint_voltage_angle_difference(pm, i)
+
+        PowerModels.constraint_thermal_limit_from(pm, i)
+        PowerModels.constraint_thermal_limit_to(pm, i)
+    end
+
+    for i in ids(pm, :dcline)
+        PowerModels.constraint_dcline(pm, i)
+    end
+end
+
+
+function run_opf_cheap(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, post_opf_cheap; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
+end
+
+
+function post_opf_cheap(pm::GenericPowerModel)
+    PowerModels.variable_voltage(pm)
+    PowerModels.variable_generation(pm)
+    PowerModels.variable_branch_flow(pm, bounded=false)
+    PowerModels.variable_dcline_flow(pm)
+
+    variable_reactive_shunt(pm)
+
+    sm_slack = var(pm)[:sm_slack] = @variable(pm.model,
+        [l in ids(pm, :branch)], base_name="sm_slack",
+        lower_bound = 0.0,
+        start = 0.0
+    )
+
+    PowerModels.constraint_model_voltage(pm)
+
+    for i in ids(pm, :ref_buses)
+        PowerModels.constraint_theta_ref(pm, i)
+    end
+
+    for i in ids(pm, :bus)
+        constraint_power_balance_shunt_dispatch(pm, i)
+    end
+
+    for (i,branch) in ref(pm, :branch)
+        constraint_ohms_yt_from_goc(pm, i)
+        PowerModels.constraint_ohms_yt_to(pm, i)
+
+        PowerModels.constraint_voltage_angle_difference(pm, i)
+
+        #PowerModels.constraint_thermal_limit_from(pm, i)
+        #PowerModels.constraint_thermal_limit_to(pm, i)
+
+        f_bus_id = branch["f_bus"]
+        t_bus_id = branch["t_bus"]
+        f_idx = (i, f_bus_id, t_bus_id)
+        t_idx = (i, t_bus_id, f_bus_id)
+
+        rate_a = branch["rate_a"]
+        @constraint(pm.model, var(pm, :p, f_idx)^2 + var(pm, :q, f_idx)^2 <= (rate_a + sm_slack[i])^2)
+        @constraint(pm.model, var(pm, :p, t_idx)^2 + var(pm, :q, t_idx)^2 <= (rate_a + sm_slack[i])^2)
+    end
+
+    ##### Setup Objective #####
+    objective_variable_pg_cost(pm)
+    # explicit network id needed because of conductor-less
+    pg_cost = var(pm, pm.cnw, :pg_cost)
+
+    @objective(pm.model, Min,
+        sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
+        sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch) )
+    )
+end
+
+
 function run_opf_cheap_dc(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_opf_cheap_dc; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end

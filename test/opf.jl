@@ -1,5 +1,79 @@
 # Tests formulations in prob/opf
 
+opf_shunt_ac_objective = [14676.95, 27545.01]
+@testset "opf cheap acp - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_shunt(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_shunt_ac_objective[i]; atol = 1e0)
+end
+
+@testset "opf cheap acr - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_shunt(network, ACRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_shunt_ac_objective[i]; atol = 1e0)
+end
+
+opf_shunt_soc_objective = [14666.91, 27510.25]
+@testset "opf cheap soc - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_shunt(network, SOCWRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_shunt_soc_objective[i]; atol = 1e0)
+end
+
+opf_shunt_dcp_objective = [14642.16, 26982.17]
+@testset "opf cheap dcp - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_shunt(network, DCPPowerModel, lp_solver)
+
+    @test isapprox(result["termination_status"], OPTIMAL)
+    @test isapprox(result["objective"], opf_shunt_dcp_objective[i]; atol = 1e0)
+end
+
+
+opf_cheap_ac_objective = [14676.95, 27542.05]
+@testset "opf cheap acp - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_cheap(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_cheap_ac_objective[i]; atol = 1e0)
+end
+
+@testset "opf cheap acr - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_cheap(network, ACRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_cheap_ac_objective[i]; atol = 1e0)
+end
+
+opf_cheap_soc_objective = [14666.81, 27507.30]
+@testset "opf cheap soc - $(i)" for (i,network) in enumerate(networks)
+
+    result = run_opf_cheap(network, SOCWRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_cheap_soc_objective[i]; atol = 1e0)
+end
+
+# not fully general
+# opf_cheap_dcp_objective = [14676.95, 27542.05]
+# @testset "opf cheap dcp - $(i)" for (i,network) in enumerate(networks)
+
+#     result = run_opf_cheap(network, ACPPowerModel, lp_solver)
+
+#     @test isapprox(result["termination_status"], OPTIMAL)
+#     @test isapprox(result["objective"], opf_cheap_ac_objective[i]; atol = 1e0)
+# end
+
+
+
 opf_cheap_dc_objective = [14642.16, 26982.17]
 @testset "opf cheap dc - $(i)" for (i,network) in enumerate(networks)
 
@@ -22,5 +96,4 @@ opf_pg_pf_rect_objective = [123117.35405092733, 9.480588301784407e6]
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_pg_pf_rect_objective[i]; atol = 1e0)
 end
-
 
