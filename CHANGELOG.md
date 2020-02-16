@@ -5,4 +5,4 @@ PowerModelsSecurityConstrained.jl Change Log
 - nothing
 
 ### v0.1.0
-- ARPA-e Grid Optimization Challenge 1, Final Event submission
+- ARPA-e Grid Optimization Competition Challenge 1, Final Event submission

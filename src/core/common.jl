@@ -1,5 +1,11 @@
 ##### Shared PowerModels Data Transformation #####
 
+
+"""
+transforms files from ARPA-e GOC Challenge 1 data format in to the PowerModels
+data format.  This consists of taking the data from multiple data structures
+and putting into a network data dictionary.
+"""
 function build_pm_model(goc_data)
     scenario = goc_data.scenario
     network = goc_data.network

@@ -8,6 +8,14 @@ end
 
 ##### GOC Initialization File Parser (.ini) #####
 
+"""
+Given an `.ini` file and a scenario id (i.e. a directory name), parses the
+files from ARPA-e GOC Challenge 1 data format.
+* `.raw` network model
+* `.rop` generator costs
+* `.con` contingency set
+* `.inl` generator contingency response parameters
+"""
 function parse_goc_files(ini_file; scenario_id="")
     files, scenario_id = find_goc_files(ini_file, scenario_id=scenario_id)
     return parse_goc_files(files["con"], files["inl"], files["raw"], files["rop"], ini_file=ini_file, scenario_id=scenario_id)

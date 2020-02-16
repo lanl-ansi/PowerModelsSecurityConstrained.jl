@@ -1,5 +1,15 @@
 
-"Simple DC SCOPF with flow cuts"
+
+"""
+An SCOPF formulation conforming to the ARPA-e GOC Challenge 1 specification.
+A DC power flow approximation is used. Power balance and line flow constraints
+are strictly enforced in the first stage.  Contigency branch flow constraints
+are enforced by PTDF cuts and penalized based on a conservative linear
+approximation of the formulation's specification.
+
+This formulation is used in conjunction with the contigency filters that
+generate PTDF cuts.
+"""
 function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_scopf_dc_cuts_soft_2; solution_builder=solution_goc!, kwargs...)
 end

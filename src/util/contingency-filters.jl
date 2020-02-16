@@ -226,7 +226,13 @@ function check_contingencies_branch_flow_remote_nd_first_lazy(cont_range, output
     return cuts
 end
 
-"given a network, checks the operating point against the contingencies to look for violations"
+
+"""
+A variant of check_contingencies_branch_flow_remote, which ignores the
+participation factor based generator response model from the ARPA-e GOC
+Challenge 1 specification and instead injects active power equally at all buses
+in the network.
+"""
 function check_contingencies_branch_flow_ratec_nd_first_lazy(network;
         gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
@@ -501,7 +507,13 @@ end
 
 
 
-"given a network, checks the operating point against the contingencies to look for violations"
+"""
+Checks a given operating point against the contingencies to look for branch
+flow violations.  The DC Power Flow approximation is used for flow simulation.
+If a violation is found, computes a PTDF cut based on bus injections.  Uses the
+participation factor based generator response model from the ARPA-e GOC
+Challenge 1 specification.
+"""
 function check_contingencies_branch_flow_ratec(network;
         gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,

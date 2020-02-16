@@ -19,6 +19,12 @@ function solution_goc!(pm::GenericPowerModel, sol::Dict{String,Any})
 end
 
 
+"""
+An OPF formulation conforming to the ARPA-e GOC Challenge 1 specification.
+Power balance and branch flow constraints are strictly enforced.
+The primary departure from the PowerModels standard formulation is dispatchable
+bus shunts and a slight change in the transformer model.
+"""
 function run_opf_shunt(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_opf_shunt; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
@@ -59,6 +65,12 @@ function post_opf_shunt(pm::GenericPowerModel)
 end
 
 
+"""
+An OPF formulation conforming to the ARPA-e GOC Challenge 1 specification.
+Power balance are strictly enforced and the branch flow violations are
+penalized based on a conservative linear approximation of the formulation's
+specification.
+"""
 function run_opf_cheap(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_opf_cheap; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
@@ -119,6 +131,9 @@ function post_opf_cheap(pm::GenericPowerModel)
 end
 
 
+"""
+A variant of run_opf_cheap model, specialized to the DC Power Flow Model
+"""
 function run_opf_cheap_dc(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_opf_cheap_dc; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
@@ -179,7 +194,12 @@ end
 
 
 
-""
+"""
+A variant of run_opf_cheap model, specialized for solving very large
+AC Power Flow models in rectangular coordinates for faster derivative
+computations.  Support sparse collections of flow constrains for
+increased performance.
+"""
 function run_opf_pg_pf_rect_5(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_opf_pg_pf_rect_5; ref_extensions=[ref_add_goc!], solution_builder=solution_goc!, kwargs...)
 end

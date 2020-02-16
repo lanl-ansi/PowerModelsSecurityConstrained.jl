@@ -31,6 +31,7 @@ run_opf_pg_pf_rect_5
 These are tools for checking for constraint violations in contingencies
 
 ```@docs
+check_contingencies_branch_flow_ratec
 check_contingencies_branch_flow_ratec_nd_first_lazy
 ```
 
