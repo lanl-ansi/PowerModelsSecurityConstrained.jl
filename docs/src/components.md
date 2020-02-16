@@ -1,4 +1,4 @@
-# Algorithmic Components
+# Solver Components
 
 ```@meta
 CurrentModule = PowerModelsSecurityConstrained

@@ -12,6 +12,19 @@ scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
     @test isapprox(result["objective"], scopf_dc_cuts_soft_woc_objective[i]; atol = 1e0)
 end
 
+@testset "scopf cuts dc soft 2, infeasible" begin
+    network = deepcopy(network_infeasible)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    try
+        result = run_scopf_cuts_dc_soft_2(network, DCPPowerModel, lp_solver)
+        @test false
+    catch
+        @test true
+    end
+end
+
 scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
 @testset "scopf cuts dc soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)

@@ -194,6 +194,20 @@ function solution_second_stage!(pm::GenericPowerModel, sol::Dict{String,Any})
     #PowerModels.print_summary(sol)
 end
 
+""
+function solution_second_stage_shunt!(pm::GenericPowerModel, sol::Dict{String,Any})
+    PowerModels.add_setpoint_bus_voltage!(sol, pm)
+    PowerModels.add_setpoint_generator_power!(sol, pm)
+    PowerModels.add_setpoint_branch_flow!(sol, pm)
+    sol["delta"] = JuMP.value(var(pm, :delta))
+
+    #PowerModels.add_setpoint!(sol, pm, "shunt", "gs", :qsh)
+    # requires check dispatchable flag
+    #PowerModels.add_setpoint!(sol, pm, "shunt", "bs", :bsh)
+
+    add_setpoint_dispatchable(sol, pm, "shunt", "bs", :bsh, default_value = (item)->item["bs"]; dispatchable_check=true)
+end
+
 
 """
 A power flow solver inspired by the ARPA-e GOC Challenge 1 second-stage
@@ -1024,5 +1038,372 @@ function post_fixed_pf_nbf_rect2_ds(pm::GenericPowerModel)
         @constraint(pm.model, sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
     end
     #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
+end
+
+
+
+
+
+function run_fixpoint_pf_v5!(network, pg_lost, model_constructor, solver; iteration_limit=typemax(Int64))
+    time_start = time()
+
+    delta = apply_pg_response!(network, pg_lost)
+    #delta = 0.0
+
+    debug(LOGGER, "pg lost: $(pg_lost)")
+    debug(LOGGER, "delta: $(network["delta"])")
+    debug(LOGGER, "pre-solve time: $(time() - time_start)")
+
+    base_solution = extract_solution(network)
+    base_solution["delta"] = delta
+    final_result = Dict(
+        "termination_status" => LOCALLY_SOLVED,
+        "solution" => base_solution
+    )
+
+    bus_gens = gens_by_bus(network)
+
+    #network["delta_start"] = network["delta"]
+    for (i,gen) in network["gen"]
+        gen["qg_fixed"] = false
+        gen["pg_start"] = gen["pg"]
+        gen["qg_start"] = gen["qg"]
+    end
+
+    for (i,bus) in network["bus"]
+        if length(bus_gens[i]) == 0
+            bus["vm_fixed"] = false
+        else
+            bus["vm_fixed"] = true
+        end
+        #bus["vm_start"] = bus["vm"]
+        #bus["va_start"] = bus["va"]
+        bus["vr_start"] = bus["vm"]*cos(bus["va"])
+        bus["vi_start"] = bus["vm"]*sin(bus["va"])
+    end
+
+
+    time_start = time()
+    result = run_contingency_opf4(network, ACPPowerModel, solver)
+    debug(LOGGER, "pf solve time: $(time() - time_start)")
+    if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
+        warn(LOGGER, "$(network["cont_label"]) voltage profile correction objective: $(result["objective"])")
+        PowerModels.update_data!(network, result["solution"])
+        final_result = result
+    else
+        warn(LOGGER, "contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
+        return final_result
+    end
+
+
+
+    pg_switched = true
+    qg_switched = true
+    vm_switched = true
+
+    iteration = 1
+    deltas = [result["solution"]["delta"]]
+    while (pg_switched || qg_switched || vm_switched) && iteration <= iteration_limit
+        debug(LOGGER, "obj: $(result["objective"])")
+        debug(LOGGER, "delta: $(result["solution"]["delta"])")
+        pg_switched = false
+        qg_switched = false
+        vm_switched = false
+
+        for (i,gen) in network["gen"]
+            pg = gen["pg_base"] + network["delta"]*gen["alpha"]
+
+            if gen["pg_fixed"]
+                if !isapprox(gen["pmax"], gen["pmin"]) && pg < gen["pmax"] && pg > gen["pmin"]
+                    gen["pg"] = pg
+                    gen["pg_fixed"] = false
+                    pg_switched = true
+                    #info(LOGGER, "unfix pg on gen $(i)")
+                end
+            else
+                if pg >= gen["pmax"]
+                    gen["pg"] = gen["pmax"]
+                    gen["pg_fixed"] = true
+                    pg_switched = true
+                    #info(LOGGER, "fix pg to ub on gen $(i)")
+                elseif gen["pg"] <= gen["pmin"]
+                    gen["pg"] = gen["pmin"]
+                    gen["pg_fixed"] = true
+                    pg_switched = true
+                    #info(LOGGER, "fix pg to lb on gen $(i)")
+                end
+            end
+        end
+
+        for (i,bus) in network["bus"]
+            if length(bus_gens[i]) > 0
+                qg = sum(gen["qg"] for gen in bus_gens[i])
+                qmin = sum(gen["qmin"] for gen in bus_gens[i])
+                qmax = sum(gen["qmax"] for gen in bus_gens[i])
+
+                if bus["vm_fixed"]
+                    if qg >= qmax
+                        bus["vm_fixed"] = false
+                        vm_switched = true
+                        for gen in bus_gens[i]
+                            gen["qg"] = gen["qmax"]
+                            gen["qg_fixed"] = true
+                        end
+                        #info(LOGGER, "fix qg to ub on bus $(i)")
+                    end
+
+                    if qg <= qmin
+                        bus["vm_fixed"] = false
+                        vm_switched = true
+                        for gen in bus_gens[i]
+                            gen["qg"] = gen["qmin"]
+                            gen["qg_fixed"] = true
+                        end
+                        #info(LOGGER, "fix qg to lb on bus $(i)")
+                    end
+                else
+                    if qg < qmax && qg > qmin
+                        bus["vm_fixed"] = true
+
+                        vm_switched = true
+                        for gen in bus_gens[i]
+                            gen["qg_fixed"] = false
+                            gen["qg_start"] = gen["qg"]
+                        end
+                        #info(LOGGER, "fix vm to on bus $(i)")
+                    end
+                    if qg >= qmax && bus["vm"] > bus["vm_base"]
+                        bus["vm_fixed"] = true
+                        vm_switched = true
+                        for gen in bus_gens[i]
+                            gen["qg_fixed"] = false
+                        end
+                        #info(LOGGER, "fix vm to on bus $(i)")
+                    end
+                    if qg <= qmin && bus["vm"] < bus["vm_base"]
+                        bus["vm_fixed"] = true
+                        vm_switched = true
+                        for gen in bus_gens[i]
+                            gen["qg_fixed"] = false
+                        end
+                        #info(LOGGER, "fix vm to on bus $(i)")
+                    end
+                end
+            end
+        end
+
+
+        for (i,gen) in network["gen"]
+            gen["pg_start"] = gen["pg"]
+            gen["qg_start"] = gen["qg"]
+        end
+
+        for (i,bus) in network["bus"]
+            bus["vm_start"] = bus["vm"]
+            bus["va_start"] = bus["va"]
+        end
+
+
+        if pg_switched || qg_switched || vm_switched
+            debug(LOGGER, "bus or gen swtiched: $iteration")
+            time_start = time()
+            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver)
+            result = run_fixed_pf_nbf_rect2(network, model_constructor, solver)
+            debug(LOGGER, "pf solve time: $(time() - time_start)")
+            if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
+                correct_qg!(network, result["solution"], bus_gens=bus_gens)
+                PowerModels.update_data!(network, result["solution"])
+                final_result = result
+            else
+                warn(LOGGER, "contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
+                break
+            end
+
+            push!(deltas, result["solution"]["delta"])
+            iteration += 1
+            if iteration >= iteration_limit
+                warn(LOGGER, "hit iteration limit")
+            end
+            if length(deltas) > 3 && isapprox(deltas[end-2], deltas[end])
+                warn(LOGGER, "cycle detected, stopping")
+                break
+            end
+        end
+    end
+
+    return final_result
+end
+
+
+
+
+
+# this approach has a minor ipopt runtime performance hit, but extracting branch flow values is much faster
+
+"attempts to correct voltage profile only"
+function run_contingency_opf4(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, post_contingency_opf4; ref_extensions=[ref_add_goc!], solution_builder = solution_second_stage_shunt!, kwargs...)
+end
+
+""
+function post_contingency_opf4(pm::GenericPowerModel)
+    PowerModels.variable_voltage(pm, bounded=false)
+    PowerModels.variable_active_generation(pm, bounded=false)
+    PowerModels.variable_reactive_generation(pm, bounded=false)
+    #PowerModels.variable_branch_flow(pm, bounded=false)
+    #PowerModels.variable_dcline_flow(pm)
+
+    #nw = 0
+    #cnd = 1
+
+    bsh = var(pm)[:bsh] = @variable(pm.model,
+        [i in ids(pm, :shunt_var)], base_name="qsh",
+        upper_bound = ref(pm, :shunt, i)["bmax"],
+        lower_bound = ref(pm, :shunt, i)["bmin"],
+        start = ref(pm, :shunt, i)["bs"]
+    )
+
+    qg_vio = @variable(pm.model,
+        [i in ids(pm, :gen)], base_name="qg_vio",
+        lower_bound = 0.0,
+        start = 0.0
+    )
+
+    vm_vio = @variable(pm.model,
+        [i in ids(pm, :bus)], base_name="vm_vio",
+        lower_bound = 0.0,
+        start = 0.0
+    )
+
+    var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start = 0.0)
+    if haskey(pm.ref, :delta_start)
+        set_start_value(delta, ref(pm, :delta_start))
+    end
+
+
+    #@objective(pm.model, Min,
+    #    sum( 5e5*qg_vio[i]^2 for (i,gen) in ref(pm, :gen) ) +
+    #    sum( 1e7*vm_vio[i]^2 for (i,bus) in ref(pm, :bus) )
+    #)
+
+    @objective(pm.model, Min,
+        sum( 5e5*qg_vio[i] for (i,gen) in ref(pm, :gen) ) +
+        sum( 1e7*vm_vio[i] for (i,bus) in ref(pm, :bus) )
+    )
+
+    PowerModels.constraint_model_voltage(pm)
+
+    vm = Dict()
+    for (i,bus) in ref(pm, :bus)
+        if bus["vm_fixed"]
+            vm[i] = bus["vm_base"]
+            @constraint(pm.model, vm[i] == bus["vm_base"])
+            @constraint(pm.model, vm_vio[i] == 0)
+        else
+            vm[i] = var(pm, :vm, i)
+            @constraint(pm.model,  vm_vio[i] >=  vm[i] - bus["vmax"])
+            @constraint(pm.model,  vm_vio[i] >= -vm[i] + bus["vmin"])
+        end
+    end
+
+    for i in ids(pm, :ref_buses)
+        PowerModels.constraint_theta_ref(pm, i)
+    end
+
+    p = Dict()
+    q = Dict()
+    for (i,branch) in ref(pm, :branch)
+        #PowerModels.constraint_ohms_yt_from(pm, i)
+        #PowerModels.constraint_ohms_yt_to(pm, i)
+
+        #branch = ref(pm, :branch, i)
+        f_bus_id = branch["f_bus"]
+        t_bus_id = branch["t_bus"]
+        f_idx = (i, f_bus_id, t_bus_id)
+        t_idx = (i, t_bus_id, f_bus_id)
+
+        f_bus = ref(pm, :bus, f_bus_id)
+        t_bus = ref(pm, :bus, t_bus_id)
+
+        g, b = PowerModels.calc_branch_y(branch)
+        tr, ti = PowerModels.calc_branch_t(branch)
+        g_fr = branch["g_fr"]
+        b_fr = branch["b_fr"]
+        g_to = branch["g_to"]
+        b_to = branch["b_to"]
+        tm = branch["tap"]
+
+
+        #p_fr  = var(pm, :p, f_idx)
+        #q_fr  = var(pm, :q, f_idx)
+        #p_to  = var(pm, :p, t_idx)
+        #q_to  = var(pm, :q, t_idx)
+        va_fr = var(pm, :va, f_bus_id)
+        va_to = var(pm, :va, t_bus_id)
+        vm_fr = vm[f_bus_id]
+        vm_to = vm[t_bus_id]
+
+        if branch["transformer"]
+            p[f_idx] = @NLexpression(pm.model,  (g/tm^2+g_fr)*vm_fr^2 + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+            q[f_idx] = @NLexpression(pm.model, -(b/tm^2+b_fr)*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+        else
+            p[f_idx] = @NLexpression(pm.model,  (g+g_fr)/tm^2*vm_fr^2 + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+            q[f_idx] = @NLexpression(pm.model, -(b+b_fr)/tm^2*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+        end
+        p[t_idx] = @NLexpression(pm.model,  (g+g_to)*vm_to^2 + (-g*tr-b*ti)/tm^2*(vm_to*vm_fr*cos(va_to-va_fr)) + (-b*tr+g*ti)/tm^2*(vm_to*vm_fr*sin(va_to-va_fr)) )
+        q[t_idx] = @NLexpression(pm.model, -(b+b_to)*vm_to^2 - (-b*tr+g*ti)/tm^2*(vm_to*vm_fr*cos(va_to-va_fr)) + (-g*tr-b*ti)/tm^2*(vm_to*vm_fr*sin(va_to-va_fr)) )
+    end
+
+
+    pg = Dict()
+    qg = Dict()
+    for (i,gen) in ref(pm, :gen)
+        if gen["pg_fixed"]
+            pg[i] = gen["pg"]
+            @constraint(pm.model, var(pm, :pg, i) == gen["pg"])
+        else
+            pg[i] = @NLexpression(pm.model, gen["pg_base"] + gen["alpha"]*delta)
+            @constraint(pm.model, var(pm, :pg, i) == gen["pg_base"] + gen["alpha"]*delta)
+        end
+
+        if gen["qg_fixed"]
+            qg[i] = gen["qg"]
+            @constraint(pm.model, var(pm, :qg, i) == gen["qg"])
+            @constraint(pm.model, qg_vio[i] == 0)
+        else
+            qg[i] = var(pm, :qg, i)
+            @constraint(pm.model,  qg_vio[i] >=  qg[i] - gen["qmax"])
+            @constraint(pm.model,  qg_vio[i] >= -qg[i] + gen["qmin"])
+        end
+    end
+
+
+    for (i,bus) in ref(pm, :bus)
+        #PowerModels.constraint_power_balance_shunt(pm, i)
+
+        #bus = ref(pm, :bus, i)
+        bus_arcs = ref(pm, :bus_arcs, i)
+        bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
+        bus_gens = ref(pm, :bus_gens, i)
+        bus_loads = ref(pm, :bus_loads, i)
+        bus_shunts_const = ref(pm, :bus_shunts_const, i)
+        bus_shunts_var = ref(pm, :bus_shunts_var, i)
+
+        bus_pd = Dict(k => ref(pm, :load, k, "pd") for k in bus_loads)
+        bus_qd = Dict(k => ref(pm, :load, k, "qd") for k in bus_loads)
+
+        bus_gs_const = Dict(k => ref(pm, :shunt, k, "gs") for k in bus_shunts_const)
+        bus_bs_const = Dict(k => ref(pm, :shunt, k, "bs") for k in bus_shunts_const)
+
+
+        #p = var(pm, :p)
+        #q = var(pm, :q)
+        #pg = var(pm, :pg)
+        #qg = var(pm, :qg)
+
+        @NLconstraint(pm.model, sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm[i]^2)
+        @NLconstraint(pm.model, sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm[i]^2 + sum(bsh[s]*vm[i]^2 for s in bus_shunts_var))
+    end
+
 end
 
