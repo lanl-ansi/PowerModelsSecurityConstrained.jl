@@ -55,7 +55,13 @@ function compute_solution2(con_file::String, inl_file::String, raw_file::String,
     #end
 
 
-    solution2_files = pmap(solution2_solver, process_data)
+    #solution2_files = pmap(solution2_solver, process_data)
+
+    solution2_files = []
+    for pd in process_data
+        push!(solution2_files, solution2_solver(pd))
+    end
+
     sort!(solution2_files)
 
     #println("pmap result: $(solution2_files)")

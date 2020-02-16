@@ -2119,11 +2119,13 @@ function write_solution2_contingency(io::IO, pm_network, contingency_solution)
     base_mva = pm_network["baseMVA"]
 
     bus_switched_shunt_b = Dict(i => 0.0 for (i,bus) in pm_network["bus"])
-    for (i,nw_shunt) in pm_network["shunt"]
-        if nw_shunt["dispatchable"] && nw_shunt["status"] == 1
-            #@assert nw_shunt["gs"] == 0.0
-            shunt = contingency_solution["shunt"][i]
-            bus_switched_shunt_b["$(nw_shunt["shunt_bus"])"] += shunt["bs"]
+    if haskey(pm_network, "shunt") && haskey(contingency_solution, "shunt")
+        for (i,nw_shunt) in pm_network["shunt"]
+            if nw_shunt["dispatchable"] && nw_shunt["status"] == 1
+                #@assert nw_shunt["gs"] == 0.0
+                shunt = contingency_solution["shunt"][i]
+                bus_switched_shunt_b["$(nw_shunt["shunt_bus"])"] += shunt["bs"]
+            end
         end
     end
 
