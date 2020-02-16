@@ -7,7 +7,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ### v0.2.0
 - Update to PowerModels v0.13
 - Remove try/catch blocks around solver calls
-- Remove duplicate psse data parser
+- Remove duplicate psse data parser (#3)
 
 ### v0.1.1
 - Added missing `gen_default` dictionary for security-stage solvers
