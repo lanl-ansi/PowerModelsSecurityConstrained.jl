@@ -8,8 +8,8 @@ julia:
   - nightly
 codecov: true
 jobs:
- allow_failures:
-   - julia: nightly
+  allow_failures:
+    - julia: nightly
   include:
     - stage: "SCOPF Solver Scripts"
       julia: 1.3
