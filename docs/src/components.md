@@ -1,4 +1,4 @@
-# PowerModelsSecurityConstrained Algorithmic Components
+# Algorithmic Components
 
 ```@meta
 CurrentModule = PowerModelsSecurityConstrained
