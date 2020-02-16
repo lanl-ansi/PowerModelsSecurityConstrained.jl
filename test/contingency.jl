@@ -1,4 +1,4 @@
-
+@testset "test contigency" begin
 
 @testset "pg response - $(i)" for (i,network) in enumerate(networks)
 
@@ -92,3 +92,6 @@ cuts_ratec_branch = [0, 10]
     @test isapprox(length(cuts.gen_cuts), cuts_ratec_gen[i])
     @test isapprox(length(cuts.branch_cuts), cuts_ratec_branch[i])
 end
+
+end # close test group
+

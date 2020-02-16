@@ -37,6 +37,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     correct_network_solution!(network)
     write_solution1(network, output_dir=output_dir)
 
+    result = Dict(
+        "termination_status" => LOCALLY_SOLVED,
+        "solution" => extract_solution(network)
+    )
+
     time_data = time() - time_start
 
 
@@ -59,22 +64,29 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     network_apo = deepcopy(network)
 
-    result = run_opf_cheap_dc(network_apo, DCPPowerModel, lp_solver)
-    if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
-        warn(LOGGER, "base case DC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
-
-        result = run_opf_cheap_dc(network_apo, DCPPowerModel, qp_solver_relaxed)
+    try
+        result = run_opf_cheap_dc(network_apo, DCPPowerModel, lp_solver)
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
-            warn(LOGGER, "relaxed base case DC-OPF solve failed with status $(result["termination_status"])")
-        else
-            warn(LOGGER, "relaxed base case DC-OPF solve status $(result["termination_status"])")
+            warn(LOGGER, "base case DC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
+
+            result = run_opf_cheap_dc(network_apo, DCPPowerModel, qp_solver_relaxed)
+            if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
+                warn(LOGGER, "relaxed base case DC-OPF solve failed with status $(result["termination_status"])")
+            else
+                warn(LOGGER, "relaxed base case DC-OPF solve status $(result["termination_status"])")
+            end
         end
+
+        update_active_power_data!(network_apo, result["solution"])
+        update_active_power_data!(network, result["solution"])
+    catch
+        # in PowerModels v0.12/v0.13, run_scopf_cuts_dc_soft_2 can crash when no solution is found
+        warn(LOGGER, "run_opf_cheap_dc crashed")
     end
 
-    update_active_power_data!(network_apo, result["solution"])
+
     write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
 
-    update_active_power_data!(network, result["solution"])
     correct_network_solution!(network)
     write_solution1(network, output_dir=output_dir)
 
@@ -284,24 +296,29 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
             time_solve_start = time()
             #result = run_scopf_cuts_dc_soft(network_apo, DCPPowerModel, qp_solver)
-            result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver)
-            if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
-                warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")
-
-                result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
+            try
+                result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver)
                 if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
-                    warn(LOGGER, "relaxed scopf solve failed with status $(result["termination_status"])")
-                    break
-                else
-                    warn(LOGGER, "relaxed scopf solve status $(result["termination_status"])")
-                end
-            end
-            info(LOGGER, "objective: $(result["objective"])")
-            time_solve += time() - time_solve_start
-            update_active_power_data!(network_apo, result["solution"])
-            update_active_power_data!(network, result["solution"])
-            write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
+                    warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")
 
+                    result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
+                    if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
+                        warn(LOGGER, "relaxed scopf solve failed with status $(result["termination_status"])")
+                        break
+                    else
+                        warn(LOGGER, "relaxed scopf solve status $(result["termination_status"])")
+                    end
+                end
+                info(LOGGER, "objective: $(result["objective"])")
+                time_solve += time() - time_solve_start
+                update_active_power_data!(network_apo, result["solution"])
+                update_active_power_data!(network, result["solution"])
+                write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
+            catch
+                # in PowerModels v0.12/v0.13, run_scopf_cuts_dc_soft_2 can crash when no solution is found
+                warn(LOGGER, "run_scopf_cuts_dc_soft_2 crashed")
+                break
+            end
             balance = compute_power_balance_deltas!(network)
             info(LOGGER, "power balance cost: $(balance)")
 

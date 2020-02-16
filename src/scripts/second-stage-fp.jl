@@ -228,7 +228,13 @@ end
 
             fr_bus = network_tmp["bus"]["$(cont_branch["f_bus"])"]
             to_bus = network_tmp["bus"]["$(cont_branch["t_bus"])"]
-            network_tmp["response_gens"] = union(network_tmp["area_gens"][fr_bus["area"]], network_tmp["area_gens"][to_bus["area"]])
+            network_tmp["response_gens"] = Set()
+            if haskey(network_tmp["area_gens"], fr_bus["area"])
+                network_tmp["response_gens"] = network_tmp["area_gens"][fr_bus["area"]]
+            end
+            if haskey(network_tmp["area_gens"], to_bus["area"])
+                network_tmp["response_gens"] = union(network_tmp["response_gens"], network_tmp["area_gens"][to_bus["area"]])
+            end
 
             time_start = time()
             result = run_fixpoint_pf_v2_3!(network_tmp, 0.0, ACRPowerModel, nlp_solver, iteration_limit=5)

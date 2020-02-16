@@ -1,7 +1,8 @@
 # Tests formulations in prob/opf
+@testset "test opf" begin
 
 opf_shunt_ac_objective = [14676.95, 27545.01]
-@testset "opf cheap acp - $(i)" for (i,network) in enumerate(networks)
+@testset "opf shunt acp - $(i)" for (i,network) in enumerate(networks)
 
     result = run_opf_shunt(network, ACPPowerModel, nlp_solver)
 
@@ -9,7 +10,7 @@ opf_shunt_ac_objective = [14676.95, 27545.01]
     @test isapprox(result["objective"], opf_shunt_ac_objective[i]; atol = 1e0)
 end
 
-@testset "opf cheap acr - $(i)" for (i,network) in enumerate(networks)
+@testset "opf shunt acr - $(i)" for (i,network) in enumerate(networks)
 
     result = run_opf_shunt(network, ACRPowerModel, nlp_solver)
 
@@ -18,7 +19,7 @@ end
 end
 
 opf_shunt_soc_objective = [14666.91, 27510.25]
-@testset "opf cheap soc - $(i)" for (i,network) in enumerate(networks)
+@testset "opf shunt soc - $(i)" for (i,network) in enumerate(networks)
 
     result = run_opf_shunt(network, SOCWRPowerModel, nlp_solver)
 
@@ -27,12 +28,21 @@ opf_shunt_soc_objective = [14666.91, 27510.25]
 end
 
 opf_shunt_dcp_objective = [14642.16, 26982.17]
-@testset "opf cheap dcp - $(i)" for (i,network) in enumerate(networks)
+@testset "opf shunt dcp - $(i)" for (i,network) in enumerate(networks)
 
     result = run_opf_shunt(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], opf_shunt_dcp_objective[i]; atol = 1e0)
+end
+
+@testset "opf shunt dc - infeasible" begin
+    try
+        result = run_opf_shunt(network_infeasible, DCPPowerModel, lp_solver)
+        @test false
+    catch
+        @test true
+    end
 end
 
 
@@ -75,7 +85,7 @@ end
 
 
 opf_cheap_dc_objective = [14642.16, 26982.17]
-@testset "opf cheap dc - $(i)" for (i,network) in enumerate(networks)
+@testset "opf cheap_dc dc - $(i)" for (i,network) in enumerate(networks)
 
     result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
 
@@ -83,8 +93,17 @@ opf_cheap_dc_objective = [14642.16, 26982.17]
     @test isapprox(result["objective"], opf_cheap_dc_objective[i]; atol = 1e0)
 end
 
+@testset "opf shunt dc - infeasible" begin
+    try
+        result = run_opf_cheap_dc(network_infeasible, DCPPowerModel, lp_solver)
+        @test false
+    catch
+        @test true
+    end
+end
 
-opf_pg_pf_rect_objective = [123117.35405092733, 9.480588301784407e6]
+
+opf_pg_pf_rect_objective = [122981.99, 9.480588301784407e6]
 @testset "opf pg pf rect 5 - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
 
@@ -97,3 +116,15 @@ opf_pg_pf_rect_objective = [123117.35405092733, 9.480588301784407e6]
     @test isapprox(result["objective"], opf_pg_pf_rect_objective[i]; atol = 1e0)
 end
 
+@testset "opf pg pf rect 5 - infeasible" begin
+    network = deepcopy(network_infeasible)
+
+    deactivate_rate_a!(network)
+    activate_rate_a_violations!(network)
+
+    result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_INFEASIBLE)
+end
+
+end # close test group
