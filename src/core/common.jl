@@ -651,14 +651,14 @@ end
 
 
 "generates variables for both `active` and `reactive` bus deltas"
-function variable_bus_delta_abs(pm::GenericPowerModel; kwargs...)
+function variable_bus_delta_abs(pm::AbstractPowerModel; kwargs...)
     variable_active_delta_abs(pm; kwargs...)
     variable_reactive_delta_abs(pm; kwargs...)
 end
 
 
 ""
-function variable_active_delta_abs(pm::GenericPowerModel; nw::Int=pm.cnw, cnd::Int=pm.ccnd, bounded = true)
+function variable_active_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, cnd::Int=pm.ccnd, bounded = true)
     if bounded
          var(pm, nw, cnd)[:p_delta_abs] = @variable(pm.model,
             [i in ids(pm, :bus)], base_name="$(nw)_$(cnd)_p_delta_abs",
@@ -675,7 +675,7 @@ function variable_active_delta_abs(pm::GenericPowerModel; nw::Int=pm.cnw, cnd::I
 end
 
 ""
-function variable_reactive_delta_abs(pm::GenericPowerModel; nw::Int=pm.cnw, cnd::Int=pm.ccnd, bounded = true)
+function variable_reactive_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, cnd::Int=pm.ccnd, bounded = true)
     if bounded
          var(pm, nw, cnd)[:q_delta_abs] = @variable(pm.model,
             [i in ids(pm, :bus)], base_name="$(nw)_$(cnd)_q_delta_abs",
@@ -693,7 +693,7 @@ end
 
 
 ""
-function variable_reactive_shunt(pm::GenericPowerModel; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
+function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
     var(pm, nw, cnd)[:bsh] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_$(cnd)_bsh",
         upper_bound = ref(pm, nw, :shunt, i, "bmax", cnd),
@@ -703,7 +703,7 @@ function variable_reactive_shunt(pm::GenericPowerModel; nw::Int=pm.cnw, cnd::Int
 end
 
 ""
-function variable_reactive_shunt(pm::GenericPowerModel{T}; nw::Int=pm.cnw, cnd::Int=pm.ccnd) where T <: PowerModels.AbstractWRForms
+function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
     var(pm, nw, cnd)[:bsh] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_$(cnd)_bsh",
         upper_bound = ref(pm, nw, :shunt, i, "bmax", cnd),
@@ -719,7 +719,7 @@ end
 
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel, i::Int; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
+function constraint_power_balance_shunt_dispatch(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
     if !haskey(con(pm, nw, cnd), :kcl_p)
         con(pm, nw, cnd)[:kcl_p] = Dict{Int,JuMP.ConstraintRef}()
     end
@@ -745,7 +745,7 @@ function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel, i::Int; 
 end
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const) where T <: PowerModels.AbstractACPForm
+function constraint_power_balance_shunt_dispatch(pm::AbstractACPModel, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vm = var(pm, n, c, :vm, i)
     p = var(pm, n, c, :p)
     q = var(pm, n, c, :q)
@@ -760,7 +760,7 @@ function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::In
 end
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const) where T <: PowerModels.AbstractACRForm
+function constraint_power_balance_shunt_dispatch(pm::AbstractACRModel, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vi = var(pm, n, c, :vi, i)
     vr = var(pm, n, c, :vr, i)
     p = var(pm, n, c, :p)
@@ -783,7 +783,7 @@ function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::In
 end
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const) where T <: PowerModels.AbstractWRForms
+function constraint_power_balance_shunt_dispatch(pm::AbstractWRModels, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     w = var(pm, n, c, :w, i)
     p = var(pm, n, c, :p)
     q = var(pm, n, c, :q)
@@ -803,7 +803,7 @@ function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::In
 end
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::GenericPowerModel{T}, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const) where T <: PowerModels.AbstractActivePowerFormulation
+function constraint_power_balance_shunt_dispatch(pm::AbstractActivePowerModel, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     p = var(pm, n, c, :p)
     pg = var(pm, n, c, :pg)
     p_dc = var(pm, n, c, :p_dc)
@@ -813,7 +813,7 @@ end
 
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::GenericPowerModel, i::Int; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
+function constraint_power_balance_shunt_dispatch_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
     if !haskey(con(pm, nw, cnd), :kcl_p)
         con(pm, nw, cnd)[:kcl_p] = Dict{Int,JuMP.ConstraintRef}()
     end
@@ -839,7 +839,7 @@ function constraint_power_balance_shunt_dispatch_soft(pm::GenericPowerModel, i::
 end
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::GenericPowerModel{T}, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const) where T <: PowerModels.AbstractACPForm
+function constraint_power_balance_shunt_dispatch_soft(pm::AbstractACPModel, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vm = var(pm, n, c, :vm, i)
     p_delta_abs = var(pm, n, c, :p_delta_abs, i)
     q_delta_abs = var(pm, n, c, :q_delta_abs, i)
@@ -863,7 +863,7 @@ function constraint_power_balance_shunt_dispatch_soft(pm::GenericPowerModel{T}, 
 end
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::GenericPowerModel{T}, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const) where T <: PowerModels.AbstractWRForms
+function constraint_power_balance_shunt_dispatch_soft(pm::AbstractWRModels, n::Int, c::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     w = var(pm, n, c, :w, i)
     p_delta_abs = var(pm, n, c, :p_delta_abs, i)
     q_delta_abs = var(pm, n, c, :q_delta_abs, i)
@@ -894,7 +894,7 @@ end
 
 
 ""
-function constraint_ohms_yt_from_goc(pm::GenericPowerModel, i::Int; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
+function constraint_ohms_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw, cnd::Int=pm.ccnd)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -914,7 +914,7 @@ function constraint_ohms_yt_from_goc(pm::GenericPowerModel, i::Int; nw::Int=pm.c
     end
 end
 
-function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm) where T <: PowerModels.AbstractACPForm
+function constraint_ohms_yt_from_goc(pm::AbstractACPModel, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr  = var(pm, n, c,  :p, f_idx)
     q_fr  = var(pm, n, c,  :q, f_idx)
     vm_fr = var(pm, n, c, :vm, f_bus)
@@ -926,7 +926,7 @@ function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f
     JuMP.@NLconstraint(pm.model, q_fr == -(b/tm^2+b_fr)*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
 end
 
-function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm) where T <: PowerModels.AbstractACRForm
+function constraint_ohms_yt_from_goc(pm::AbstractACRModel, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr = var(pm, n, c, :p, f_idx)
     q_fr = var(pm, n, c, :q, f_idx)
     vr_fr = var(pm, n, c, :vr, f_bus)
@@ -938,7 +938,7 @@ function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f
     JuMP.@constraint(pm.model, q_fr == -(b/tm^2+b_fr)*(vr_fr^2 + vi_fr^2) - (-b*tr-g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr+b*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to) )
 end
 
-function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm) where T <: PowerModels.AbstractWRForms
+function constraint_ohms_yt_from_goc(pm::AbstractWRModels, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr = var(pm, n, c, :p, f_idx)
     q_fr = var(pm, n, c, :q, f_idx)
     w_fr = var(pm, n, c, :w, f_bus)
@@ -949,7 +949,7 @@ function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f
     JuMP.@constraint(pm.model, q_fr == -(b/tm^2+b_fr)*w_fr - (-b*tr-g*ti)/tm^2*wr + (-g*tr+b*ti)/tm^2*wi )
 end
 
-function constraint_ohms_yt_from_goc(pm::GenericPowerModel{T}, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm) where T <: PowerModels.AbstractDCPForm
+function constraint_ohms_yt_from_goc(pm::AbstractDCPModel, n::Int, c::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr  = var(pm, n, c,  :p, f_idx)
     va_fr = var(pm, n, c, :va, f_bus)
     va_to = var(pm, n, c, :va, t_bus)
@@ -960,7 +960,7 @@ end
 
 
 "adds pg_cost variables and constraints"
-function objective_variable_pg_cost(pm::GenericPowerModel)
+function objective_variable_pg_cost(pm::AbstractPowerModel)
     for (n, nw_ref) in nws(pm)
         gen_lines = calc_cost_pwl_lines(nw_ref[:gen])
         pg_cost_start = Dict{Int64,Float64}()
@@ -1026,7 +1026,7 @@ function set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
 end
 
 
-function ref_add_goc!(pm::GenericPowerModel)
+function ref_add_goc!(pm::AbstractPowerModel)
     if InfrastructureModels.ismultinetwork(pm.data)
         nws_data = pm.data["nw"]
     else
@@ -1057,7 +1057,7 @@ end
 
 function add_setpoint_dispatchable(
     sol,
-    pm::GenericPowerModel,
+    pm::AbstractPowerModel,
     dict_name,
     param_name,
     variable_symbol;

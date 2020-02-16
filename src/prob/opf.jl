@@ -1,4 +1,4 @@
-function solution_goc!(pm::GenericPowerModel, sol::Dict{String,Any})
+function solution_goc!(pm::AbstractPowerModel, sol::Dict{String,Any})
     PowerModels.add_setpoint_bus_voltage!(sol, pm)
     PowerModels.add_setpoint_generator_power!(sol, pm)
     PowerModels.add_setpoint_branch_flow!(sol, pm)
@@ -29,7 +29,7 @@ function run_opf_shunt(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, post_opf_shunt; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
 
-function post_opf_shunt(pm::GenericPowerModel)
+function post_opf_shunt(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
@@ -76,7 +76,7 @@ function run_opf_cheap(file, model_constructor, solver; kwargs...)
 end
 
 
-function post_opf_cheap(pm::GenericPowerModel)
+function post_opf_cheap(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm, bounded=false)
@@ -139,7 +139,7 @@ function run_opf_cheap_dc(file, model_constructor, solver; kwargs...)
 end
 
 
-function post_opf_cheap_dc(pm::GenericPowerModel)
+function post_opf_cheap_dc(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm, bounded=false)
@@ -205,7 +205,7 @@ function run_opf_pg_pf_rect_5(file, model_constructor, solver; kwargs...)
 end
 
 ""
-function post_opf_pg_pf_rect_5(pm::GenericPowerModel)
+function post_opf_pg_pf_rect_5(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_generation(pm)
 
