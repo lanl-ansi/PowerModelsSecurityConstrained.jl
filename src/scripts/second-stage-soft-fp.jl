@@ -56,7 +56,6 @@ function compute_solution2(con_file::String, inl_file::String, raw_file::String,
 
 
     solution2_files = pmap(solution2_solver, process_data)
-
     sort!(solution2_files)
 
     #println("pmap result: $(solution2_files)")
@@ -215,8 +214,7 @@ end
             cont_sol["cont_type"] = "gen"
             cont_sol["cont_comp_id"] = cont.idx
 
-            cont_sol["gen"]["$(cont.idx)"]["pg"] = 0.0
-            cont_sol["gen"]["$(cont.idx)"]["qg"] = 0.0
+            cont_sol["gen"]["$(cont.idx)"] = Dict("pg" => 0.0, "qg" => 0.0)
             cont_sol["delta"] = 0.0
 
             #push!(contingency_solutions, result["solution"])

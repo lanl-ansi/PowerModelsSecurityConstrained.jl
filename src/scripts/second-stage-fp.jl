@@ -207,8 +207,7 @@ end
             result["solution"]["cont_type"] = "gen"
             result["solution"]["cont_comp_id"] = cont.idx
 
-            result["solution"]["gen"]["$(cont.idx)"]["pg"] = 0.0
-            result["solution"]["gen"]["$(cont.idx)"]["qg"] = 0.0
+            result["solution"]["gen"]["$(cont.idx)"] = Dict("pg" => 0.0, "qg" => 0.0)
 
             #push!(contingency_solutions, result["solution"])
             correct_contingency_solution!(network, result["solution"])

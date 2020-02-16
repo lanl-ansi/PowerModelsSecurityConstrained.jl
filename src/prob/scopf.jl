@@ -11,7 +11,7 @@ This formulation is used in conjunction with the contigency filters that
 generate PTDF cuts.
 """
 function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft_2; solution_builder=solution_goc!, kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft_2; kwargs...)
 end
 
 ""
@@ -21,13 +21,13 @@ function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
     PowerModels.variable_branch_flow(pm)
     PowerModels.variable_dcline_flow(pm)
 
-    branch_cut_vio = var(pm, 0, 1)[:branch_cut_vio] = @variable(pm.model,
+    branch_cut_vio = var(pm, 0)[:branch_cut_vio] = @variable(pm.model,
         [i in 1:length(pm.data["branch_flow_cuts"])], base_name="branch_cut_vio",
         lower_bound = 0.0,
         start = 0.0
     )
 
-    gen_cut_vio = var(pm, 0, 1)[:gen_cut_vio] = @variable(pm.model,
+    gen_cut_vio = var(pm, 0)[:gen_cut_vio] = @variable(pm.model,
         [i in 1:length(pm.data["gen_flow_cuts"])], base_name="gen_cut_vio",
         lower_bound = 0.0,
         start = 0.0

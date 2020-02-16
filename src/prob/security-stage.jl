@@ -171,44 +171,6 @@ gen_default = Dict(
 )
 
 
-""
-function solution_second_stage!(pm::AbstractPowerModel, sol::Dict{String,Any})
-    #start_time = time()
-    PowerModels.add_setpoint_bus_voltage!(sol, pm)
-    #Memento.info(LOGGER, "voltage solution time: $(time() - start_time)")
-
-    #start_time = time()
-    PowerModels.add_setpoint_generator_power!(sol, pm)
-    #Memento.info(LOGGER, "generator solution time: $(time() - start_time)")
-
-    #start_time = time()
-    PowerModels.add_setpoint_branch_flow!(sol, pm)
-    #Memento.info(LOGGER, "branch solution time: $(time() - start_time)")
-
-    sol["delta"] = JuMP.value(var(pm, :delta))
-
-    #start_time = time()
-    PowerModels.add_setpoint_fixed!(sol, pm, "shunt", "bs", default_value = (item) -> item["bs"])
-    #Memento.info(LOGGER, "shunt solution time: $(time() - start_time)")
-
-    #PowerModels.print_summary(sol)
-end
-
-""
-function solution_second_stage_shunt!(pm::AbstractPowerModel, sol::Dict{String,Any})
-    PowerModels.add_setpoint_bus_voltage!(sol, pm)
-    PowerModels.add_setpoint_generator_power!(sol, pm)
-    PowerModels.add_setpoint_branch_flow!(sol, pm)
-    sol["delta"] = JuMP.value(var(pm, :delta))
-
-    #PowerModels.add_setpoint!(sol, pm, "shunt", "gs", :qsh)
-    # requires check dispatchable flag
-    #PowerModels.add_setpoint!(sol, pm, "shunt", "bs", :bsh)
-
-    add_setpoint_dispatchable(sol, pm, "shunt", "bs", :bsh, default_value = (item)->item["bs"]; dispatchable_check=true)
-end
-
-
 """
 A power flow solver inspired by the ARPA-e GOC Challenge 1 second-stage
 specification but designed to be faster on large network cases.
@@ -245,7 +207,7 @@ function run_fixpoint_pf_soft!(network, pg_lost, model_constructor, solver; iter
         info(LOGGER, "pf soft fixpoint iteration: $iteration")
 
         time_start = time()
-        result = run_pf_soft_rect(network, model_constructor, solver)
+        result = run_pf_soft_rect(network, model_constructor, solver, solution_processors=[sol_data_model!])
         info(LOGGER, "solve pf time: $(time() - time_start)")
 
         if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
@@ -310,7 +272,7 @@ end
 
 ""
 function run_pf_soft_rect(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_pf_soft_rect; solution_builder = solution_second_stage!, kwargs...)
+    return run_model(file, model_constructor, solver, build_pf_soft_rect; kwargs...)
 end
 
 ""
@@ -321,6 +283,7 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
 
     delta = ref(pm, :delta)
     var(pm)[:delta] = @variable(pm.model, base_name="delta", start=0.0)
+    sol(pm)[:delta] = var(pm)[:delta]
     #@constraint(pm.model, var(pm, :delta) == 0.0)
 
     var(pm)[:p_slack] = @variable(pm.model, p_slack, base_name="p_slack", start=0.0)
@@ -526,9 +489,9 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
     time_start = time()
     #result = run_fixed_pf_nbf_rect(network, model_constructor, solver)
     if !pf_fixed_all
-        result = run_fixed_pf_nbf_rect2(network, model_constructor, solver)
+        result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
     else
-        result = run_fixed_pf_nbf_rect2_ds(network, model_constructor, solver)
+        result = run_fixed_pf_nbf_rect2_ds(network, model_constructor, solver, solution_processors=[sol_data_model!])
     end
     debug(LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
@@ -539,7 +502,6 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
         warn(LOGGER, "$(network["cont_label"]) contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
         cont_pf_failed = true
     end
-
 
 
     pg_switched = true
@@ -676,12 +638,12 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
 
             pf_fixed_all = all(gen["pg_fixed"] for gen in active_response_gens)
 
-            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver)
-            #result = run_fixed_pf_nbf_rect2(network, model_constructor, solver)
+            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver, solution_processors=[sol_data_model!])
+            #result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
             if !pf_fixed_all
-                result = run_fixed_pf_nbf_rect2(network, model_constructor, solver)
+                result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
             else
-                result = run_fixed_pf_nbf_rect2_ds(network, model_constructor, solver)
+                result = run_fixed_pf_nbf_rect2_ds(network, model_constructor, solver, solution_processors=[sol_data_model!])
             end
             debug(LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
@@ -707,19 +669,23 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
 
     vm_bound_vio = false
     for (i,bus) in network["bus"]
-        bus_sol = final_result["solution"]["bus"][i]
-        if bus_sol["vm"] - vm_bound_tol >= bus["vmax"] || bus_sol["vm"] + vm_bound_tol <= bus["vmin"]
-            vm_bound_vio = true
-            warn(LOGGER, "$(network["cont_label"]) vm bound out of range on bus $(i): $(bus["vmin"]) - $(bus_sol["vm"]) - $(bus["vmax"])")
+        if bus["bus_type"] != 4
+            bus_sol = final_result["solution"]["bus"][i]
+            if bus_sol["vm"] - vm_bound_tol >= bus["vmax"] || bus_sol["vm"] + vm_bound_tol <= bus["vmin"]
+                vm_bound_vio = true
+                warn(LOGGER, "$(network["cont_label"]) vm bound out of range on bus $(i): $(bus["vmin"]) - $(bus_sol["vm"]) - $(bus["vmax"])")
+            end
         end
     end
 
     qg_bound_vio = false
     for (i,gen) in network["gen"]
-        gen_sol = final_result["solution"]["gen"][i]
-        if gen_sol["qg"] - qg_bound_tol >= gen["qmax"] || gen_sol["qg"] + qg_bound_tol <= gen["qmin"]
-            qg_bound_vio = true
-            warn(LOGGER, "$(network["cont_label"]) qg bound out of range on gen $(i): $(gen["qmin"]) - $(gen_sol["qg"]) - $(gen["qmax"])")
+        if gen["gen_status"] != 0
+            gen_sol = final_result["solution"]["gen"][i]
+            if gen_sol["qg"] - qg_bound_tol >= gen["qmax"] || gen_sol["qg"] + qg_bound_tol <= gen["qmin"]
+                qg_bound_vio = true
+                warn(LOGGER, "$(network["cont_label"]) qg bound out of range on gen $(i): $(gen["qmin"]) - $(gen_sol["qg"]) - $(gen["qmax"])")
+            end
         end
     end
 
@@ -742,7 +708,7 @@ end
 
 ""
 function run_fixed_pf_nbf_rect2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2; solution_builder = solution_second_stage!, kwargs...)
+    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2; kwargs...)
 end
 
 ""
@@ -760,6 +726,7 @@ function build_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
     var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=0.0)
     #var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=ref(pm, :delta_start))
     #Memento.info(LOGGER, "post variable time: $(time() - start_time)")
+    sol(pm)[:delta] = var(pm)[:delta]
 
     start_time = time()
 
@@ -889,7 +856,7 @@ end
 
 "a variant of fixed_pf_nbf_rect2 with a distributed active power slack"
 function run_fixed_pf_nbf_rect2_ds(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2_ds; solution_builder = solution_second_stage!, kwargs...)
+    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2_ds; kwargs...)
 end
 
 ""
@@ -904,6 +871,7 @@ function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
 
     delta = ref(pm, :delta)
     var(pm)[:delta] = @variable(pm.model, base_name="delta", start=0.0)
+    sol(pm)[:delta] = var(pm)[:delta]
     @constraint(pm.model, var(pm, :delta) == delta)
 
     active_response_gens = intersect(ids(pm, :gen), ref(pm, :response_gens))
@@ -1084,7 +1052,7 @@ function run_fixpoint_pf_v5!(network, pg_lost, model_constructor, solver; iterat
 
 
     time_start = time()
-    result = run_contingency_opf4(network, ACPPowerModel, solver)
+    result = run_contingency_opf4(network, ACPPowerModel, solver, solution_processors=[sol_data_model!])
     debug(LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
         warn(LOGGER, "$(network["cont_label"]) voltage profile correction objective: $(result["objective"])")
@@ -1207,8 +1175,8 @@ function run_fixpoint_pf_v5!(network, pg_lost, model_constructor, solver; iterat
         if pg_switched || qg_switched || vm_switched
             debug(LOGGER, "bus or gen swtiched: $iteration")
             time_start = time()
-            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver)
-            result = run_fixed_pf_nbf_rect2(network, model_constructor, solver)
+            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver, solution_processors=[sol_data_model!])
+            result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
             debug(LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
                 correct_qg!(network, result["solution"], bus_gens=bus_gens)
@@ -1242,7 +1210,7 @@ end
 
 "attempts to correct voltage profile only"
 function run_contingency_opf4(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_contingency_opf4; ref_extensions=[ref_add_goc!], solution_builder = solution_second_stage_shunt!, kwargs...)
+    return run_model(file, model_constructor, solver, build_contingency_opf4; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -1276,6 +1244,7 @@ function build_contingency_opf4(pm::AbstractPowerModel)
     )
 
     var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start = 0.0)
+    sol(pm)[:delta] = var(pm)[:delta]
     if haskey(pm.ref, :delta_start)
         set_start_value(delta, ref(pm, :delta_start))
     end
