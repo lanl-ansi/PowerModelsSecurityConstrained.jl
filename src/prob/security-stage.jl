@@ -148,6 +148,29 @@ function correct_qg!(network, solution; bus_gens=gens_by_bus(network))
 end
 
 
+gen_default = Dict(
+#    "gen_bus" => 0,
+#    "index" => 0,
+    "pg" => 0.0,
+    "model" => 1,
+    "pg_base" => 0.0,
+    "qg" => 0.0,
+    "pg_fixed" => false,
+    "pmax" => 0.94379,
+    "pg_start" => 0.0,
+    "qg_start" => 0.0,
+    "alpha" => 0.0,
+    "cost" => [0.0, 0.0, 99.99, 0.0],
+    "gen_status" => 1,
+    "qmax" =>  10.0,
+    "qmin" => -10.0,
+    "qg_fixed" => false,
+    "pmin" => 0.0,
+    "ncost" => 2,
+    "virtual" => true
+)
+
+
 ""
 function solution_second_stage!(pm::GenericPowerModel, sol::Dict{String,Any})
     #start_time = time()
