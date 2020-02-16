@@ -95,7 +95,7 @@ end
 end
 
 
-opf_pg_pf_rect_objective = [123117.35405092733, 9.480588301784407e6]
+opf_pg_pf_rect_objective = [122981.99, 9.480588301784407e6]
 @testset "opf pg pf rect 5 - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
 

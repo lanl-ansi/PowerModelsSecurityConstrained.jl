@@ -88,7 +88,7 @@ end
 
 opf_p_delta_abs_max = [0.26746780838927353, 0.07392932526496376]
 opf_q_delta_abs_max = [0.41571449226280965, 1.1036712386853447]
-solution1_lines = [23,594]
+solution1_lines = [25,594]
 @testset "write_solution1 - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
 
