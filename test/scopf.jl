@@ -1,4 +1,5 @@
 # Tests formulations in prob/scopf
+@testset "test scopf" begin
 
 scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
 @testset "scopf cuts dc soft 2, without cuts - $(i)" for (i,network) in enumerate(networks)
@@ -45,17 +46,4 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
     @test isapprox(result["objective"], scopf_dc_cuts_soft_wc_objective[i]; atol = 1e0)
 end
 
-# opf_pg_pf_rect_objective = [123117.35405092733, 9.480588301784407e6]
-# @testset "opf pg pf rect 5" for (i,network) in enumerate(networks)
-#     network = deepcopy(network)
-
-#     deactivate_rate_a!(network)
-#     activate_rate_a_violations!(network)
-
-#     result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
-
-#     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
-#     @test isapprox(result["objective"], opf_pg_pf_rect_objective[i]; atol = 1e0)
-# end
-
-
+end # close test group

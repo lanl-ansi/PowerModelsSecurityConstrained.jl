@@ -1,4 +1,5 @@
 # Tests formulations in prob/opf
+@testset "test opf" begin
 
 opf_shunt_ac_objective = [14676.95, 27545.01]
 @testset "opf shunt acp - $(i)" for (i,network) in enumerate(networks)
@@ -118,3 +119,4 @@ end
     @test isapprox(result["termination_status"], LOCALLY_INFEASIBLE)
 end
 
+end # close test group

@@ -1,3 +1,5 @@
+@testset "test common" begin
+
 networks_opf = [build_pm_opf_model(case) for case in cases]
 opf_ac_objective = [14676.9, 27564.91]
 @testset "opf ac - $(i)" for (i,network) in enumerate(networks_opf)
@@ -100,7 +102,5 @@ solution1_lines = [23,594]
     rm("solution1-tmp.txt")
 end
 
-
-
-
+end # close test group
 
