@@ -1,4 +1,5 @@
 # Tests formulations in prob/security-stage
+@testset "test security-stage" begin
 
 function security_stage_data(network)
     network = deepcopy(network)
@@ -114,3 +115,5 @@ end
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
 end
+
+end # close test group

@@ -1,3 +1,5 @@
+@testset "test common" begin
+
 networks_opf = [build_pm_opf_model(case) for case in cases]
 opf_ac_objective = [14676.9, 27564.91]
 @testset "opf ac - $(i)" for (i,network) in enumerate(networks_opf)
@@ -55,7 +57,7 @@ end
     @test all(haskey(branch, "rate_a") for (i,branch) in network["branch"])
 end
 
-first_cont_id = [9, 203]
+first_cont_id = [3, 203]
 @testset "contingency_order - $(i)" for (i,network) in enumerate(networks)
     order = contingency_order(network)
     @test isapprox(order[i].idx, first_cont_id[i]; atol = 1e0)
@@ -100,7 +102,5 @@ solution1_lines = [23,594]
     rm("solution1-tmp.txt")
 end
 
-
-
-
+end # close test group
 
