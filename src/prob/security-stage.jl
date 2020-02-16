@@ -310,11 +310,11 @@ end
 
 ""
 function run_pf_soft_rect(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_pf_soft_rect; solution_builder = solution_second_stage!, kwargs...)
+    return run_model(file, model_constructor, solver, build_pf_soft_rect; solution_builder = solution_second_stage!, kwargs...)
 end
 
 ""
-function post_pf_soft_rect(pm::AbstractPowerModel)
+function build_pf_soft_rect(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
@@ -742,11 +742,11 @@ end
 
 ""
 function run_fixed_pf_nbf_rect2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_fixed_pf_nbf_rect2; solution_builder = solution_second_stage!, kwargs...)
+    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2; solution_builder = solution_second_stage!, kwargs...)
 end
 
 ""
-function post_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
+function build_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
     start_time = time()
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
@@ -889,11 +889,11 @@ end
 
 "a variant of fixed_pf_nbf_rect2 with a distributed active power slack"
 function run_fixed_pf_nbf_rect2_ds(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_fixed_pf_nbf_rect2_ds; solution_builder = solution_second_stage!, kwargs...)
+    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2_ds; solution_builder = solution_second_stage!, kwargs...)
 end
 
 ""
-function post_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
+function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
@@ -1242,11 +1242,11 @@ end
 
 "attempts to correct voltage profile only"
 function run_contingency_opf4(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_contingency_opf4; ref_extensions=[ref_add_goc!], solution_builder = solution_second_stage_shunt!, kwargs...)
+    return run_model(file, model_constructor, solver, build_contingency_opf4; ref_extensions=[ref_add_goc!], solution_builder = solution_second_stage_shunt!, kwargs...)
 end
 
 ""
-function post_contingency_opf4(pm::AbstractPowerModel)
+function build_contingency_opf4(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)

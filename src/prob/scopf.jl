@@ -11,11 +11,11 @@ This formulation is used in conjunction with the contigency filters that
 generate PTDF cuts.
 """
 function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_scopf_dc_cuts_soft_2; solution_builder=solution_goc!, kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft_2; solution_builder=solution_goc!, kwargs...)
 end
 
 ""
-function post_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
+function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)

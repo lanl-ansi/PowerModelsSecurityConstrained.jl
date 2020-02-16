@@ -26,10 +26,10 @@ The primary departure from the PowerModels standard formulation is dispatchable
 bus shunts and a slight change in the transformer model.
 """
 function run_opf_shunt(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_opf_shunt; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
+    return run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
 
-function post_opf_shunt(pm::AbstractPowerModel)
+function build_opf_shunt(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
@@ -72,11 +72,11 @@ penalized based on a conservative linear approximation of the formulation's
 specification.
 """
 function run_opf_cheap(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_opf_cheap; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
+    return run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
 
 
-function post_opf_cheap(pm::AbstractPowerModel)
+function build_opf_cheap(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm, bounded=false)
@@ -135,11 +135,11 @@ end
 A variant of run_opf_cheap model, specialized to the DC Power Flow Model
 """
 function run_opf_cheap_dc(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_opf_cheap_dc; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
+    return run_model(file, model_constructor, solver, build_opf_cheap_dc; ref_extensions=[ref_add_goc!], solution_builder = solution_goc!, kwargs...)
 end
 
 
-function post_opf_cheap_dc(pm::AbstractPowerModel)
+function build_opf_cheap_dc(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm, bounded=false)
@@ -201,11 +201,11 @@ computations.  Support sparse collections of flow constrains for
 increased performance.
 """
 function run_opf_pg_pf_rect_5(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, post_opf_pg_pf_rect_5; ref_extensions=[ref_add_goc!], solution_builder=solution_goc!, kwargs...)
+    return run_model(file, model_constructor, solver, build_opf_pg_pf_rect_5; ref_extensions=[ref_add_goc!], solution_builder=solution_goc!, kwargs...)
 end
 
 ""
-function post_opf_pg_pf_rect_5(pm::AbstractPowerModel)
+function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_generation(pm)
 
