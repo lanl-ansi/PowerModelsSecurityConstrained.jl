@@ -336,7 +336,7 @@ function post_opf_pg_pf_rect_5(pm::AbstractPowerModel)
 
     bsh = var(pm, :bsh)
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)

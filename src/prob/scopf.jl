@@ -40,7 +40,7 @@ function post_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        PowerModels.constraint_power_balance_shunt(pm, i)
+        PowerModels.constraint_power_balance(pm, i)
     end
 
     for i in ids(pm, :branch)

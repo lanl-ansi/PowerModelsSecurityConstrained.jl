@@ -430,7 +430,7 @@ function post_pf_soft_rect(pm::AbstractPowerModel)
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
@@ -861,7 +861,7 @@ function post_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
@@ -1015,7 +1015,7 @@ function post_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
@@ -1379,7 +1379,7 @@ function post_contingency_opf4(pm::AbstractPowerModel)
 
 
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         #bus = ref(pm, :bus, i)
         bus_arcs = ref(pm, :bus_arcs, i)

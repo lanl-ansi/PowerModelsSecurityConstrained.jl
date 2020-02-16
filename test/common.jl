@@ -55,7 +55,7 @@ end
     @test all(haskey(branch, "rate_a") for (i,branch) in network["branch"])
 end
 
-first_cont_id = [9, 203]
+first_cont_id = [3, 203]
 @testset "contingency_order - $(i)" for (i,network) in enumerate(networks)
     order = contingency_order(network)
     @test isapprox(order[i].idx, first_cont_id[i]; atol = 1e0)
