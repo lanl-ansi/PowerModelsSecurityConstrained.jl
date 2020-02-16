@@ -17,12 +17,8 @@ end
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    try
-        result = run_scopf_cuts_dc_soft_2(network, DCPPowerModel, lp_solver)
-        @test false
-    catch
-        @test true
-    end
+    result = run_scopf_cuts_dc_soft_2(network, DCPPowerModel, lp_solver)
+    @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
 scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]

@@ -36,12 +36,8 @@ opf_shunt_dcp_objective = [14642.16, 26982.17]
 end
 
 @testset "opf shunt dc - infeasible" begin
-    try
-        result = run_opf_shunt(network_infeasible, DCPPowerModel, lp_solver)
-        @test false
-    catch
-        @test true
-    end
+    result = run_opf_shunt(network_infeasible, DCPPowerModel, lp_solver)
+    @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
 
@@ -93,12 +89,8 @@ opf_cheap_dc_objective = [14642.16, 26982.17]
 end
 
 @testset "opf shunt dc - infeasible" begin
-    try
-        result = run_opf_cheap_dc(network_infeasible, DCPPowerModel, lp_solver)
-        @test false
-    catch
-        @test true
-    end
+    result = run_opf_cheap_dc(network_infeasible, DCPPowerModel, lp_solver)
+    @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
 
