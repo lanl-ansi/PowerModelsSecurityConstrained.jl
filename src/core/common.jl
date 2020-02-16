@@ -1800,8 +1800,11 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
         nw_branch = network["branch"]["$(branch_id)"]
         nw_fr_bus = network["bus"]["$(nw_branch["f_bus"])"]
         nw_to_bus = network["bus"]["$(nw_branch["t_bus"])"]
-        response_gens = network["area_gens"][nw_fr_bus["area"]]
-        if nw_fr_bus["area"] != nw_to_bus["area"]
+        response_gens = Set()
+        if haskey(network["area_gens"], nw_fr_bus["area"])
+            response_gens = network["area_gens"][nw_fr_bus["area"]]
+        end
+        if nw_fr_bus["area"] != nw_to_bus["area"] && haskey(network["area_gens"], nw_to_bus["area"])
             response_gens = union(response_gens, network["area_gens"][nw_to_bus["area"]])
         end
     end
