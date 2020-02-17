@@ -782,8 +782,8 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractACRModel, n::Int, i
     #vm_sqr = @variable(pm.model, start=1.0, base_name="$(0)_vm_sqr_$(i)")
 
     #JuMP.@constraint(pm.model, vm_sqr == vi^2 + vr^2)
-    #con(pm, n, :kcl_p)[i] = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm_sqr)
-    #con(pm, n, :kcl_q)[i] = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm_sqr + sum(bsh[s]*vm_sqr for s in bus_shunts_var))
+    #cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm_sqr)
+    #cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm_sqr + sum(bsh[s]*vm_sqr for s in bus_shunts_var))
 
     cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*(vi^2 + vr^2))
     cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi^2 + vr^2) + sum(bsh[s]*(vi^2 + vr^2) for s in bus_shunts_var))
@@ -836,13 +836,6 @@ end
 
 ""
 function constraint_power_balance_shunt_dispatch_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
-    if !haskey(con(pm, nw), :kcl_p)
-        con(pm, nw)[:kcl_p] = Dict{Int,JuMP.ConstraintRef}()
-    end
-    if !haskey(con(pm, nw), :kcl_q)
-        con(pm, nw)[:kcl_q] = Dict{Int,JuMP.ConstraintRef}()
-    end
-
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
