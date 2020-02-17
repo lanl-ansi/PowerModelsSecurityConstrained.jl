@@ -729,13 +729,6 @@ end
 
 ""
 function constraint_power_balance_shunt_dispatch(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
-    if !haskey(con(pm, nw), :kcl_p)
-        con(pm, nw)[:kcl_p] = Dict{Int,JuMP.ConstraintRef}()
-    end
-    if !haskey(con(pm, nw), :kcl_q)
-        con(pm, nw)[:kcl_q] = Dict{Int,JuMP.ConstraintRef}()
-    end
-
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
@@ -764,8 +757,13 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractACPModel, n::Int, i
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
-    con(pm, n, :kcl_p)[i] = JuMP.@NLconstraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
-    con(pm, n, :kcl_q)[i] = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bsh[s]*vm^2 for s in bus_shunts_var))
+    cstr_p = JuMP.@NLconstraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
+    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bsh[s]*vm^2 for s in bus_shunts_var))
+
+    if report_duals(pm)
+        sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
+        sol(pm, n, :bus, i)[:lam_kcl_i] = cstr_q
+    end
 end
 
 ""
@@ -787,8 +785,13 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractACRModel, n::Int, i
     #con(pm, n, :kcl_p)[i] = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm_sqr)
     #con(pm, n, :kcl_q)[i] = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm_sqr + sum(bsh[s]*vm_sqr for s in bus_shunts_var))
 
-    con(pm, n, :kcl_p)[i] = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*(vi^2 + vr^2))
-    con(pm, n, :kcl_q)[i] = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi^2 + vr^2) + sum(bsh[s]*(vi^2 + vr^2) for s in bus_shunts_var))
+    cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*(vi^2 + vr^2))
+    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi^2 + vr^2) + sum(bsh[s]*(vi^2 + vr^2) for s in bus_shunts_var))
+
+    if report_duals(pm)
+        sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
+        sol(pm, n, :bus, i)[:lam_kcl_i] = cstr_q
+    end
 end
 
 ""
@@ -803,11 +806,16 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractWRModels, n::Int, i
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
-    con(pm, n, :kcl_p)[i] = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*w)
-    con(pm, n, :kcl_q)[i] = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbsh[s] for s in bus_shunts_var))
+    cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*w)
+    cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbsh[s] for s in bus_shunts_var))
 
     for s in bus_shunts_var
         InfrastructureModels.relaxation_product(pm.model, w, bsh[s], wbsh[s])
+    end
+
+    if report_duals(pm)
+        sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
+        sol(pm, n, :bus, i)[:lam_kcl_i] = cstr_q
     end
 end
 
@@ -817,7 +825,12 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractActivePowerModel, n
     pg = var(pm, n, :pg)
     p_dc = var(pm, n, :p_dc)
 
-    con(pm, n, :kcl_p)[i] = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*1.0)
+    cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*1.0)
+
+    if report_duals(pm)
+        sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
+        sol(pm, n, :bus, i)[:lam_kcl_i] = NaN
+    end
 end
 
 
@@ -1060,67 +1073,6 @@ function ref_add_goc!(pm::AbstractPowerModel)
             push!(bus_shunts_var[shunt["shunt_bus"]], i)
         end
         ref[:bus_shunts_var] = bus_shunts_var
-    end
-end
-
-
-function add_setpoint_dispatchable(
-    sol,
-    pm::AbstractPowerModel,
-    dict_name,
-    param_name,
-    variable_symbol;
-    index_name = "index",
-    default_value = (item) -> NaN,
-    scale = (x,item,cnd) -> x,
-    extract_var = (var,idx,item) -> var[idx],
-    sol_dict = get(sol, dict_name, Dict{String,Any}()),
-    conductorless = false,
-    dispatchable_check = false
-)
-
-    if InfrastructureModels.ismultinetwork(pm.data)
-        data_dict = pm.data["nw"]["$(pm.cnw)"][dict_name]
-    else
-        data_dict = pm.data[dict_name]
-    end
-
-    if length(data_dict) > 0
-        sol[dict_name] = sol_dict
-    end
-    for (i,item) in data_dict
-        if dispatchable_check && (!haskey(item, "dispatchable") || !item["dispatchable"])
-            continue
-        end
-
-        idx = Int(item[index_name])
-        sol_item = sol_dict[i] = get(sol_dict, i, Dict{String,Any}())
-
-        if conductorless
-            sol_item[param_name] = default_value(item)
-            try
-                variable = extract_var(var(pm, pm.cnw, variable_symbol), idx, item)
-                sol_item[param_name] = scale(JuMP.value(variable), item, 1)
-            catch
-            end
-        else
-            num_conductors = length(conductor_ids(pm))
-            cnd_idx = 1
-            sol_item[param_name] = MultiConductorVector{Real}([default_value(item) for i in 1:num_conductors])
-            for conductor in conductor_ids(pm)
-                try
-                    variable = extract_var(var(pm, variable_symbol), idx, item)
-                    sol_item[param_name][cnd_idx] = scale(JuMP.value(variable), item, conductor)
-                catch
-                end
-                cnd_idx += 1
-            end
-        end
-
-        # remove MultiConductorValue, if it was not a ismulticonductor network
-        if !ismulticonductor(pm)
-            sol_item[param_name] = sol_item[param_name][1]
-        end
     end
 end
 
