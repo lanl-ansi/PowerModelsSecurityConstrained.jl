@@ -659,18 +659,16 @@ end
 
 ""
 function variable_active_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+    p_delta_abs = var(pm, nw)[:p_delta_abs] = @variable(pm.model,
+        [i in ids(pm, :bus)], base_name="$(nw)_p_delta_abs",
+        start = 0.0
+    )
+
     if bounded
-         p_delta_abs = var(pm, nw)[:p_delta_abs] = @variable(pm.model,
-            [i in ids(pm, :bus)], base_name="$(nw)_p_delta_abs",
-            upper_bound = 0.5,
-            lower_bound = 0,
-            start = 0.0
-        )
-    else
-        p_delta_abs = var(pm, nw)[:p_delta_abs] = @variable(pm.model,
-            [i in ids(pm, :bus)], base_name="$(nw)_p_delta_abs",
-            start = 0.0
-        )
+        for (i, bus) in ref(pm, nw, :bus)
+            JuMP.set_lower_bound(p_delta_abs[i], 0.0)
+            JuMP.set_upper_bound(p_delta_abs[i], 0.5)
+        end
     end
 
     report && sol_component_value(pm, nw, :bus, :p_delta_abs, ids(pm, nw, :bus), p_delta_abs)
@@ -678,18 +676,16 @@ end
 
 ""
 function variable_reactive_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+     q_delta_abs = var(pm, nw)[:q_delta_abs] = @variable(pm.model,
+        [i in ids(pm, :bus)], base_name="$(nw)_q_delta_abs",
+        start = 0.0
+    )
+
     if bounded
-         q_delta_abs = var(pm, nw)[:q_delta_abs] = @variable(pm.model,
-            [i in ids(pm, :bus)], base_name="$(nw)_q_delta_abs",
-            upper_bound = 0.5,
-            lower_bound = 0,
-            start = 0.0
-        )
-    else
-         q_delta_abs = var(pm, nw)[:q_delta_abs] = @variable(pm.model,
-            [i in ids(pm, :bus)], base_name="$(nw)_q_delta_abs",
-            start = 0.0
-        )
+        for (i, bus) in ref(pm, nw, :bus)
+            JuMP.set_lower_bound(q_delta_abs[i], 0.0)
+            JuMP.set_upper_bound(q_delta_abs[i], 0.5)
+        end
     end
 
     report && sol_component_value(pm, nw, :bus, :q_delta_abs, ids(pm, nw, :bus), q_delta_abs)
@@ -697,23 +693,27 @@ end
 
 
 ""
-function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, report::Bool=true)
+function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     bsh = var(pm, nw)[:bsh] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bsh",
-        upper_bound = ref(pm, nw, :shunt, i, "bmax"),
-        lower_bound = ref(pm, nw, :shunt, i, "bmin"),
         start = comp_start_value(ref(pm, nw, :shunt, i), "bsh_start")
     )
+
+    if bounded
+        for i in ids(pm, nw, :shunt_var)
+            shunt = ref(pm, nw, :shunt, i)
+            JuMP.set_lower_bound(bsh[i], shunt["bmin"])
+            JuMP.set_upper_bound(bsh[i], shunt["bmax"])
+        end
+    end
 
     report && sol_component_value(pm, nw, :shunt, :bsh, ids(pm, nw, :shunt_var), bsh)
 end
 
 ""
-function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, report::Bool=true)
+function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     bsh = var(pm, nw)[:bsh] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bsh",
-        upper_bound = ref(pm, nw, :shunt, i, "bmax"),
-        lower_bound = ref(pm, nw, :shunt, i, "bmin"),
         start = comp_start_value(ref(pm, nw, :shunt, i), "bsh_start")
     )
 
@@ -721,6 +721,14 @@ function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, report::Bo
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_wbsh",
         start = 0.0
     )
+
+    if bounded
+        for i in ids(pm, nw, :shunt_var)
+            shunt = ref(pm, nw, :shunt, i)
+            JuMP.set_lower_bound(bsh[i], shunt["bmin"])
+            JuMP.set_upper_bound(bsh[i], shunt["bmax"])
+        end
+    end
 
     report && sol_component_value(pm, nw, :shunt, :bsh, ids(pm, nw, :shunt_var), bsh)
     report && sol_component_value(pm, nw, :shunt, :wbsh, ids(pm, nw, :shunt_var), wbsh)
