@@ -43,7 +43,7 @@ function security_stage_data(network)
 end
 
 
-solution2_lines = [29,561]
+solution2_lines = [31,600]
 @testset "write_solution2 - $(i)" for (i,network) in enumerate(networks)
     network = security_stage_data(network)
 

@@ -2088,18 +2088,37 @@ function write_solution2_contingency(io::IO, pm_network, contingency_solution)
 
     write(io, "-- bus section\n")
     write(io, "i, v(p.u.), theta(deg), bcs(MVAR at v = 1 p.u.)\n")
-    for (i,bus) in contingency_solution["bus"]
-        nw_bus = pm_network["bus"][i]
-        write(io, "$(nw_bus["index"]), $(bus["vm"]), $(rad2deg(bus["va"])), $(base_mva*bus_switched_shunt_b[i])\n")
+    for (i,nw_bus) in pm_network["bus"]
+        vm = 0.0
+        va = 0.0
+
+        if haskey(contingency_solution["bus"], i)
+            bus = contingency_solution["bus"][i]
+            vm = bus["vm"]
+            va = bus["va"]
+        end
+
+        write(io, "$(nw_bus["index"]), $(vm), $(rad2deg(va)), $(base_mva*bus_switched_shunt_b[i])\n")
     end
 
     write(io, "-- generator section\n")
     write(io, "i, id, p(MW), q(MVAR)\n")
-    for (i,gen) in contingency_solution["gen"]
+    for (i,nw_gen) in pm_network["gen"]
+
         nw_gen = pm_network["gen"][i]
         bus_index = nw_gen["source_id"][2]
         gen_id = nw_gen["source_id"][3]
-        write(io, "$(bus_index), $(gen_id), $(base_mva*gen["pg"]), $(base_mva*gen["qg"])\n")
+
+        pg = 0.0
+        qg = 0.0
+
+        if haskey(contingency_solution["gen"], i)
+            gen = contingency_solution["gen"][i]
+            pg = gen["pg"]
+            qg = gen["qg"]
+        end
+
+        write(io, "$(bus_index), $(gen_id), $(base_mva*pg), $(base_mva*qg)\n")
     end
 
     write(io, "-- delta section\n")
