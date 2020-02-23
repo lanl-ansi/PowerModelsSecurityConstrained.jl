@@ -707,7 +707,7 @@ function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded
         end
     end
 
-    report && sol_component_value(pm, nw, :shunt, :bsh, ids(pm, nw, :shunt_var), bsh)
+    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bsh)
 end
 
 ""
@@ -717,7 +717,7 @@ function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::B
         start = comp_start_value(ref(pm, nw, :shunt, i), "bsh_start")
     )
 
-    wbsh = var(pm, nw)[:wbsh] = @variable(pm.model,
+    wbs = var(pm, nw)[:wbsh] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_wbsh",
         start = 0.0
     )
@@ -730,8 +730,8 @@ function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::B
         end
     end
 
-    report && sol_component_value(pm, nw, :shunt, :bsh, ids(pm, nw, :shunt_var), bsh)
-    report && sol_component_value(pm, nw, :shunt, :wbsh, ids(pm, nw, :shunt_var), wbsh)
+    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bsh)
+    report && sol_component_value(pm, nw, :shunt, :wbs, ids(pm, nw, :shunt_var), wbs)
 end
 
 

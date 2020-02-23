@@ -272,7 +272,7 @@ end
 
 ""
 function run_pf_soft_rect(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_pf_soft_rect; kwargs...)
+    return run_model(file, model_constructor, solver, build_pf_soft_rect; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -285,6 +285,9 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
     var(pm)[:delta] = @variable(pm.model, base_name="delta", start=0.0)
     sol(pm)[:delta] = var(pm)[:delta]
     #@constraint(pm.model, var(pm, :delta) == 0.0)
+
+    shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
+    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     var(pm)[:p_slack] = @variable(pm.model, p_slack, base_name="p_slack", start=0.0)
 
@@ -708,7 +711,7 @@ end
 
 ""
 function run_fixed_pf_nbf_rect2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2; kwargs...)
+    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -727,6 +730,9 @@ function build_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
     #var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=ref(pm, :delta_start))
     #Memento.info(LOGGER, "post variable time: $(time() - start_time)")
     sol(pm)[:delta] = var(pm)[:delta]
+
+    shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
+    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     start_time = time()
 
@@ -856,7 +862,7 @@ end
 
 "a variant of fixed_pf_nbf_rect2 with a distributed active power slack"
 function run_fixed_pf_nbf_rect2_ds(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2_ds; kwargs...)
+    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2_ds; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -873,6 +879,9 @@ function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
     var(pm)[:delta] = @variable(pm.model, base_name="delta", start=0.0)
     sol(pm)[:delta] = var(pm)[:delta]
     @constraint(pm.model, var(pm, :delta) == delta)
+
+    shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
+    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     active_response_gens = intersect(ids(pm, :gen), ref(pm, :response_gens))
     # for i in active_response_gens
@@ -1230,6 +1239,7 @@ function build_contingency_opf4(pm::AbstractPowerModel)
         lower_bound = ref(pm, :shunt, i)["bmin"],
         start = ref(pm, :shunt, i)["bs"]
     )
+    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), bsh)
 
     qg_vio = @variable(pm.model,
         [i in ids(pm, :gen)], base_name="qg_vio",
