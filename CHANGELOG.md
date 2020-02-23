@@ -4,6 +4,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.2.1
+- Add support for PowerModels v0.14
+
 ### v0.2.0
 - Update to PowerModels v0.13
 - Remove try/catch blocks around solver calls
