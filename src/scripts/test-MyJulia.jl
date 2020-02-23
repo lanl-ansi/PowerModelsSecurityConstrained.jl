@@ -7,6 +7,11 @@ InFile1=joinpath(pmsc_path, "test/data/scenario_01/case.con")
 InFile2=joinpath(pmsc_path, "test/data/scenario_01/case.inl")
 InFile3=joinpath(pmsc_path, "test/data/scenario_01/case.raw")
 InFile4=joinpath(pmsc_path, "test/data/scenario_01/case.rop")
+
+# InFile1=joinpath(pmsc_path, "test/data/scenario_02/case.con")
+# InFile2=joinpath(pmsc_path, "test/data/scenario_02/case.inl")
+# InFile3=joinpath(pmsc_path, "test/data/scenario_02/case.raw")
+# InFile4=joinpath(pmsc_path, "test/data/scenario_02/case.rop")
 TimeLimitInSeconds=600
 ScoringMethod=2
 NetworkModel="IEEE 14"
