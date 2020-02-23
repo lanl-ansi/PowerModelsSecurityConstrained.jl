@@ -15,7 +15,7 @@ function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
 end
 
 ""
-function post_scopf_dc_cuts_soft_2(pm::GenericPowerModel)
+function post_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
@@ -40,7 +40,7 @@ function post_scopf_dc_cuts_soft_2(pm::GenericPowerModel)
     end
 
     for i in ids(pm, :bus)
-        PowerModels.constraint_power_balance_shunt(pm, i)
+        PowerModels.constraint_power_balance(pm, i)
     end
 
     for i in ids(pm, :branch)

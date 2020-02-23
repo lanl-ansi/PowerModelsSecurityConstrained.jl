@@ -23,7 +23,7 @@ end
 
 
 opf_ac_tight_objective = [14676.9, 28347.12]
-@testset "opf ac tight- $(i)" for (i,network) in enumerate(networks_opf)
+@testset "opf ac tight - $(i)" for (i,network) in enumerate(networks_opf)
     network = deepcopy(network)
 
     tighten_constraints!(network)
@@ -31,6 +31,18 @@ opf_ac_tight_objective = [14676.9, 28347.12]
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_ac_tight_objective[i]; atol = 1e0)
+end
+
+
+opf_ac_no_rate_a_objective = [14676.9, 27546.46]
+@testset "opf ac no flow limits - $(i)" for (i,network) in enumerate(networks_opf)
+    network = deepcopy(network)
+
+    deactivate_rate_a!(network)
+    result = run_ac_opf(network, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_ac_no_rate_a_objective[i]; atol = 1e0)
 end
 
 

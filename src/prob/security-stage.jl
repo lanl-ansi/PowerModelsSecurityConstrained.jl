@@ -172,7 +172,7 @@ gen_default = Dict(
 
 
 ""
-function solution_second_stage!(pm::GenericPowerModel, sol::Dict{String,Any})
+function solution_second_stage!(pm::AbstractPowerModel, sol::Dict{String,Any})
     #start_time = time()
     PowerModels.add_setpoint_bus_voltage!(sol, pm)
     #Memento.info(LOGGER, "voltage solution time: $(time() - start_time)")
@@ -195,7 +195,7 @@ function solution_second_stage!(pm::GenericPowerModel, sol::Dict{String,Any})
 end
 
 ""
-function solution_second_stage_shunt!(pm::GenericPowerModel, sol::Dict{String,Any})
+function solution_second_stage_shunt!(pm::AbstractPowerModel, sol::Dict{String,Any})
     PowerModels.add_setpoint_bus_voltage!(sol, pm)
     PowerModels.add_setpoint_generator_power!(sol, pm)
     PowerModels.add_setpoint_branch_flow!(sol, pm)
@@ -314,7 +314,7 @@ function run_pf_soft_rect(file, model_constructor, solver; kwargs...)
 end
 
 ""
-function post_pf_soft_rect(pm::GenericPowerModel)
+function post_pf_soft_rect(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
@@ -430,7 +430,7 @@ function post_pf_soft_rect(pm::GenericPowerModel)
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
@@ -746,7 +746,7 @@ function run_fixed_pf_nbf_rect2(file, model_constructor, solver; kwargs...)
 end
 
 ""
-function post_fixed_pf_nbf_rect2(pm::GenericPowerModel)
+function post_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
     start_time = time()
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
@@ -861,7 +861,7 @@ function post_fixed_pf_nbf_rect2(pm::GenericPowerModel)
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
@@ -893,7 +893,7 @@ function run_fixed_pf_nbf_rect2_ds(file, model_constructor, solver; kwargs...)
 end
 
 ""
-function post_fixed_pf_nbf_rect2_ds(pm::GenericPowerModel)
+function post_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
@@ -1015,7 +1015,7 @@ function post_fixed_pf_nbf_rect2_ds(pm::GenericPowerModel)
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
@@ -1246,7 +1246,7 @@ function run_contingency_opf4(file, model_constructor, solver; kwargs...)
 end
 
 ""
-function post_contingency_opf4(pm::GenericPowerModel)
+function post_contingency_opf4(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
@@ -1379,7 +1379,7 @@ function post_contingency_opf4(pm::GenericPowerModel)
 
 
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance_shunt(pm, i)
+        #PowerModels.constraint_power_balance(pm, i)
 
         #bus = ref(pm, :bus, i)
         bus_arcs = ref(pm, :bus_arcs, i)
