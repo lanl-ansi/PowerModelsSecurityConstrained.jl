@@ -43,6 +43,47 @@ function security_stage_data(network)
 end
 
 
+solution2_lines = [31,600]
+@testset "write_solution2 - $(i)" for (i,network) in enumerate(networks)
+    network = security_stage_data(network)
+
+    bus_gens = gens_by_bus(network)
+    cont = network["gen_contingencies"][1]
+
+    cont_gen = network["gen"]["$(cont.idx)"]
+    cont_gen["contingency"] = true
+    cont_gen["gen_status"] = 0
+    pg_lost = cont_gen["pg"]
+
+    gen_bus = network["bus"]["$(cont_gen["gen_bus"])"]
+    if length(bus_gens["$(gen_bus["index"])"]) == 1
+        gen_bus["vm_fixed"] = false
+    end
+
+    result = run_fixpoint_pf_soft!(network, pg_lost, ACRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], 0.0; atol = 1e0)
+
+    cont_sol = result["solution"]
+    cont_sol["label"] = cont.label
+    cont_sol["feasible"] = (result["termination_status"] == LOCALLY_SOLVED)
+    cont_sol["cont_type"] = "gen"
+    cont_sol["cont_comp_id"] = cont.idx
+
+    cont_sol["gen"]["$(cont.idx)"] = Dict("pg" => 0.0, "qg" => 0.0)
+    cont_sol["delta"] = 0.0
+
+    write_solution2(network, [cont_sol], solution_file="solution2-tmp.txt")
+
+    open("solution2-tmp.txt", "r") do file
+        lines = countlines(file)
+        @test lines == solution2_lines[i]
+    end
+    rm("solution2-tmp.txt")
+end
+
+
 @testset "pf soft rect - $(i)" for (i,network) in enumerate(networks)
     network = security_stage_data(network)
 

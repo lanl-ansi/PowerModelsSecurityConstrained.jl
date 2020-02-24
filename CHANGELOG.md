@@ -4,6 +4,10 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.3.0
+- Update to PowerModels v0.15
+- Changed post_* function names to build_* to follow new naming conventions
+
 ### v0.2.1
 - Add support for PowerModels v0.14
 
