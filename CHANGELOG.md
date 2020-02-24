@@ -4,6 +4,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.3.1
+- Add support for JuMP v0.21
+
 ### v0.3.0
 - Update to PowerModels v0.15
 - Changed post_* function names to build_* to follow new naming conventions
