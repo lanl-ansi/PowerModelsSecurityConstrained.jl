@@ -2,22 +2,25 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- Add variant of the `build_scopf_dc_cuts_soft` formulation
+- Updated `bsh` variable name to `bs`
+
+### Staged
+- Added variant of the `build_scopf_dc_cuts_soft` formulation
 
 ### v0.3.1
-- Add support for JuMP v0.21
+- Added support for JuMP v0.21
 
 ### v0.3.0
-- Update to PowerModels v0.15
+- Updated to PowerModels v0.15
 - Changed post_* function names to build_* to follow new naming conventions
 
 ### v0.2.1
 - Add support for PowerModels v0.14
 
 ### v0.2.0
-- Update to PowerModels v0.13
-- Remove try/catch blocks around solver calls
-- Remove duplicate psse data parser (#3)
+- Updated to PowerModels v0.13
+- Removed try/catch blocks around solver calls
+- Removed duplicate psse data parser (#3)
 
 ### v0.1.1
 - Added missing `gen_default` dictionary for security-stage solvers

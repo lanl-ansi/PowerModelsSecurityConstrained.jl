@@ -1233,13 +1233,13 @@ function build_contingency_opf4(pm::AbstractPowerModel)
     #nw = 0
     #cnd = 1
 
-    bsh = var(pm)[:bsh] = @variable(pm.model,
+    bs = var(pm)[:bs] = @variable(pm.model,
         [i in ids(pm, :shunt_var)], base_name="qsh",
         upper_bound = ref(pm, :shunt, i)["bmax"],
         lower_bound = ref(pm, :shunt, i)["bmin"],
         start = ref(pm, :shunt, i)["bs"]
     )
-    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), bsh)
+    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), bs)
 
     qg_vio = @variable(pm.model,
         [i in ids(pm, :gen)], base_name="qg_vio",
@@ -1381,7 +1381,7 @@ function build_contingency_opf4(pm::AbstractPowerModel)
         #qg = var(pm, :qg)
 
         @NLconstraint(pm.model, sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm[i]^2)
-        @NLconstraint(pm.model, sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm[i]^2 + sum(bsh[s]*vm[i]^2 for s in bus_shunts_var))
+        @NLconstraint(pm.model, sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm[i]^2 + sum(bs[s]*vm[i]^2 for s in bus_shunts_var))
     end
 
 end

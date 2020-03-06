@@ -694,43 +694,43 @@ end
 
 ""
 function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
-    bsh = var(pm, nw)[:bsh] = @variable(pm.model,
-        [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bsh",
-        start = comp_start_value(ref(pm, nw, :shunt, i), "bsh_start")
+    bs = var(pm, nw)[:bs] = @variable(pm.model,
+        [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bs",
+        start = comp_start_value(ref(pm, nw, :shunt, i), "bs_start")
     )
 
     if bounded
         for i in ids(pm, nw, :shunt_var)
             shunt = ref(pm, nw, :shunt, i)
-            JuMP.set_lower_bound(bsh[i], shunt["bmin"])
-            JuMP.set_upper_bound(bsh[i], shunt["bmax"])
+            JuMP.set_lower_bound(bs[i], shunt["bmin"])
+            JuMP.set_upper_bound(bs[i], shunt["bmax"])
         end
     end
 
-    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bsh)
+    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bs)
 end
 
 ""
 function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
-    bsh = var(pm, nw)[:bsh] = @variable(pm.model,
-        [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bsh",
-        start = comp_start_value(ref(pm, nw, :shunt, i), "bsh_start")
+    bs = var(pm, nw)[:bs] = @variable(pm.model,
+        [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bs",
+        start = comp_start_value(ref(pm, nw, :shunt, i), "bs_start")
     )
 
-    wbs = var(pm, nw)[:wbsh] = @variable(pm.model,
-        [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_wbsh",
+    wbs = var(pm, nw)[:wbs] = @variable(pm.model,
+        [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_wbs",
         start = 0.0
     )
 
     if bounded
         for i in ids(pm, nw, :shunt_var)
             shunt = ref(pm, nw, :shunt, i)
-            JuMP.set_lower_bound(bsh[i], shunt["bmin"])
-            JuMP.set_upper_bound(bsh[i], shunt["bmax"])
+            JuMP.set_lower_bound(bs[i], shunt["bmin"])
+            JuMP.set_upper_bound(bs[i], shunt["bmax"])
         end
     end
 
-    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bsh)
+    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bs)
     report && sol_component_value(pm, nw, :shunt, :wbs, ids(pm, nw, :shunt_var), wbs)
 end
 
@@ -761,12 +761,12 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractACPModel, n::Int, i
     q = var(pm, n, :q)
     pg = var(pm, n, :pg)
     qg = var(pm, n, :qg)
-    bsh = var(pm, n, :bsh)
+    bs = var(pm, n, :bs)
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
     cstr_p = JuMP.@NLconstraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
-    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bsh[s]*vm^2 for s in bus_shunts_var))
+    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bs[s]*vm^2 for s in bus_shunts_var))
 
     if report_duals(pm)
         sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
@@ -782,7 +782,7 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractACRModel, n::Int, i
     q = var(pm, n, :q)
     pg = var(pm, n, :pg)
     qg = var(pm, n, :qg)
-    bsh = var(pm, n, :bsh)
+    bs = var(pm, n, :bs)
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
@@ -791,10 +791,10 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractACRModel, n::Int, i
 
     #JuMP.@constraint(pm.model, vm_sqr == vi^2 + vr^2)
     #cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm_sqr)
-    #cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm_sqr + sum(bsh[s]*vm_sqr for s in bus_shunts_var))
+    #cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm_sqr + sum(bs[s]*vm_sqr for s in bus_shunts_var))
 
     cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*(vi^2 + vr^2))
-    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi^2 + vr^2) + sum(bsh[s]*(vi^2 + vr^2) for s in bus_shunts_var))
+    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi^2 + vr^2) + sum(bs[s]*(vi^2 + vr^2) for s in bus_shunts_var))
 
     if report_duals(pm)
         sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
@@ -809,16 +809,16 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractWRModels, n::Int, i
     q = var(pm, n, :q)
     pg = var(pm, n, :pg)
     qg = var(pm, n, :qg)
-    bsh = var(pm, n, :bsh)
-    wbsh = var(pm, n, :wbsh)
+    bs = var(pm, n, :bs)
+    wbs = var(pm, n, :wbs)
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
     cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*w)
-    cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbsh[s] for s in bus_shunts_var))
+    cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbs[s] for s in bus_shunts_var))
 
     for s in bus_shunts_var
-        InfrastructureModels.relaxation_product(pm.model, w, bsh[s], wbsh[s])
+        InfrastructureModels.relaxation_product(pm.model, w, bs[s], wbs[s])
     end
 
     if report_duals(pm)
@@ -871,12 +871,12 @@ function constraint_power_balance_shunt_dispatch_soft(pm::AbstractACPModel, n::I
     q = var(pm, n, :q)
     pg = var(pm, n, :pg)
     qg = var(pm, n, :qg)
-    bsh = var(pm, n, :bsh)
+    bs = var(pm, n, :bs)
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
     p_delta = @NLexpression(pm.model, - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
-    q_delta = @NLexpression(pm.model, - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bsh[s]*vm^2 for s in bus_shunts_var))
+    q_delta = @NLexpression(pm.model, - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bs[s]*vm^2 for s in bus_shunts_var))
 
     @NLconstraint(pm.model,  p_delta_abs >= p_delta)
     @NLconstraint(pm.model, -p_delta_abs <= p_delta)
@@ -895,22 +895,22 @@ function constraint_power_balance_shunt_dispatch_soft(pm::AbstractWRModels, n::I
     q = var(pm, n, :q)
     pg = var(pm, n, :pg)
     qg = var(pm, n, :qg)
-    bsh = var(pm, n, :bsh)
-    wbsh = var(pm, n, :wbsh)
+    bs = var(pm, n, :bs)
+    wbs = var(pm, n, :wbs)
     p_dc = var(pm, n, :p_dc)
     q_dc = var(pm, n, :q_dc)
 
     #p_delta = - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*w
-    #q_delta = - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbsh[s] for s in bus_shunts_var)
+    #q_delta = - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbs[s] for s in bus_shunts_var)
 
     @constraint(pm.model,  p_delta_abs >= - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*w)
     @constraint(pm.model, -p_delta_abs <= - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*w)
 
-    @constraint(pm.model,  q_delta_abs >= - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbsh[s] for s in bus_shunts_var))
-    @constraint(pm.model, -q_delta_abs <= - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbsh[s] for s in bus_shunts_var))
+    @constraint(pm.model,  q_delta_abs >= - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbs[s] for s in bus_shunts_var))
+    @constraint(pm.model, -q_delta_abs <= - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbs[s] for s in bus_shunts_var))
 
     for s in bus_shunts_var
-        InfrastructureModels.relaxation_product(pm.model, w, bsh[s], wbsh[s])
+        InfrastructureModels.relaxation_product(pm.model, w, bs[s], wbs[s])
     end
 end
 
@@ -1034,7 +1034,7 @@ function set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
     end
 
     for (i,shunt) in network["shunt"]
-        shunt["bsh_start"] = shunt["bs"]
+        shunt["bs_start"] = shunt["bs"]
     end
 
     if branch_flow

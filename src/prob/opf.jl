@@ -315,7 +315,7 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
     #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
 
 
-    bsh = var(pm, :bsh)
+    bs = var(pm, :bs)
     for (i,bus) in ref(pm, :bus)
         #PowerModels.constraint_power_balance(pm, i)
 
@@ -341,8 +341,8 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
         #@constraint(pm.model, sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
         #@constraint(pm.model, q_delta[i] + sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
         @constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vvm[i])
-        @constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vvm[i] + sum(bsh[s]*vvm[i] for s in bus_shunts_var))
-        #@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi[i]^2 + vr[i]^2) + sum(bsh[s]*1.0 for s in bus_shunts_var))
+        @constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vvm[i] + sum(bs[s]*vvm[i] for s in bus_shunts_var))
+        #@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi[i]^2 + vr[i]^2) + sum(bs[s]*1.0 for s in bus_shunts_var))
     end
     #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
 
