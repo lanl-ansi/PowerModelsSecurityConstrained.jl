@@ -64,11 +64,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     network_apo = deepcopy(network)
 
-    result = run_opf_cheap_dc(network_apo, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network_apo, DCPPowerModel, lp_solver)
     if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
         warn(LOGGER, "base case DC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
 
-        result = run_opf_cheap_dc(network_apo, DCPPowerModel, qp_solver_relaxed)
+        result = run_opf_cheap(network_apo, DCPPowerModel, qp_solver_relaxed)
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             warn(LOGGER, "relaxed base case DC-OPF solve failed with status $(result["termination_status"])")
             result = Dict(

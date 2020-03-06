@@ -30,7 +30,7 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 28675.72]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
 
     update_active_power_data!(network, result["solution"])
@@ -77,7 +77,7 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
 
     update_active_power_data!(network, result["solution"])

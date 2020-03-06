@@ -22,7 +22,6 @@ are used as sub-processes in building contingency constrained solutions.
 ```@docs
 run_opf_shunt
 run_opf_cheap
-run_opf_cheap_dc
 run_opf_pg_pf_rect_5
 ```
 

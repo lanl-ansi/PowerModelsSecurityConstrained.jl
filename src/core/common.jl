@@ -1060,6 +1060,8 @@ function ref_add_goc!(pm::AbstractPowerModel)
         nw_id = parse(Int, n)
         ref = pm.ref[:nw][nw_id]
 
+        ref[:branch_sm_active] = Dict(x for x in ref[:branch] if haskey(x.second, "rate_a"))
+
         ref[:shunt_const] = Dict(x for x in ref[:shunt] if (!haskey(x.second, "dispatchable") || !x.second["dispatchable"]))
         ref[:shunt_var] = Dict(x for x in ref[:shunt] if (haskey(x.second, "dispatchable") && x.second["dispatchable"]))
 

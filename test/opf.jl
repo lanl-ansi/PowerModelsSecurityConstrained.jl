@@ -83,14 +83,14 @@ end
 opf_cheap_dc_objective = [14642.16, 26982.17]
 @testset "opf cheap_dc dc - $(i)" for (i,network) in enumerate(networks)
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], opf_cheap_dc_objective[i]; atol = 1e0)
 end
 
 @testset "opf shunt dc - infeasible" begin
-    result = run_opf_cheap_dc(network_infeasible, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network_infeasible, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], INFEASIBLE)
 end
 

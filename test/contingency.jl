@@ -65,7 +65,7 @@ cuts_ratec_nd_first_lazy_branch = [0, 1]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
     update_active_power_data!(network, result["solution"])
 
@@ -83,7 +83,7 @@ cuts_ratec_branch = [0, 10]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
     update_active_power_data!(network, result["solution"])
 

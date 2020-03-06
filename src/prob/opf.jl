@@ -63,14 +63,9 @@ function build_opf_cheap(pm::AbstractPowerModel)
     PowerModels.variable_branch_flow(pm, bounded=false)
     PowerModels.variable_dcline_flow(pm)
 
+    variable_branch_flow_slack(pm)
     variable_reactive_shunt(pm)
 
-    sm_slack = var(pm)[:sm_slack] = @variable(pm.model,
-        [l in ids(pm, :branch)], base_name="sm_slack",
-        lower_bound = 0.0,
-        start = 0.0
-    )
-
     PowerModels.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
@@ -87,92 +82,21 @@ function build_opf_cheap(pm::AbstractPowerModel)
 
         PowerModels.constraint_voltage_angle_difference(pm, i)
 
-        #PowerModels.constraint_thermal_limit_from(pm, i)
-        #PowerModels.constraint_thermal_limit_to(pm, i)
-
-        f_bus_id = branch["f_bus"]
-        t_bus_id = branch["t_bus"]
-        f_idx = (i, f_bus_id, t_bus_id)
-        t_idx = (i, t_bus_id, f_bus_id)
-
-        rate_a = branch["rate_a"]
-        @constraint(pm.model, var(pm, :p, f_idx)^2 + var(pm, :q, f_idx)^2 <= (rate_a + sm_slack[i])^2)
-        @constraint(pm.model, var(pm, :p, t_idx)^2 + var(pm, :q, t_idx)^2 <= (rate_a + sm_slack[i])^2)
+        constraint_thermal_limit_from_soft(pm, i)
+        constraint_thermal_limit_to_soft(pm, i)
     end
 
     ##### Setup Objective #####
     objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
-    pg_cost = var(pm, pm.cnw, :pg_cost)
+    pg_cost = var(pm, :pg_cost)
+    sm_slack = var(pm, :sm_slack)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
-        sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch) )
+        sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch_sm_active) )
     )
 end
-
-
-"""
-A variant of run_opf_cheap model, specialized to the DC Power Flow Model
-"""
-function run_opf_cheap_dc(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_opf_cheap_dc; ref_extensions=[ref_add_goc!], kwargs...)
-end
-
-
-function build_opf_cheap_dc(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm, bounded=false)
-    PowerModels.variable_dcline_flow(pm)
-
-    sm_slack = var(pm)[:sm_slack] = @variable(pm.model,
-        [l in ids(pm, :branch)], base_name="sm_slack",
-        lower_bound = 0.0,
-        start = 0.0
-    )
-
-    PowerModels.constraint_model_voltage(pm)
-
-    for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
-    end
-
-    for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
-    end
-
-    for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
-
-        PowerModels.constraint_voltage_angle_difference(pm, i)
-
-        #PowerModels.constraint_thermal_limit_from(pm, i)
-        #PowerModels.constraint_thermal_limit_to(pm, i)
-
-        f_bus_id = branch["f_bus"]
-        t_bus_id = branch["t_bus"]
-        f_idx = (i, f_bus_id, t_bus_id)
-        t_idx = (i, t_bus_id, f_bus_id)
-
-        rate_a = branch["rate_a"]
-        @constraint(pm.model, var(pm, :p, f_idx) <= rate_a + sm_slack[i])
-        @constraint(pm.model, var(pm, :p, f_idx) >= -(rate_a + sm_slack[i]))
-    end
-
-    ##### Setup Objective #####
-    objective_variable_pg_cost(pm)
-
-    # explicit network id needed because of conductor-less
-    pg_cost = var(pm, pm.cnw, :pg_cost)
-
-    @objective(pm.model, Min,
-        sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
-        sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch) )
-    )
-end
-
 
 
 """

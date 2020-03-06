@@ -36,6 +36,11 @@ end
 
 
 include("core/common.jl")
+include("core/variable.jl")
+include("core/constraint.jl")
+include("core/constraint_template.jl")
+
+include("form/apo.jl")
 
 include("io/parsers.jl")
 
