@@ -22,3 +22,11 @@ function constraint_thermal_limit_to_soft(pm::AbstractPowerModel, i::Int; nw::In
         constraint_thermal_limit_to_soft(pm, nw, t_idx, branch["rate_a"])
     end
 end
+
+
+""
+function constraint_gen_active_deviation(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    gen = ref(pm, nw, :gen, i)
+
+    constraint_gen_active_deviation(pm, nw, i, gen["pg"])
+end

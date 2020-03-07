@@ -21,23 +21,10 @@ function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
     PowerModels.variable_branch_flow(pm)
     PowerModels.variable_dcline_flow(pm)
 
-    branch_cut_vio = var(pm, 0)[:branch_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["branch_flow_cuts"])], base_name="branch_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
+    variable_branch_contigency_flow_violation(pm)
+    variable_gen_contigency_flow_violation(pm)
+    variable_gen_contigency_capacity_violation(pm)
 
-    gen_cut_vio = var(pm, 0)[:gen_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["gen_flow_cuts"])], base_name="gen_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
-
-    gen_cap_vio = var(pm, 0)[:gen_cap_vio] = @variable(pm.model,
-        [i in 1:length(ref(pm, :gen_contingencies))], base_name="gen_cap_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
 
     PowerModels.constraint_model_voltage(pm)
 
@@ -153,17 +140,8 @@ function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
     PowerModels.variable_branch_flow(pm)
     PowerModels.variable_dcline_flow(pm)
 
-    branch_cut_vio = var(pm, 0)[:branch_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["branch_flow_cuts"])], base_name="branch_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
-
-    gen_cut_vio = var(pm, 0)[:gen_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["gen_flow_cuts"])], base_name="gen_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
+    variable_branch_contigency_flow_violation(pm)
+    variable_gen_contigency_flow_violation(pm)
 
     PowerModels.constraint_model_voltage(pm)
 

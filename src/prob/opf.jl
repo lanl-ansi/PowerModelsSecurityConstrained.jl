@@ -114,29 +114,17 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_generation(pm)
 
+    variable_branch_flow_slack(pm)
     variable_reactive_shunt(pm)
+
+    variable_vvm_delta(pm)
+    variable_pg_delta(pm)
 
     vvm = var(pm)[:vvm] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="vvm",
         lower_bound = ref(pm, :bus, i, "vmin")^2,
         upper_bound = ref(pm, :bus, i, "vmax")^2,
         start = 1.0
-    )
-
-    vm_delta = var(pm)[:vm_delta] = @variable(pm.model,
-        [i in ids(pm, :bus)], base_name="vm_delta",
-        start = 0.1
-    )
-
-    pg_delta = var(pm)[:pg_delta] = @variable(pm.model,
-        [i in ids(pm, :gen)], base_name="pg_delta",
-        start = 0.0
-    )
-
-    sm_slack = var(pm)[:sm_slack_sparse] = @variable(pm.model,
-        [l in ref(pm, :active_rates)], base_name="sm_slack_sparse",
-        lower_bound = 0.0,
-        start = 0.0
     )
 
     vr = var(pm, :vr)
@@ -150,7 +138,7 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
         #vm_target = bus["vm"]
 
         @constraint(pm.model, vr[i]^2 + vi[i]^2 == vvm[i])
-        @constraint(pm.model, vvm[i] == vm_target^2 + vm_delta[i])
+        @constraint(pm.model, vvm[i] == vm_target^2 + var(pm, :vvm_delta, i))
     end
 
     for i in ids(pm, :ref_buses)
@@ -160,8 +148,11 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
 
 
     start_time = time()
-    p = Dict{Tuple{Int64,Int64,Int64},GenericQuadExpr{Float64,VariableRef}}()
-    q = Dict{Tuple{Int64,Int64,Int64},GenericQuadExpr{Float64,VariableRef}}()
+    p = var(pm)[:p] = Dict{Tuple{Int64,Int64,Int64},VariableRef}()
+    q = var(pm)[:q] = Dict{Tuple{Int64,Int64,Int64},VariableRef}()
+
+    p_expr = var(pm)[:p_expr] = Dict{Tuple{Int64,Int64,Int64},GenericQuadExpr{Float64,VariableRef}}()
+    q_expr = var(pm)[:q_expr] = Dict{Tuple{Int64,Int64,Int64},GenericQuadExpr{Float64,VariableRef}}()
     for (i,branch) in ref(pm, :branch)
         #PowerModels.constraint_ohms_yt_from(pm, i)
         #PowerModels.constraint_ohms_yt_to(pm, i)
@@ -198,47 +189,42 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
 
 
         if branch["transformer"]
-            p[f_idx] = (g/tm^2+g_fr)*(vr_fr^2 + vi_fr^2) + (-g*tr+b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr-g*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
-            q[f_idx] = -(b/tm^2+b_fr)*(vr_fr^2 + vi_fr^2) - (-b*tr-g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr+b*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
+            p_expr[f_idx] = (g/tm^2+g_fr)*(vr_fr^2 + vi_fr^2) + (-g*tr+b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr-g*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
+            q_expr[f_idx] = -(b/tm^2+b_fr)*(vr_fr^2 + vi_fr^2) - (-b*tr-g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr+b*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
         else
-            p[f_idx] = (g+g_fr)/tm^2*(vr_fr^2 + vi_fr^2) + (-g*tr+b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr-g*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
-            q[f_idx] = -(b+b_fr)/tm^2*(vr_fr^2 + vi_fr^2) - (-b*tr-g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr+b*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
+            p_expr[f_idx] = (g+g_fr)/tm^2*(vr_fr^2 + vi_fr^2) + (-g*tr+b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr-g*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
+            q_expr[f_idx] = -(b+b_fr)/tm^2*(vr_fr^2 + vi_fr^2) - (-b*tr-g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr+b*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
         end
-        p[t_idx] = (g+g_to)*(vr_to^2 + vi_to^2) + (-g*tr-b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr+g*ti)/tm^2*(-(vi_fr*vr_to - vr_fr*vi_to))
-        q[t_idx] = -(b+b_to)*(vr_to^2 + vi_to^2) - (-b*tr+g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr-b*ti)/tm^2*(-(vi_fr*vr_to - vr_fr*vi_to))
+        p_expr[t_idx] = (g+g_to)*(vr_to^2 + vi_to^2) + (-g*tr-b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr+g*ti)/tm^2*(-(vi_fr*vr_to - vr_fr*vi_to))
+        q_expr[t_idx] = -(b+b_to)*(vr_to^2 + vi_to^2) - (-b*tr+g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr-b*ti)/tm^2*(-(vi_fr*vr_to - vr_fr*vi_to))
 
         if haskey(branch, "rate_a")
-            #@constraint(pm.model,  p[f_idx] <= branch["rate_a"] + sm_slack[i])
-            #@constraint(pm.model, -p[f_idx] <= branch["rate_a"] + sm_slack[i])
-            #@constraint(pm.model,  p[t_idx] <= branch["rate_a"] + sm_slack[i])
-            #@constraint(pm.model, -p[t_idx] <= branch["rate_a"] + sm_slack[i])
+            p[f_idx] = @variable(pm.model, base_name="p_fr", start = 0.0)
+            q[f_idx] = @variable(pm.model, base_name="q_fr", start = 0.0)
+            p[t_idx] = @variable(pm.model, base_name="p_to", start = 0.0)
+            q[t_idx] = @variable(pm.model, base_name="q_to", start = 0.0)
 
-            p_fr = @variable(pm.model, base_name="p_fr", start = 0.0)
-            q_fr = @variable(pm.model, base_name="q_fr", start = 0.0)
-            p_to = @variable(pm.model, base_name="p_to", start = 0.0)
-            q_to = @variable(pm.model, base_name="q_to", start = 0.0)
+            @constraint(pm.model,  p_expr[f_idx] == p[f_idx])
+            @constraint(pm.model,  q_expr[f_idx] == q[f_idx])
+            @constraint(pm.model,  p_expr[t_idx] == p[t_idx])
+            @constraint(pm.model,  q_expr[t_idx] == q[t_idx])
 
-            @constraint(pm.model,  p[f_idx] == p_fr)
-            @constraint(pm.model,  q[f_idx] == q_fr)
-            @constraint(pm.model,  p[t_idx] == p_to)
-            @constraint(pm.model,  q[t_idx] == q_to)
-
-            @constraint(pm.model, p_fr^2 + q_fr^2 <= (branch["rate_a"] + sm_slack[i])^2)
-            @constraint(pm.model, p_to^2 + q_to^2 <= (branch["rate_a"] + sm_slack[i])^2)
+            constraint_thermal_limit_from_soft(pm, i)
+            constraint_thermal_limit_to_soft(pm, i)
         end
     end
     #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
 
 
     start_time = time()
-    pg = var(pm, :pg)
-    qg = var(pm, :qg)
     for (i,gen) in ref(pm, :gen)
-        @constraint(pm.model, pg[i] == gen["pg"] + pg_delta[i])
+        constraint_gen_active_deviation(pm, i)
     end
     #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
 
 
+    pg = var(pm, :pg)
+    qg = var(pm, :qg)
     bs = var(pm, :bs)
     for (i,bus) in ref(pm, :bus)
         #PowerModels.constraint_power_balance(pm, i)
@@ -247,7 +233,6 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
         bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
         bus_gens = ref(pm, :bus_gens, i)
         bus_loads = ref(pm, :bus_loads, i)
-        #bus_shunts = ref(pm, :bus_shunts, i)
         bus_shunts_const = ref(pm, :bus_shunts_const, i)
         bus_shunts_var = ref(pm, :bus_shunts_var, i)
 
@@ -257,22 +242,18 @@ function build_opf_pg_pf_rect_5(pm::AbstractPowerModel)
         bus_gs_const = Dict(k => ref(pm, :shunt, k, "gs") for k in bus_shunts_const)
         bus_bs_const = Dict(k => ref(pm, :shunt, k, "bs") for k in bus_shunts_const)
 
-        #p = var(pm, :p)
-        #q = var(pm, :q)
-        #pg = var(pm, :pg)
-        #qg = var(pm, :qg)
-
-        #@constraint(pm.model, sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
-        #@constraint(pm.model, q_delta[i] + sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
-        @constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vvm[i])
-        @constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vvm[i] + sum(bs[s]*vvm[i] for s in bus_shunts_var))
-        #@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*(vi[i]^2 + vr[i]^2) + sum(bs[s]*1.0 for s in bus_shunts_var))
+        @constraint(pm.model, 0 == - sum(p_expr[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vvm[i])
+        @constraint(pm.model, 0 == - sum(q_expr[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vvm[i] + sum(bs[s]*vvm[i] for s in bus_shunts_var))
     end
     #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
 
+    vvm_delta = var(pm, :vvm_delta)
+    sm_slack = var(pm, :sm_slack)
+    pg_delta = var(pm, :pg_delta)
+
     @objective(pm.model, Min,
-        sum( 1e7*vm_delta[i]^2 for (i,bus) in ref(pm, :bus)) +
-        sum( 5e5*sm_slack[i] for i in ref(pm, :active_rates)) +
+        sum( 1e7*vvm_delta[i]^2 for (i,bus) in ref(pm, :bus)) +
+        sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch_sm_active)) +
         sum( 1e5*pg_delta[i]^2 for (i,gen) in ref(pm, :gen))
     )
 end

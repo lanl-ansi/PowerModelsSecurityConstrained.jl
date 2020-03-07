@@ -18,3 +18,12 @@ function constraint_thermal_limit_to_soft(pm::AbstractPowerModel, n::Int, t_idx,
 
     JuMP.@constraint(pm.model, p_to^2 + q_to^2 <= (rate_a + sm_slack)^2)
 end
+
+
+""
+function constraint_gen_active_deviation(pm::AbstractPowerModel, n::Int, i, pg)
+    pg_var = var(pm, n, :pg, i)
+    pg_delta = var(pm, n, :pg_delta, i)
+
+    JuMP.@constraint(pm.model, pg_var == pg + pg_delta)
+end
