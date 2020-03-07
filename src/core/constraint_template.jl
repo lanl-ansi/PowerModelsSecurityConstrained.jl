@@ -70,16 +70,3 @@ end
 #     end
 # end
 
-
-""
-function constraint_gen_contingency_ptdf_bus_thermal_limit_from_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
-    cut = ref(pm, :gen_flow_cuts, i)
-    branch = ref(pm, nw, :branch, cut.branch_id)
-    gen = ref(pm, :gen, cut.gen_id)
-
-    if haskey(branch, "rate_c")
-        constraint_gen_contingency_ptdf_thermal_limit_from_soft(pm, nw, i, cut.bus_injection, branch["rate_c"], gen_set, gen_alpha, gen_bus)
-    end
-end
-
-

@@ -10,12 +10,12 @@ approximation of the formulation's specification.
 This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
-function run_scopf_cuts_dc_soft(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft; kwargs...)
+function run_scopf_cuts_soft(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_cuts_soft; kwargs...)
 end
 
 ""
-function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
+function build_scopf_cuts_soft(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
@@ -113,12 +113,12 @@ end
 
 
 "a variant of `run_scopf_cuts_dc_soft` with a different generator response function"
-function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft_2; kwargs...)
+function run_scopf_cuts_soft_2(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_cuts_soft_2; kwargs...)
 end
 
 ""
-function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
+function build_scopf_cuts_soft_2(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)

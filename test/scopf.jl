@@ -9,7 +9,7 @@ scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_scopf_cuts_dc_soft(network, DCPPowerModel, lp_solver)
+    result = run_scopf_cuts_soft(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], scopf_dc_cuts_soft_woc_objective[i]; atol = 1e0)
@@ -20,7 +20,7 @@ end
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_scopf_cuts_dc_soft(network, DCPPowerModel, lp_solver)
+    result = run_scopf_cuts_soft(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
@@ -42,10 +42,34 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 28675.72]
     append!(network["gen_flow_cuts"], cuts.gen_cuts)
     append!(network["branch_flow_cuts"], cuts.branch_cuts)
 
-    result = run_scopf_cuts_dc_soft(network, DCPPowerModel, lp_solver)
+    result = run_scopf_cuts_soft(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], scopf_dc_cuts_soft_wc_objective[i]; atol = 1e0)
+end
+
+scopf_ac_cuts_soft_wc_objective = [14676.95, 29587.60]
+@testset "scopf cuts ac soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_opf_cheap(network, ACPPowerModel, nlp_solver)
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+
+    update_active_power_data!(network, result["solution"])
+
+    cuts = check_contingencies_branch_flow_ratec(network, total_cut_limit=2, gen_flow_cuts=[], branch_flow_cuts=[])
+
+    #println(length(cuts.gen_cuts) + length(cuts.branch_cuts))
+    #cuts_found = sum(length(c.gen_cuts)+length(c.branch_cuts) for c in cuts)
+    append!(network["gen_flow_cuts"], cuts.gen_cuts)
+    append!(network["branch_flow_cuts"], cuts.branch_cuts)
+
+    result = run_scopf_cuts_soft(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], scopf_ac_cuts_soft_wc_objective[i]; atol = 1e0)
 end
 
 
@@ -56,7 +80,7 @@ scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_scopf_cuts_dc_soft_2(network, DCPPowerModel, lp_solver)
+    result = run_scopf_cuts_soft_2(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], scopf_dc_cuts_soft_woc_objective[i]; atol = 1e0)
@@ -67,7 +91,7 @@ end
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_scopf_cuts_dc_soft_2(network, DCPPowerModel, lp_solver)
+    result = run_scopf_cuts_soft_2(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
@@ -89,10 +113,35 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
     append!(network["gen_flow_cuts"], cuts.gen_cuts)
     append!(network["branch_flow_cuts"], cuts.branch_cuts)
 
-    result = run_scopf_cuts_dc_soft_2(network, DCPPowerModel, lp_solver)
+    result = run_scopf_cuts_soft_2(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], scopf_dc_cuts_soft_wc_objective[i]; atol = 1e0)
 end
+
+scopf_ac_cuts_soft_wc_objective = [14676.95, 28346.36]
+@testset "scopf cuts ac soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_opf_cheap(network, ACPPowerModel, nlp_solver)
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+
+    update_active_power_data!(network, result["solution"])
+
+    cuts = check_contingencies_branch_flow_ratec_nd_first_lazy(network, total_cut_limit=2, gen_flow_cuts=[], branch_flow_cuts=[])
+
+    #println(length(cuts.gen_cuts) + length(cuts.branch_cuts))
+    #cuts_found = sum(length(c.gen_cuts)+length(c.branch_cuts) for c in cuts)
+    append!(network["gen_flow_cuts"], cuts.gen_cuts)
+    append!(network["branch_flow_cuts"], cuts.branch_cuts)
+
+    result = run_scopf_cuts_soft_2(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], scopf_ac_cuts_soft_wc_objective[i]; atol = 1e0)
+end
+
 
 end # close test group

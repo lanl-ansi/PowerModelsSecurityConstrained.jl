@@ -294,13 +294,13 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             #end
 
             time_solve_start = time()
-            #result = run_scopf_cuts_dc_soft(network_apo, DCPPowerModel, qp_solver)
+            #result = run_scopf_cuts_soft(network_apo, DCPPowerModel, qp_solver)
 
-            result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver)
+            result = run_scopf_cuts_soft_2(network_apo, DCPPowerModel, qp_solver)
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")
 
-                result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
+                result = run_scopf_cuts_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
                 if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                     warn(LOGGER, "relaxed scopf solve failed with status $(result["termination_status"])")
                     break
