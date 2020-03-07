@@ -34,7 +34,7 @@ function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::Abstract
     bus_injection = var(pm, :bus_pg)
     bus_withdrawal = var(pm, :bus_wdp)
 
-    @constraint(pm.model, sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut_map) <= rate + var(pm, :branch_cut_vio, i))
+    @constraint(pm.model, sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut_map) <= rate + var(pm, :branch_cont_flow_vio, i))
 end
 
 
@@ -43,5 +43,5 @@ function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::AbstractPo
     bus_injection = var(pm, :bus_pg)
     bus_withdrawal = var(pm, :bus_wdp)
 
-    @constraint(pm.model, -sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut_map) <= rate + var(pm, :branch_cut_vio, i))
+    @constraint(pm.model, -sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut_map) <= rate + var(pm, :branch_cont_flow_vio, i))
 end

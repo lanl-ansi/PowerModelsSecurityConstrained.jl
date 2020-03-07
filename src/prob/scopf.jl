@@ -83,8 +83,8 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
 
         #rate = branch["rate_a"]
         rate = branch["rate_c"]
-        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cut_vio, i))
-        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cut_vio, i))
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
     end
 
     for (i,gen_cont) in enumerate(ref(pm, :gen_contingencies))
@@ -96,7 +96,7 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
 
         # factor of 1.2 accounts for losses in a DC model
         #@constraint(pm.model, sum(gen["pmax"] - var(pm, :pg, g) for (g,gen) in response_gens) >= 1.2*var(pm, :pg, gen_cont.idx))
-        @constraint(pm.model, var(pm, :gen_cap_vio, i) + sum(gen["pmax"] - var(pm, :pg, g) for (g,gen) in response_gens) >= var(pm, :pg, gen_cont.idx))
+        @constraint(pm.model, var(pm, :gen_cont_cap_vio, i) + sum(gen["pmax"] - var(pm, :pg, g) for (g,gen) in response_gens) >= var(pm, :pg, gen_cont.idx))
         #@constraint(pm.model, sum(gen["pmin"] - var(pm, :pg, g) for (g,gen) in response_gens) <= var(pm, :pg, gen_cont.idx))
     end
 
@@ -104,15 +104,15 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
     objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, pm.cnw, :pg_cost)
-    branch_cut_vio = var(pm, pm.cnw, :branch_cut_vio)
-    gen_cut_vio = var(pm, pm.cnw, :gen_cut_vio)
-    gen_cap_vio = var(pm, pm.cnw, :gen_cap_vio)
+    branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
+    gen_cont_flow_vio = var(pm, pm.cnw, :gen_cont_flow_vio)
+    gen_cont_cap_vio = var(pm, pm.cnw, :gen_cont_cap_vio)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
-        sum( 5e5*branch_cut_vio[i] for i in 1:length(ref(pm, :branch_flow_cuts)) ) +
-        sum( 5e5*gen_cut_vio[i] for i in 1:length(ref(pm, :gen_flow_cuts)) ) + 
-        sum( 5e5*gen_cap_vio[i] for i in 1:length(ref(pm, :gen_contingencies)) )
+        sum( 5e5*branch_cont_flow_vio[i] for i in 1:length(ref(pm, :branch_flow_cuts)) ) +
+        sum( 5e5*gen_cont_flow_vio[i] for i in 1:length(ref(pm, :gen_flow_cuts)) ) + 
+        sum( 5e5*gen_cont_cap_vio[i] for i in 1:length(ref(pm, :gen_contingencies)) )
     )
 end
 
@@ -184,8 +184,8 @@ function build_scopf_cuts_soft_2(pm::AbstractPowerModel)
 
         #rate = branch["rate_a"]
         rate = branch["rate_c"]
-        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cut_vio, i))
-        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cut_vio, i))
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
         #@constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
         #@constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
     end
@@ -194,12 +194,12 @@ function build_scopf_cuts_soft_2(pm::AbstractPowerModel)
     objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, pm.cnw, :pg_cost)
-    branch_cut_vio = var(pm, pm.cnw, :branch_cut_vio)
-    gen_cut_vio = var(pm, pm.cnw, :gen_cut_vio)
+    branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
+    gen_cont_flow_vio = var(pm, pm.cnw, :gen_cont_flow_vio)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
-        sum( 5e5*branch_cut_vio[i] for i in 1:length(ref(pm, :branch_flow_cuts)) ) +
-        sum( 5e5*gen_cut_vio[i] for i in 1:length(ref(pm, :gen_flow_cuts)) )
+        sum( 5e5*branch_cont_flow_vio[i] for i in 1:length(ref(pm, :branch_flow_cuts)) ) +
+        sum( 5e5*gen_cont_flow_vio[i] for i in 1:length(ref(pm, :gen_flow_cuts)) )
     )
 end

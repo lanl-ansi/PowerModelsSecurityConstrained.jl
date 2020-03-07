@@ -1,3 +1,20 @@
+
+
+""
+function constraint_power_balance_shunt_dispatch(pm::AbstractActivePowerModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+    p = var(pm, n, :p)
+    pg = var(pm, n, :pg)
+    p_dc = var(pm, n, :p_dc)
+
+    cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*1.0)
+
+    if report_duals(pm)
+        sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
+        sol(pm, n, :bus, i)[:lam_kcl_i] = NaN
+    end
+end
+
+
 ""
 function constraint_thermal_limit_from_soft(pm::AbstractActivePowerModel, n::Int, f_idx, rate_a)
     l,i,j = f_idx
