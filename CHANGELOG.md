@@ -2,6 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- Improved power balance constraint relicense
 - Reorganize PowerModels extensions to standard locations
 - Removed duplicate `objective_variable_pg_cost` implementation
 - Generalized dc-only OPF and SCOPF formulations
