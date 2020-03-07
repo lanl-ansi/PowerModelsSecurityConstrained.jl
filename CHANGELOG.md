@@ -2,7 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- Generalized dc-only OPF formulations
+- Generalized dc-only OPF and SCOPF formulations
 - Updated `bsh` variable name to `bs`
 
 ### Staged
