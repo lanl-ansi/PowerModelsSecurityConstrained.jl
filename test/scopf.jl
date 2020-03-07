@@ -24,7 +24,7 @@ end
     @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
-scopf_dc_cuts_soft_wc_objective = [14642.16, 28675.72]
+scopf_dc_cuts_soft_wc_objective = [14642.16, 37403.76]
 @testset "scopf cuts dc soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []

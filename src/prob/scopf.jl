@@ -99,18 +99,24 @@ function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
         alpha_total = sum(gen["alpha"] for (i,gen) in ref(pm, :gen) if gen["index"] != cut.gen_id && i in gen_set)
 
         cont_bus_injection = Dict{Int,Any}()
-        for g in gen_set
-            gen = ref(pm, :gen, g)
-            b = gen["gen_bus"]
-            if g != cut.gen_id
-                cont_bus_injection[b] = get(cont_bus_injection, b, 0.0) + var(pm, :pg, g) + gen["alpha"]*var(pm, :pg, cut.gen_id)/alpha_total
+        for (i, bus) in ref(pm, :bus)
+            inj = 0.0
+            for g in ref(pm, :bus_gens, i)
+                if g != cut.gen_id
+                    if g in gen_set
+                        inj += var(pm, :pg, g) + gen["alpha"]*var(pm, :pg, cut.gen_id)/alpha_total
+                    else
+                        inj += var(pm, :pg, g)
+                    end
+                end
             end
+            cont_bus_injection[i] = inj
         end
 
         #rate = branch["rate_a"]
         rate = branch["rate_c"]
-        @constraint(pm.model,  sum( weight*(get(cont_bus_injection, bus_id, 0.0) - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
-        @constraint(pm.model, -sum( weight*(get(cont_bus_injection, bus_id, 0.0) - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
     end
 
     for (i,gen_cont) in enumerate(ref(pm, :gen_contingencies))
