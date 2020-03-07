@@ -721,9 +721,6 @@ function build_fixed_pf_nbf_rect2(pm::AbstractPowerModel)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
     #PowerModels.variable_branch_flow(pm, bounded=false)
-    #PowerModels.variable_dcline_flow(pm, bounded=false)
-
-    #PowerModels.variable_branch_flow(pm, bounded=false)
 
     # TODO set bounds bounds on alpha and total gen capacity
     var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=0.0)
@@ -870,9 +867,6 @@ function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm, bounded=false)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
-    #PowerModels.variable_branch_flow(pm, bounded=false)
-    #PowerModels.variable_dcline_flow(pm, bounded=false)
-
     #PowerModels.variable_branch_flow(pm, bounded=false)
 
     delta = ref(pm, :delta)
@@ -1228,7 +1222,6 @@ function build_contingency_opf4(pm::AbstractPowerModel)
     PowerModels.variable_active_generation(pm, bounded=false)
     PowerModels.variable_reactive_generation(pm, bounded=false)
     #PowerModels.variable_branch_flow(pm, bounded=false)
-    #PowerModels.variable_dcline_flow(pm)
 
     #nw = 0
     #cnd = 1

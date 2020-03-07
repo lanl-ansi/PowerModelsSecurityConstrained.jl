@@ -14,7 +14,6 @@ function build_opf_shunt(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
-    PowerModels.variable_dcline_flow(pm)
 
     variable_reactive_shunt(pm)
 
@@ -39,10 +38,6 @@ function build_opf_shunt(pm::AbstractPowerModel)
         PowerModels.constraint_thermal_limit_from(pm, i)
         PowerModels.constraint_thermal_limit_to(pm, i)
     end
-
-    for i in ids(pm, :dcline)
-        PowerModels.constraint_dcline(pm, i)
-    end
 end
 
 
@@ -61,7 +56,6 @@ function build_opf_cheap(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm, bounded=false)
-    PowerModels.variable_dcline_flow(pm)
 
     variable_branch_flow_slack(pm)
     variable_reactive_shunt(pm)

@@ -3,8 +3,11 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractPowerModel, i::Int;
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
+    bus_arcs_sw = ref(pm, nw, :bus_arcs_sw, i)
     bus_gens = ref(pm, nw, :bus_gens, i)
     bus_loads = ref(pm, nw, :bus_loads, i)
+    bus_storage = ref(pm, nw, :bus_storage, i)
+
     bus_shunts_const = ref(pm, :bus_shunts_const, i)
     bus_shunts_var = ref(pm, :bus_shunts_var, i)
 
@@ -14,7 +17,7 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractPowerModel, i::Int;
     bus_gs_const = Dict(k => ref(pm, :shunt, k, "gs") for k in bus_shunts_const)
     bus_bs_const = Dict(k => ref(pm, :shunt, k, "bs") for k in bus_shunts_const)
 
-    constraint_power_balance_shunt_dispatch(pm, nw, i, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+    constraint_power_balance_shunt_dispatch(pm, nw, i, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
 end
 
 ""
@@ -22,8 +25,11 @@ function constraint_power_balance_shunt_dispatch_soft(pm::AbstractPowerModel, i:
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
+    bus_arcs_sw = ref(pm, nw, :bus_arcs_sw, i)
     bus_gens = ref(pm, nw, :bus_gens, i)
     bus_loads = ref(pm, nw, :bus_loads, i)
+    bus_storage = ref(pm, nw, :bus_storage, i)
+
     bus_shunts_const = ref(pm, :bus_shunts_const, i)
     bus_shunts_var = ref(pm, :bus_shunts_var, i)
 
@@ -33,7 +39,7 @@ function constraint_power_balance_shunt_dispatch_soft(pm::AbstractPowerModel, i:
     bus_gs_const = Dict(k => ref(pm, :shunt, k, "gs") for k in bus_shunts_const)
     bus_bs_const = Dict(k => ref(pm, :shunt, k, "bs") for k in bus_shunts_const)
 
-    constraint_power_balance_shunt_dispatch_soft(pm, nw, i, bus_arcs, bus_arcs_dc, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+    constraint_power_balance_shunt_dispatch_soft(pm, nw, i, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
 end
 
 
