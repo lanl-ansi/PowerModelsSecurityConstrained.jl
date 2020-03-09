@@ -9,7 +9,10 @@ PowerModelsSecurityConstrained.jl Change Log
 - Updated `bsh` variable name to `bs`
 
 ### Staged
-- Added variant of the `build_scopf_dc_cuts_soft` formulation
+- nothing
+
+### v0.3.2
+- Add variant of the `build_scopf_dc_cuts_soft` formulation
 
 ### v0.3.1
 - Added support for JuMP v0.21
