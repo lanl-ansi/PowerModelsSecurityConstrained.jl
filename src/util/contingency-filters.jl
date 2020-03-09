@@ -479,10 +479,10 @@ function check_contingencies_branch_flow_remote(cont_range, output_dir, cut_limi
         error(LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
 
-    sol = GOC.read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
+    sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
     PowerModels.update_data!(network_global, sol)
 
-    active_cuts = GOC.read_active_flow_cuts(output_dir=output_dir)
+    active_cuts = read_active_flow_cuts(output_dir=output_dir)
     gen_flow_cuts = []
     branch_flow_cuts = []
     for cut in active_cuts

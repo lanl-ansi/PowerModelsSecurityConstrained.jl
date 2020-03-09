@@ -4,6 +4,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.3.2
+- Add variant of the `build_scopf_dc_cuts_soft` formulation
+
 ### v0.3.1
 - Add support for JuMP v0.21
 

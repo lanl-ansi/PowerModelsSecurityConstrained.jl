@@ -40,6 +40,7 @@ check_contingencies_branch_flow_ratec_nd_first_lazy
 These are contingency constrained OPF formulations.
 
 ```@docs
+run_scopf_cuts_dc_soft
 run_scopf_cuts_dc_soft_2
 ```
 
