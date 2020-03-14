@@ -322,31 +322,9 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
     pg = Dict{Int,Any}()
     qg = Dict{Int,Any}()
     for (i,gen) in ref(pm, :gen)
-        #=
-        if gen["pg_fixed"]
-            pg[i] = gen["pg"]
-            @constraint(pm.model, var(pm, :pg, i) == gen["pg"])
-        else
-            if i in ref(pm, :response_gens)
-                pg[i] = gen["pg_base"] + gen["alpha"]*delta
-                @constraint(pm.model, var(pm, :pg, i) == gen["pg_base"] + gen["alpha"]*delta)
-            else
-                pg[i] = gen["pg_base"]
-                @constraint(pm.model, var(pm, :pg, i) == gen["pg_base"])
-            end
-        end
-        =#
         pg[i] = gen["pg_base"]
         @constraint(pm.model, var(pm, :pg, i) == gen["pg_base"])
 
-        #=
-        if gen["qg_fixed"]
-            qg[i] = gen["qg"]
-            @constraint(pm.model, var(pm, :qg, i) == gen["qg"])
-        else
-            qg[i] = var(pm, :qg, i)
-        end
-        =#
         qg[i] = var(pm, :qg, i)
     end
     #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
@@ -373,7 +351,7 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
         #qg = var(pm, :qg)
 
         @constraint(pm.model, p_slack + sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
-        @constraint(pm.model, sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
+        @constraint(pm.model,           sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
     end
     #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
 end
@@ -804,8 +782,6 @@ function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
         expression_branch_power_yt_from_goc(pm, i)
         expression_branch_power_yt_to(pm, i)
     end
-    p = var(pm, :p)
-    q = var(pm, :q)
     #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
 
 
@@ -837,6 +813,8 @@ function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
 
 
     start_time = time()
+    p = var(pm, :p)
+    q = var(pm, :q)
     for (i,bus) in ref(pm, :bus)
         #PowerModels.constraint_power_balance(pm, i)
 
@@ -857,7 +835,7 @@ function build_fixed_pf_nbf_rect2_ds(pm::AbstractPowerModel)
         #qg = var(pm, :qg)
 
         @constraint(pm.model, p_slack + sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
-        @constraint(pm.model, sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
+        @constraint(pm.model,           sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
     end
     #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
 end
@@ -1074,16 +1052,7 @@ function build_contingency_opf4(pm::AbstractPowerModel)
     PowerModels.variable_reactive_generation(pm, bounded=false)
     #PowerModels.variable_branch_flow(pm, bounded=false)
 
-    #nw = 0
-    #cnd = 1
-
-    bs = var(pm)[:bs] = @variable(pm.model,
-        [i in ids(pm, :shunt_var)], base_name="qsh",
-        upper_bound = ref(pm, :shunt, i)["bmax"],
-        lower_bound = ref(pm, :shunt, i)["bmin"],
-        start = ref(pm, :shunt, i)["bs"]
-    )
-    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), bs)
+    variable_reactive_shunt(pm)
 
     qg_vio = @variable(pm.model,
         [i in ids(pm, :gen)], base_name="qg_vio",
