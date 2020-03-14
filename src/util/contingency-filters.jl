@@ -193,6 +193,174 @@ function load_network_global(con_file, inl_file, raw_file, rop_file, scenario_id
 end
 
 
+"build a static ordering of all contigencies"
+function contingency_order(network)
+    gen_cont_order = sort(network["gen_contingencies"], by=(x) -> x.label)
+    branch_cont_order = sort(network["branch_contingencies"], by=(x) -> x.label)
+
+    gen_cont_total = length(gen_cont_order)
+    branch_cont_total = length(branch_cont_order)
+
+    gen_rate = 1.0
+    branch_rate = 1.0
+    steps = 1
+
+    if gen_cont_total == 0 && branch_cont_total == 0
+        # defaults are good
+    elseif gen_cont_total == 0 && branch_cont_total != 0
+        steps = branch_cont_total
+    elseif gen_cont_total != 0 < branch_cont_total == 0
+        steps = gen_cont_total
+    elseif gen_cont_total == branch_cont_total
+        steps = branch_cont_total
+    elseif gen_cont_total < branch_cont_total
+        gen_rate = 1.0
+        branch_rate = branch_cont_total/gen_cont_total
+        steps = gen_cont_total
+    elseif gen_cont_total > branch_cont_total
+        gen_rate = gen_cont_total/branch_cont_total
+        branch_rate = 1.0 
+        steps = branch_cont_total
+    end
+
+
+    #println(gen_cont_total)
+    #println(branch_cont_total)
+    #println(steps)
+
+    #println(gen_rate)
+    #println(branch_rate)
+    #println("")
+
+    cont_order = []
+    gen_cont_start = 1
+    branch_cont_start = 1
+    for s in 1:steps
+        gen_cont_end = min(gen_cont_total, trunc(Int,ceil(s*gen_rate)))
+        #println(gen_cont_start:gen_cont_end)
+        for j in gen_cont_start:gen_cont_end
+            push!(cont_order, gen_cont_order[j])
+        end
+        gen_cont_start = gen_cont_end+1
+
+        branch_cont_end = min(branch_cont_total, trunc(Int,ceil(s*branch_rate)))
+        #println("$(s) - $(branch_cont_start:branch_cont_end)")
+        for j in branch_cont_start:branch_cont_end
+            push!(cont_order, branch_cont_order[j])
+        end
+        branch_cont_start = branch_cont_end+1
+    end
+
+    #=
+    for s in 1:steps
+        gen_cont_start = trunc(Int, ceil(1+(s-1)*gen_rate))
+        gen_cont_end = min(gen_cont_total, trunc(Int,ceil(s*gen_rate)))
+        #println(gen_cont_start:gen_cont_end)
+        for j in gen_cont_start:gen_cont_end
+            push!(cont_order, gen_cont_order[j])
+        end
+
+        branch_cont_start = trunc(Int, ceil(1+(s-1)*branch_rate))
+        branch_cont_end = min(branch_cont_total, trunc(Int,ceil(s*branch_rate)))
+        println("$(s) - $(branch_cont_start:branch_cont_end)")
+        for j in branch_cont_start:branch_cont_end
+            push!(cont_order, branch_cont_order[j])
+        end
+    end
+    =#
+
+    #println(length(cont_order))
+    #println(gen_cont_total + branch_cont_total)
+
+    @assert(length(cont_order) == gen_cont_total + branch_cont_total)
+
+    return cont_order
+end
+
+
+function write_contingencies(network; output_dir="", file_name="contingencies.txt")
+    if length(output_dir) > 0
+        file_path = joinpath(output_dir, file_name)
+    else
+        file_path = file_name
+    end
+
+    open(file_path, "w") do cont_file
+        for c in network["gen_contingencies_active"]
+            write(cont_file, "$(c.label)\n")
+        end
+        for c in network["branch_contingencies_active"]
+            write(cont_file, "$(c.label)\n")
+        end
+    end
+end
+
+function write_active_flow_cuts(network; output_dir="", file_name="active_flow_cuts.txt")
+    if length(output_dir) > 0
+        file_path = joinpath(output_dir, file_name)
+    else
+        file_path = file_name
+    end
+
+    open(file_path, "w") do cont_file
+        for cut in network["gen_flow_cuts"]
+            write(cont_file, "$(cut.cont_label), gen, $(cut.branch_id), $(cut.rating_level)\n")
+        end
+
+        for cut in network["branch_flow_cuts"]
+            write(cont_file, "$(cut.cont_label), branch, $(cut.branch_id), $(cut.rating_level)\n")
+        end
+    end
+end
+
+function read_active_flow_cuts(;output_dir="", file_name="active_flow_cuts.txt")
+    if length(output_dir) > 0
+        file_path = joinpath(output_dir, file_name)
+    else
+        file_path = file_name
+    end
+
+    if isfile(file_path)
+        info(LOGGER, "loading flow cuts file: $(file_path)")
+        return parse_flow_cuts_file(file_path)
+    else
+        info(LOGGER, "flow cuts file not found: $(file_path)")
+        return []
+    end
+end
+
+function parse_flow_cuts_file(file::String)
+    open(file) do io
+        return parse_flow_cuts_file(io)
+    end
+end
+
+function parse_flow_cuts_file(io::IO)
+    cuts_list = []
+
+    for line in readlines(io)
+        if length(strip(line)) == 0
+            warn(LOGGER, "skipping blank line in cuts file")
+            continue
+        end
+        line_parts = split(line, ",")
+        if length(line_parts) != 4
+            warn(LOGGER, "skipping ill formated line\n   $(line)")
+            continue
+        end
+
+        cont_label = strip(line_parts[1])
+        cont_type = strip(line_parts[2])
+        branch_id = parse(Int, line_parts[3])
+        rating_level = parse(Float64, line_parts[4])
+
+        push!(cuts_list, (cont_label=cont_label, cont_type=cont_type, branch_id=branch_id, rating_level=rating_level))
+    end
+
+    return cuts_list
+end
+
+
 
 ""
 function check_contingencies_branch_flow_remote_nd_first_lazy(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")

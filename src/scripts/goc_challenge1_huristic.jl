@@ -4,6 +4,8 @@
 
 include("distributed.jl")
 
+include("common.jl")
+
 #include("second-stage-fp.jl")
 include("second-stage-soft-fp.jl")
 

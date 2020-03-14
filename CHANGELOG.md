@@ -3,11 +3,11 @@ PowerModelsSecurityConstrained.jl Change Log
 
 ### Staged
 - Added `expression_branch_power_yt_from/to` for common branch flow expressions
-- Improved power balance constraint relicense
-- Reorganize PowerModels extensions to standard locations
+- Improved power balance constraint resilience
+- Reorganize code to standard PowerModels locations
 - Removed duplicate `objective_variable_pg_cost` implementation
 - Generalized dc-only OPF and SCOPF formulations
-- Improved generality of contingency problem formulations
+- Improved generality of contingency problem definitions
 - Updated `bsh` variable name to `bs`
 - Updated scope of data processing functions
 

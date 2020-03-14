@@ -35,7 +35,7 @@ function silence()
 end
 
 
-include("core/common.jl")
+include("core/data.jl")
 include("core/variable.jl")
 include("core/constraint_template.jl")
 include("core/constraint.jl")
