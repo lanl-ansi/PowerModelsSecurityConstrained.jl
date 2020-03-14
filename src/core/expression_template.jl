@@ -40,3 +40,58 @@ function expression_bus_withdrawal(pm::AbstractPowerModel, i::Int; nw::Int=pm.cn
 
     expression_bus_withdrawal(pm, nw, i, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
 end
+
+
+
+""
+function expression_branch_power_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    if !haskey(var(pm, nw), :p)
+        var(pm, nw)[:p] = Dict{Tuple{Int,Int,Int},Any}()
+    end
+    if !haskey(var(pm, nw), :q)
+        var(pm, nw)[:q] = Dict{Tuple{Int,Int,Int},Any}()
+    end
+
+    branch = ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    f_idx = (i, f_bus, t_bus)
+    t_idx = (i, t_bus, f_bus)
+
+    g, b = calc_branch_y(branch)
+    tr, ti = calc_branch_t(branch)
+    g_fr = branch["g_fr"]
+    b_fr = branch["b_fr"]
+    tm = branch["tap"]
+
+    if branch["transformer"]
+        expression_branch_power_yt_from_goc(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+    else
+        expression_branch_power_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+    end
+end
+
+
+""
+function expression_branch_power_yt_to(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    if !haskey(var(pm, nw), :p)
+        var(pm, nw)[:p] = Dict{Tuple{Int,Int,Int},Any}()
+    end
+    if !haskey(var(pm, nw), :q)
+        var(pm, nw)[:q] = Dict{Tuple{Int,Int,Int},Any}()
+    end
+
+    branch = ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    f_idx = (i, f_bus, t_bus)
+    t_idx = (i, t_bus, f_bus)
+
+    g, b = calc_branch_y(branch)
+    tr, ti = calc_branch_t(branch)
+    g_to = branch["g_to"]
+    b_to = branch["b_to"]
+    tm = branch["tap"]
+
+    expression_branch_power_yt_to(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_to, b_to, tr, ti, tm)
+end
