@@ -1,6 +1,6 @@
 ##### Generic Helper Functions #####
 
-function remove_comment(string)
+function _remove_comment(string)
     return split(string, "/")[1]
 end
 
@@ -198,7 +198,7 @@ end
 function parse_inl_file(io::IO)
     inl_list = []
     for line in readlines(io)
-        #line = remove_comment(line)
+        #line = _remove_comment(line)
 
         if startswith(strip(line), "0")
             debug(LOGGER, "inl file sentinel found")
@@ -230,7 +230,7 @@ end
 
 ##### Generator Cost Data File Parser (.rop) #####
 
-rop_sections = [
+_rop_sections = [
     "mod" => "Modification Code",
     "bus_vm" => "Bus Voltage Attributes",
     "shunt_adj" => "Adjustable Bus Shunts",
@@ -259,7 +259,7 @@ end
 
 function parse_rop_file(io::IO)
     active_section_idx = 1
-    active_section = rop_sections[active_section_idx]
+    active_section = _rop_sections[active_section_idx]
 
     section_data = Dict()
     section_data[active_section.first] = []
@@ -267,16 +267,16 @@ function parse_rop_file(io::IO)
     line_idx = 1
     lines = readlines(io)
     while line_idx < length(lines)
-        #line = remove_comment(lines[line_idx])
+        #line = _remove_comment(lines[line_idx])
         line = lines[line_idx]
         if startswith(strip(line), "0")
             debug(LOGGER, "finished reading rop section $(active_section.second) with $(length(section_data[active_section.first])) items")
             active_section_idx += 1
-            if active_section_idx > length(rop_sections)
+            if active_section_idx > length(_rop_sections)
                 debug(LOGGER, "finished reading known rop sections")
                 break
             end
-            active_section = rop_sections[active_section_idx]
+            active_section = _rop_sections[active_section_idx]
             section_data[active_section.first] = []
             line_idx += 1
             continue
@@ -373,7 +373,7 @@ end
 ##### Contingency Description Data File (.con) #####
 
 # OPEN BRANCH FROM BUS *I TO BUS *J CIRCUIT *1CKT
-branch_contigency_structure = [
+_branch_contigency_structure = [
     1 => "OPEN",
     2 => "BRANCH",
     3 => "FROM",
@@ -387,7 +387,7 @@ branch_contigency_structure = [
 ]
 
 # REMOVE UNIT *ID FROM BUS *I
-generator_contigency_structure = [
+_generator_contigency_structure = [
     1 => "REMOVE",
     2 => "UNIT",
     #3 => "ID",
@@ -409,7 +409,7 @@ function parse_con_file(io::IO)
     tokens = []
 
     for line in readlines(io)
-        #line_tokens = split(strip(remove_comment(line)))
+        #line_tokens = split(strip(_remove_comment(line)))
         line_tokens = split(strip(line))
         #println(line_tokens)
         append!(tokens, line_tokens)
@@ -440,8 +440,8 @@ function parse_con_file(io::IO)
                 branch_tokens = tokens[token_idx:token_idx+9]
                 #println(branch_tokens)
 
-                #if !all(branch_tokens[idx] == val for (idx, val) in branch_contigency_structure) && !all(branch_tokens[idx] == val for (idx, val) in branch_contigency_structure_alt)
-                if any(branch_tokens[idx] != val for (idx, val) in branch_contigency_structure)
+                #if !all(branch_tokens[idx] == val for (idx, val) in _branch_contigency_structure) && !all(branch_tokens[idx] == val for (idx, val) in _branch_contigency_structure_alt)
+                if any(branch_tokens[idx] != val for (idx, val) in _branch_contigency_structure)
                     error(LOGGER, "incorrect branch contingency structure: $(branch_tokens)")
                 end
 
@@ -472,7 +472,7 @@ function parse_con_file(io::IO)
                 generator_tokens = tokens[token_idx:token_idx+5]
                 #println(generator_tokens)
 
-                if any(generator_tokens[idx] != val for (idx, val) in generator_contigency_structure)
+                if any(generator_tokens[idx] != val for (idx, val) in _generator_contigency_structure)
                     error(LOGGER, "incorrect generator contingency structure: $(generator_tokens)")
                 end
 
