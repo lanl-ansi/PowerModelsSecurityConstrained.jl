@@ -23,7 +23,6 @@ function security_stage_data(network)
 
     bus_gens = gens_by_bus(network)
 
-    network["delta"] = 0.0
     for (i,bus) in network["bus"]
         bus["vm_base"] = bus["vm"]
         bus["vm_start"] = bus["vm"]

@@ -1,11 +1,9 @@
-# PowerModels exports everything except internal symbols, which are defined as
-# those whose name starts with an underscore. If you don't want all of these
-# symbols in your environment, then use `import PowerModels` instead of
-# `using PowerModels`.
+# Following the PowerModels convention exports everything except internal
+# symbols, which are defined as those whose name starts with an underscore.
+# If you don't want all of these symbols in your environment, then use
+# `import` instead of `using`.
 
-# Do not add PowerModels-defined symbols to this exclude list. Instead, rename
-# them with an underscore.
-
+# Do not add items to this exclude list. Instead, rename them with an underscore.
 const _EXCLUDE_SYMBOLS = [Symbol(@__MODULE__), :eval, :include]
 
 for sym in names(@__MODULE__, all=true)
@@ -20,25 +18,3 @@ for sym in names(@__MODULE__, all=true)
     #println("$(sym)")
     @eval export $sym
 end
-
-
-# the follow items are also exported for user-friendlyness when calling
-# `using PowerModels`
-
-# so that users do not need to import JuMP to use a solver with PowerModels
-# import JuMP: with_optimizer
-# export with_optimizer
-
-# import MathOptInterface: TerminationStatusCode
-# export TerminationStatusCode
-
-# import MathOptInterface: ResultStatusCode
-# export ResultStatusCode
-
-# for status_code_enum in [TerminationStatusCode, ResultStatusCode]
-#     for status_code in instances(status_code_enum)
-#         @eval import MathOptInterface: $(Symbol(status_code))
-#         @eval export $(Symbol(status_code))
-#     end
-# end
-
