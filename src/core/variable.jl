@@ -113,7 +113,7 @@ end
 function variable_pg_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     pg_delta = var(pm, nw)[:pg_delta] = JuMP.@variable(pm.model,
         [i in ids(pm, nw, :gen)], base_name="$(nw)_pg_delta",
-        start = comp_start_value(ref(pm, nw, :bus, i), "pg_delta_start", 0.1)
+        start = comp_start_value(ref(pm, nw, :gen, i), "pg_delta_start", 0.1)
     )
 
     report && sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
