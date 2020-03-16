@@ -49,11 +49,11 @@ include("form/wr.jl")
 include("form/apo.jl")
 include("form/dcp.jl")
 
-include("io/parsers.jl")
+include("io/goc.jl")
 
 include("prob/opf.jl")
 include("prob/scopf.jl")
-include("prob/security-stage.jl")
+include("prob/contingency-stage.jl")
 
 include("util/contingency-filters.jl")
 

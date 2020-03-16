@@ -1,7 +1,7 @@
 # Tests formulations in prob/security-stage
 @testset "test security-stage" begin
 
-function security_stage_data(network)
+function contingency_stage_data(network)
     network = deepcopy(network)
 
     network["cont_label"] = "testing"
@@ -44,7 +44,7 @@ end
 
 solution2_lines = [31,600]
 @testset "write_solution2 - $(i)" for (i,network) in enumerate(networks)
-    network = security_stage_data(network)
+    network = contingency_stage_data(network)
 
     bus_gens = gens_by_bus(network)
     cont = network["gen_contingencies"][1]
@@ -84,7 +84,7 @@ end
 
 
 @testset "pf soft rect - $(i)" for (i,network) in enumerate(networks)
-    network = security_stage_data(network)
+    network = contingency_stage_data(network)
 
     result = run_pf_bqv_acr(network, nlp_solver)
 
@@ -93,7 +93,7 @@ end
 end
 
 @testset "pf soft rect fixedpoint - $(i)" for (i,network) in enumerate(networks)
-    network = security_stage_data(network)
+    network = contingency_stage_data(network)
     pg_lost = 0.0
 
     result = run_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
@@ -103,7 +103,7 @@ end
 end
 
 @testset "pf soft rect fixedpoint - infeasible" begin
-    network = security_stage_data(network_infeasible)
+    network = contingency_stage_data(network_infeasible)
     pg_lost = 0.0
 
     result = run_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
@@ -114,7 +114,7 @@ end
 
 
 @testset "pf fixed nbf rect2 - $(i)" for (i,network) in enumerate(networks)
-    network = security_stage_data(network)
+    network = contingency_stage_data(network)
 
     result = run_pf_fixed_acr(network, nlp_solver)
 
@@ -123,7 +123,7 @@ end
 end
 
 @testset "pf fixed nbf rect2 ds- $(i)" for (i,network) in enumerate(networks)
-    network = security_stage_data(network)
+    network = contingency_stage_data(network)
 
     for (i,gen) in network["gen"]
         if gen["index"] in network["response_gens"]
@@ -138,7 +138,7 @@ end
 end
 
 @testset "pf v2_3 fixpoint - $(i)" for (i,network) in enumerate(networks)
-    network = security_stage_data(network)
+    network = contingency_stage_data(network)
     pg_lost = 0.0
 
     result = run_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)
@@ -148,7 +148,7 @@ end
 end
 
 @testset "pf v2_3 fixpoint - infeasible" begin
-    network = security_stage_data(network_infeasible)
+    network = contingency_stage_data(network_infeasible)
     pg_lost = 0.0
 
     result = run_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)

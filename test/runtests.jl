@@ -37,7 +37,7 @@ network_infeasible = build_pm_model(case_infeasible)
 
     include("contingency.jl")
 
-    include("security-stage.jl")
+    include("contingency-stage.jl")
 
     include("scopf.jl")
 
