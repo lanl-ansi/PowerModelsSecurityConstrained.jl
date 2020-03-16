@@ -175,19 +175,19 @@ contingency_order_global = []
 
 ""
 function load_network_global(con_file, inl_file, raw_file, rop_file, scenario_id)
-    info(LOGGER, "skipping goc and power models data warnings")
+    info(_LOGGER, "skipping goc and power models data warnings")
     pm_logger_level = getlevel(getlogger(PowerModels))
-    goc_logger_level = getlevel(LOGGER)
+    goc_logger_level = getlevel(_LOGGER)
 
     setlevel!(getlogger(PowerModels), "error")
-    setlevel!(LOGGER, "error")
+    setlevel!(_LOGGER, "error")
 
     goc_data = parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
     global network_global = build_pm_model(goc_data)
     global contingency_order_global = contingency_order(network_global)
 
     setlevel!(getlogger(PowerModels), pm_logger_level)
-    setlevel!(LOGGER, goc_logger_level)
+    setlevel!(_LOGGER, goc_logger_level)
 
     return 0
 end
@@ -321,10 +321,10 @@ function read_active_flow_cuts(;output_dir="", file_name="active_flow_cuts.txt")
     end
 
     if isfile(file_path)
-        info(LOGGER, "loading flow cuts file: $(file_path)")
+        info(_LOGGER, "loading flow cuts file: $(file_path)")
         return parse_flow_cuts_file(file_path)
     else
-        info(LOGGER, "flow cuts file not found: $(file_path)")
+        info(_LOGGER, "flow cuts file not found: $(file_path)")
         return []
     end
 end
@@ -340,12 +340,12 @@ function parse_flow_cuts_file(io::IO)
 
     for line in readlines(io)
         if length(strip(line)) == 0
-            warn(LOGGER, "skipping blank line in cuts file")
+            warn(_LOGGER, "skipping blank line in cuts file")
             continue
         end
         line_parts = split(line, ",")
         if length(line_parts) != 4
-            warn(LOGGER, "skipping ill formated line\n   $(line)")
+            warn(_LOGGER, "skipping ill formated line\n   $(line)")
             continue
         end
 
@@ -365,7 +365,7 @@ end
 ""
 function check_contingencies_branch_flow_remote_nd_first_lazy(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
     if length(network_global) <= 0 || length(contingency_order_global) <= 0
-        error(LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
 
     sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
@@ -380,7 +380,7 @@ function check_contingencies_branch_flow_remote_nd_first_lazy(cont_range, output
         elseif cut.cont_type == "branch"
             push!(branch_flow_cuts, cut)
         else
-            warn(LOGGER, "unknown contingency type in cut $(cut)")
+            warn(_LOGGER, "unknown contingency type in cut $(cut)")
         end
     end
 
@@ -408,7 +408,7 @@ function check_contingencies_branch_power_bpv(network;
         )
 
     if InfrastructureModels.ismultinetwork(network)
-        error(LOGGER, "the branch flow cut generator can only be used on single networks")
+        error(_LOGGER, "the branch flow cut generator can only be used on single networks")
     end
     time_contingencies_start = time()
 
@@ -446,7 +446,7 @@ function check_contingencies_branch_power_bpv(network;
         for (i,load) in load_setpoint
             load["pd"] = load["pd"] + p_delta
         end
-        warn(LOGGER, "active power losses found $(p_losses) increasing loads by $(p_delta)")
+        warn(_LOGGER, "active power losses found $(p_losses) increasing loads by $(p_delta)")
     end
 
 
@@ -477,14 +477,14 @@ function check_contingencies_branch_power_bpv(network;
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
         if length(gen_cuts) >= gen_flow_cut_limit
-            info(LOGGER, "hit gen flow cut limit $(gen_flow_cut_limit)")
+            info(_LOGGER, "hit gen flow cut limit $(gen_flow_cut_limit)")
             break
         end
         if length(gen_cuts) >= total_cut_limit
-            info(LOGGER, "hit total cut limit $(total_cut_limit)")
+            info(_LOGGER, "hit total cut limit $(total_cut_limit)")
             break
         end
-        #info(LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
+        #info(_LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
 
         sol_tmp = deepcopy(solution_base)
         cont_gen = sol_tmp["gen"]["$(cont.idx)"]
@@ -504,7 +504,7 @@ function check_contingencies_branch_power_bpv(network;
         try
             va_vector = solve_theta(b_base, bus_inj_cont, ref_bus_idx)
         catch exception
-            warn(LOGGER, "linear solve failed on $(cont.label)")
+            warn(_LOGGER, "linear solve failed on $(cont.label)")
             continue
         end
         p_flows = compute_flows(network_ref, va_vector, bus_id2idx)
@@ -523,12 +523,12 @@ function check_contingencies_branch_power_bpv(network;
         vio = compute_violations_ratec(network, sol_tmp)
         network["gen"]["$(cont.idx)"]["gen_status"] = 1
 
-        #info(LOGGER, "$(cont.label) violations $(vio)")
+        #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
             branch_vio = branch_violations_sorted_ratec(network, sol_tmp)[1]
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
-                info(LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
+                info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
                 branch_ptdf_cont = compute_branch_ptdf_single(network_ref, b_inv_base, bus_id2idx, branch_vio.branch_id)
                 cut = built_flow_cut(cont.label, branch_vio.branch_id, 1.0, branch_ptdf_cont, bus_idx2id)
@@ -536,7 +536,7 @@ function check_contingencies_branch_power_bpv(network;
                 push!(gen_cuts, cut)
                 break
             else
-                warn(LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
+                warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
             end
         end
     end
@@ -548,15 +548,15 @@ function check_contingencies_branch_power_bpv(network;
     branch_cuts = []
     for (i,cont) in enumerate(branch_contingencies)
         if length(branch_cuts) >= branch_flow_cut_limit
-            info(LOGGER, "hit branch flow cut limit $(branch_flow_cut_limit)")
+            info(_LOGGER, "hit branch flow cut limit $(branch_flow_cut_limit)")
             break
         end
         if length(gen_cuts) + length(branch_cuts) >= total_cut_limit
-            info(LOGGER, "hit total cut limit $(total_cut_limit)")
+            info(_LOGGER, "hit total cut limit $(total_cut_limit)")
             break
         end
 
-        #info(LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
+        #info(_LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
         sol_tmp = deepcopy(solution_base)
         if haskey(sol_tmp, "branch")
             cont_branch = sol_tmp["branch"]["$(cont.idx)"]
@@ -576,7 +576,7 @@ function check_contingencies_branch_power_bpv(network;
         try
             va_vector = solve_theta(b_cont, bus_inj_base, ref_bus_idx)
         catch exception
-            warn(LOGGER, "linear solve failed on $(cont.label)")
+            warn(_LOGGER, "linear solve failed on $(cont.label)")
             continue
         end
         p_flows = compute_flows(network_ref, va_vector, bus_id2idx)
@@ -601,13 +601,13 @@ function check_contingencies_branch_power_bpv(network;
         vio = compute_violations_ratec(network, sol_tmp)
         network["branch"]["$(cont.idx)"]["br_status"] = 1
 
-        #info(LOGGER, "$(cont.label) violations $(vio)")
+        #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
             branch_vio = branch_violations_sorted_ratec(network, sol_tmp)[1]
 
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
-                info(LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
+                info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
                 b_inv_cont = compute_B_inverse(network_ref, bus_idx2id, bus_id2idx, inactive_branches=Set([cont.idx]))
                 branch_ptdf_cont = compute_branch_ptdf_single(network_ref, b_inv_cont, bus_id2idx, branch_vio.branch_id)
@@ -616,20 +616,20 @@ function check_contingencies_branch_power_bpv(network;
                 push!(branch_cuts, cut)
                 break
             else
-                warn(LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
+                warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
             end
         end
     end
 
     if p_delta != 0.0
-        warn(LOGGER, "re-adjusting loads by $(-p_delta)")
+        warn(_LOGGER, "re-adjusting loads by $(-p_delta)")
         for (i,load) in load_setpoint
             load["pd"] = load["pd"] - p_delta
         end
     end
 
     time_contingencies = time() - time_contingencies_start
-    info(LOGGER, "cont eval time: $(time_contingencies)")
+    info(_LOGGER, "cont eval time: $(time_contingencies)")
 
     return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
 end
@@ -644,7 +644,7 @@ end
 ""
 function check_contingencies_branch_flow_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
     if length(network_global) <= 0 || length(contingency_order_global) <= 0
-        error(LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
 
     sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
@@ -659,7 +659,7 @@ function check_contingencies_branch_flow_remote(cont_range, output_dir, cut_limi
         elseif cut.cont_type == "branch"
             push!(branch_flow_cuts, cut)
         else
-            warn(LOGGER, "unknown contingency type in cut $(cut)")
+            warn(_LOGGER, "unknown contingency type in cut $(cut)")
         end
     end
 
@@ -689,7 +689,7 @@ function check_contingencies_branch_power(network;
         )
 
     if InfrastructureModels.ismultinetwork(network)
-        error(LOGGER, "the branch flow cut generator can only be used on single networks")
+        error(_LOGGER, "the branch flow cut generator can only be used on single networks")
     end
     time_contingencies_start = time()
 
@@ -727,7 +727,7 @@ function check_contingencies_branch_power(network;
         for (i,load) in load_setpoint
             load["pd"] = load["pd"] + p_delta
         end
-        warn(LOGGER, "active power losses found $(p_losses) increasing loads by $(p_delta)")
+        warn(_LOGGER, "active power losses found $(p_losses) increasing loads by $(p_delta)")
     end
 
 
@@ -758,14 +758,14 @@ function check_contingencies_branch_power(network;
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
         if length(gen_cuts) >= gen_flow_cut_limit
-            info(LOGGER, "hit gen flow cut limit $(gen_flow_cut_limit)")
+            info(_LOGGER, "hit gen flow cut limit $(gen_flow_cut_limit)")
             break
         end
         if length(gen_cuts) >= total_cut_limit
-            info(LOGGER, "hit total cut limit $(total_cut_limit)")
+            info(_LOGGER, "hit total cut limit $(total_cut_limit)")
             break
         end
-        #info(LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
+        #info(_LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
 
         sol_tmp = deepcopy(solution_base)
         cont_gen = sol_tmp["gen"]["$(cont.idx)"]
@@ -780,13 +780,13 @@ function check_contingencies_branch_power(network;
 
         alpha_gens = [gen["alpha"] for (i,gen) in network_ref[:gen] if gen["index"] != cont.idx && gen["index"] in gen_set]
         if length(alpha_gens) == 0 || isapprox(sum(alpha_gens), 0.0)
-            warn(LOGGER, "no available active power response in cont $(cont.label), active gens $(length(alpha_gens))")
+            warn(_LOGGER, "no available active power response in cont $(cont.label), active gens $(length(alpha_gens))")
             continue
         end
         alpha_total = sum(alpha_gens)
         delta = pg_lost/alpha_total
         sol_tmp["delta"] = delta
-        #info(LOGGER, "$(pg_lost) - $(alpha_total) - $(delta)")
+        #info(_LOGGER, "$(pg_lost) - $(alpha_total) - $(delta)")
 
         for (i,gen) in network_ref[:gen]
             sol_gen = sol_tmp["gen"]["$(i)"]
@@ -802,7 +802,7 @@ function check_contingencies_branch_power(network;
         try
             va_vector = solve_theta(b_base, bus_inj_cont, ref_bus_idx)
         catch exception
-            warn(LOGGER, "linear solve failed on $(cont.label)")
+            warn(_LOGGER, "linear solve failed on $(cont.label)")
             continue
         end
         p_flows = compute_flows(network_ref, va_vector, bus_id2idx)
@@ -822,21 +822,21 @@ function check_contingencies_branch_power(network;
         vio = compute_violations_ratec(network, sol_tmp)
         network["gen"]["$(cont.idx)"]["gen_status"] = 1
 
-        #info(LOGGER, "$(cont.label) violations $(vio)")
+        #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
             branch_vios = branch_violations_sorted_ratec(network, sol_tmp)
             branch_vio = branch_vios[1]
 
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
-                info(LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
+                info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
                 branch_ptdf_cont = compute_branch_ptdf_single(network_ref, b_inv_base, bus_id2idx, branch_vio.branch_id)
                 cut = built_flow_cut(cont.label, branch_vio.branch_id, 1.0, branch_ptdf_cont, bus_idx2id)
                 cut = (gen_id=cont.idx, cont_label=cut.cont_label, branch_id=cut.branch_id, rating_level=cut.rating_level, bus_injection=cut.bus_injection)
                 push!(gen_cuts, cut)
             else
-                warn(LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
+                warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
             end
 
         end
@@ -849,15 +849,15 @@ function check_contingencies_branch_power(network;
     branch_cuts = []
     for (i,cont) in enumerate(branch_contingencies)
         if length(branch_cuts) >= branch_flow_cut_limit
-            info(LOGGER, "hit branch flow cut limit $(branch_flow_cut_limit)")
+            info(_LOGGER, "hit branch flow cut limit $(branch_flow_cut_limit)")
             break
         end
         if length(gen_cuts) + length(branch_cuts) >= total_cut_limit
-            info(LOGGER, "hit total cut limit $(total_cut_limit)")
+            info(_LOGGER, "hit total cut limit $(total_cut_limit)")
             break
         end
 
-        #info(LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
+        #info(_LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
         sol_tmp = deepcopy(solution_base)
         if haskey(sol_tmp, "branch")
             cont_branch = sol_tmp["branch"]["$(cont.idx)"]
@@ -881,7 +881,7 @@ function check_contingencies_branch_power(network;
         try
             va_vector = solve_theta(b_cont, bus_inj_base, ref_bus_idx)
         catch exception
-            warn(LOGGER, "linear solve failed on $(cont.label)")
+            warn(_LOGGER, "linear solve failed on $(cont.label)")
             continue
         end
         p_flows = compute_flows(network_ref, va_vector, bus_id2idx)
@@ -906,12 +906,12 @@ function check_contingencies_branch_power(network;
         vio = compute_violations_ratec(network, sol_tmp)
         network["branch"]["$(cont.idx)"]["br_status"] = 1
 
-        #info(LOGGER, "$(cont.label) violations $(vio)")
+        #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
             branch_vio = branch_violations_sorted_ratec(network, sol_tmp)[1]
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
-                info(LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
+                info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
                 b_inv_cont = compute_B_inverse(network_ref, bus_idx2id, bus_id2idx, inactive_branches=Set([cont.idx]))
                 branch_ptdf_cont = compute_branch_ptdf_single(network_ref, b_inv_cont, bus_id2idx, branch_vio.branch_id)
@@ -919,20 +919,20 @@ function check_contingencies_branch_power(network;
                 cut = built_flow_cut(cont.label, branch_vio.branch_id, 1.0, branch_ptdf_cont, bus_idx2id)
                 push!(branch_cuts, cut)
             else
-                warn(LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
+                warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
             end
         end
     end
 
     if p_delta != 0.0
-        warn(LOGGER, "re-adjusting loads by $(-p_delta)")
+        warn(_LOGGER, "re-adjusting loads by $(-p_delta)")
         for (i,load) in load_setpoint
             load["pd"] = load["pd"] - p_delta
         end
     end
 
     time_contingencies = time() - time_contingencies_start
-    info(LOGGER, "cont eval time: $(time_contingencies)")
+    info(_LOGGER, "cont eval time: $(time_contingencies)")
 
     return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
 end

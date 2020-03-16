@@ -34,8 +34,8 @@ function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
     end
 
     pg_target = pg_total + pg_delta
-    #info(LOGGER, "total gen:  $(pg_total)")
-    #info(LOGGER, "target gen: $(pg_target)")
+    #info(_LOGGER, "total gen:  $(pg_total)")
+    #info(_LOGGER, "target gen: $(pg_target)")
     status = 0
 
     delta_est = 0.0
@@ -46,16 +46,16 @@ function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
                 alpha_total += gen["alpha"]
             end
         end
-        #info(LOGGER, "alpha total: $(alpha_total)")
+        #info(_LOGGER, "alpha total: $(alpha_total)")
 
         if isapprox(alpha_total, 0.0) && !isapprox(pg_total, pg_target)
-            warn(LOGGER, "insufficient generator response to meet demand, remaining pg $(pg_total - pg_target), remaining alpha $(alpha_total)")
+            warn(_LOGGER, "insufficient generator response to meet demand, remaining pg $(pg_total - pg_target), remaining alpha $(alpha_total)")
             status = 1
             break
         end
 
         delta_est += pg_delta/alpha_total
-        #info(LOGGER, "detla: $(delta_est)")
+        #info(_LOGGER, "detla: $(delta_est)")
 
         for (i,gen) in network["gen"]
             if gen["gen_status"] != 0 && gen["index"] in gens
@@ -65,13 +65,13 @@ function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
                     gen["pg"] = gen["pmin"]
                     if !gen["pg_fixed"]
                         gen["pg_fixed"] = true
-                        #info(LOGGER, "gen $(i) hit lb $(gen["pmin"]) with target value of $(pg_cont)")
+                        #info(_LOGGER, "gen $(i) hit lb $(gen["pmin"]) with target value of $(pg_cont)")
                     end
                 elseif pg_cont >= gen["pmax"]
                     gen["pg"] = gen["pmax"]
                     if !gen["pg_fixed"]
                         gen["pg_fixed"] = true
-                        #info(LOGGER, "gen $(i) hit ub $(gen["pmax"]) with target value of $(pg_cont)")
+                        #info(_LOGGER, "gen $(i) hit ub $(gen["pmax"]) with target value of $(pg_cont)")
                     end
                 else
                     gen["pg"] = pg_cont
@@ -87,9 +87,9 @@ function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
         end
 
         #pg_comp = comp_pg_response_total(network, delta=delta_est)
-        #info(LOGGER, "detla: $(delta_est)")
-        #info(LOGGER, "total gen comp $(pg_comp) - gen inc $(pg_total)")
-        #info(LOGGER, "total gen $(pg_total) - target gen $(pg_target)")
+        #info(_LOGGER, "detla: $(delta_est)")
+        #info(_LOGGER, "total gen comp $(pg_comp) - gen inc $(pg_total)")
+        #info(_LOGGER, "total gen $(pg_total) - target gen $(pg_target)")
 
         pg_delta = pg_target - pg_total
     end
@@ -101,8 +101,8 @@ function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
         end
     end
     if isapprox(alpha_final, 0.0)
-        warn(LOGGER, "no remaining alpha for generator response (final alpha value $(alpha_final))")
-        debug(LOGGER, "delta $(delta_est)")
+        warn(_LOGGER, "no remaining alpha for generator response (final alpha value $(alpha_final))")
+        debug(_LOGGER, "delta $(delta_est)")
     end
 
     network["delta"] = delta_est
@@ -117,7 +117,7 @@ function correct_qg!(network, solution; bus_gens=gens_by_bus(network))
             gen_ids = [gen["index"] for gen in gens]
             qgs = [solution["gen"]["$(j)"]["qg"] for j in gen_ids]
             if !isapprox(abs(sum(qgs)), sum(abs.(qgs)))
-                #info(LOGGER, "$(i) - $(gen_ids) - $(qgs) - output requires correction!")
+                #info(_LOGGER, "$(i) - $(gen_ids) - $(qgs) - output requires correction!")
                 qg_total = sum(qgs)
 
                 qg_remaining = sum(qgs)
@@ -132,16 +132,16 @@ function correct_qg!(network, solution; bus_gens=gens_by_bus(network))
                         qg_assignment[gen["index"]] = gen_qg + qg_remaining
                     end
                 end
-                #info(LOGGER, "$(qg_assignment)")
+                #info(_LOGGER, "$(qg_assignment)")
                 for (j,qg) in qg_assignment
                     solution["gen"]["$(j)"]["qg"] = qg
                 end
 
                 sol_qg_total = sum(solution["gen"]["$(j)"]["qg"] for j in gen_ids)
-                #info(LOGGER, "$(qg_total) - $(sol_qg_total)")
+                #info(_LOGGER, "$(qg_total) - $(sol_qg_total)")
                 @assert isapprox(qg_total, sol_qg_total)
 
-                #info(LOGGER, "updated to $([solution["gen"]["$(j)"]["qg"] for j in gen_ids])")
+                #info(_LOGGER, "updated to $([solution["gen"]["$(j)"]["qg"] for j in gen_ids])")
             end
         end
     end
@@ -184,9 +184,9 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
     #delta = apply_pg_response!(network, pg_lost)
     #delta = 0.0
 
-    #info(LOGGER, "pg lost: $(pg_lost)")
-    #info(LOGGER, "delta: $(network["delta"])")
-    #info(LOGGER, "pre-solve time: $(time() - time_start)")
+    #info(_LOGGER, "pg lost: $(pg_lost)")
+    #info(_LOGGER, "delta: $(network["delta"])")
+    #info(_LOGGER, "pre-solve time: $(time() - time_start)")
 
     base_solution = extract_solution(network)
     base_solution["delta"] = network["delta"]
@@ -204,17 +204,17 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
     iteration = 1
     vm_fixed = true
     while vm_fixed && iteration < iteration_limit
-        info(LOGGER, "pf soft fixpoint iteration: $iteration")
+        info(_LOGGER, "pf soft fixpoint iteration: $iteration")
 
         time_start = time()
         result = run_pf_bqv_acr(network, solver, solution_processors=[sol_data_model!])
-        info(LOGGER, "solve pf time: $(time() - time_start)")
+        info(_LOGGER, "solve pf time: $(time() - time_start)")
 
         if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
             correct_qg!(network, result["solution"], bus_gens=bus_gens)
             PowerModels.update_data!(network, result["solution"])
         else
-            warn(LOGGER, "solve issue with run_pf_bqv_acr, $(result["termination_status"])")
+            warn(_LOGGER, "solve issue with run_pf_bqv_acr, $(result["termination_status"])")
             break
         end
 
@@ -238,7 +238,7 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
                     bus["vm"] = bus["vmax"]
                 end
 
-                warn(LOGGER, "bus $(i) voltage out of bounds $(current_vm) -> $(bus["vm"]), adding virtual generator $(gen_idx)")
+                warn(_LOGGER, "bus $(i) voltage out of bounds $(current_vm) -> $(bus["vm"]), adding virtual generator $(gen_idx)")
                 gen_virtual = deepcopy(gen_default)
                 gen_virtual["index"] = gen_idx
                 gen_virtual["gen_bus"] = bus["index"]
@@ -255,7 +255,7 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
     end
 
     if iteration >= iteration_limit
-        warn(LOGGER, "hit iteration limit")
+        warn(_LOGGER, "hit iteration limit")
     end
 
     for (i,gen) in collect(network["gen"])
@@ -305,7 +305,7 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
     for i in ids(pm, :ref_buses)
         PowerModels.constraint_theta_ref(pm, i)
     end
-    #Memento.info(LOGGER, "misc constraints time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
 
     start_time = time()
@@ -313,7 +313,7 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
         expression_branch_power_yt_from_goc(pm, i)
         expression_branch_power_yt_to(pm, i)
     end
-    #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
 
     start_time = time()
@@ -325,7 +325,7 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
 
         qg[i] = var(pm, :qg, i)
     end
-    #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
 
     start_time = time()
@@ -348,7 +348,7 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
         @constraint(pm.model, p_slack + sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
         @constraint(pm.model,           sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
     end
-    #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "power balance constraint time: $(time() - start_time)")
 end
 
 
@@ -369,10 +369,10 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
 
     response_status = apply_pg_response!(network, pg_lost)
 
-    debug(LOGGER, "pg lost: $(pg_lost)")
-    debug(LOGGER, "delta: $(network["delta"])")
-    debug(LOGGER, "status: $(response_status)")
-    debug(LOGGER, "pre-solve time: $(time() - time_start)")
+    debug(_LOGGER, "pg lost: $(pg_lost)")
+    debug(_LOGGER, "delta: $(network["delta"])")
+    debug(_LOGGER, "status: $(response_status)")
+    debug(_LOGGER, "pre-solve time: $(time() - time_start)")
 
 
     base_solution = extract_solution(network)
@@ -426,13 +426,13 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
     else
         result = run_pf_fixed_bp_slack_acr(network, solver, solution_processors=[sol_data_model!])
     end
-    debug(LOGGER, "pf solve time: $(time() - time_start)")
+    debug(_LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
         correct_qg!(network, result["solution"], bus_gens=bus_gens)
         PowerModels.update_data!(network, result["solution"])
         final_result = result
     else
-        warn(LOGGER, "$(network["cont_label"]) contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
+        warn(_LOGGER, "$(network["cont_label"]) contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
         cont_pf_failed = true
     end
 
@@ -444,8 +444,8 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
     iteration = 1
     deltas = [result["solution"]["delta"]]
     while (pg_switched || qg_switched || vm_switched) && !cont_pf_failed && iteration <= iteration_limit
-        debug(LOGGER, "obj: $(result["objective"])")
-        debug(LOGGER, "delta: $(result["solution"]["delta"])")
+        debug(_LOGGER, "obj: $(result["objective"])")
+        debug(_LOGGER, "delta: $(result["solution"]["delta"])")
         pg_switched = false
         qg_switched = false
         vm_switched = false
@@ -462,19 +462,19 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
                     gen["pg"] = pg
                     gen["pg_fixed"] = false
                     pg_switched = true
-                    #info(LOGGER, "unfix pg on gen $(i)")
+                    #info(_LOGGER, "unfix pg on gen $(i)")
                 end
             else
                 if pg >= gen["pmax"]
                     gen["pg"] = gen["pmax"]
                     gen["pg_fixed"] = true
                     pg_switched = true
-                    #info(LOGGER, "fix pg to ub on gen $(i)")
+                    #info(_LOGGER, "fix pg to ub on gen $(i)")
                 elseif gen["pg"] <= gen["pmin"]
                     gen["pg"] = gen["pmin"]
                     gen["pg_fixed"] = true
                     pg_switched = true
-                    #info(LOGGER, "fix pg to lb on gen $(i)")
+                    #info(_LOGGER, "fix pg to lb on gen $(i)")
                 end
             end
         end
@@ -499,7 +499,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
                             gen["qg"] = gen["qmax"]
                             gen["qg_fixed"] = true
                         end
-                        #info(LOGGER, "fix qg to ub on bus $(i)")
+                        #info(_LOGGER, "fix qg to ub on bus $(i)")
                     end
 
                     if qg <= qmin
@@ -509,7 +509,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
                             gen["qg"] = gen["qmin"]
                             gen["qg_fixed"] = true
                         end
-                        #info(LOGGER, "fix qg to lb on bus $(i)")
+                        #info(_LOGGER, "fix qg to lb on bus $(i)")
                     end
                 else
                     if qg < qmax && qg > qmin
@@ -520,7 +520,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
                             gen["qg_fixed"] = false
                             gen["qg_start"] = gen["qg"]
                         end
-                        #info(LOGGER, "fix vm to on bus $(i)")
+                        #info(_LOGGER, "fix vm to on bus $(i)")
                     end
                     if qg >= qmax && bus["vm"] > bus["vm_base"]
                         bus["vm_fixed"] = true
@@ -528,7 +528,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
                         for gen in bus_gens[i]
                             gen["qg_fixed"] = false
                         end
-                        #info(LOGGER, "fix vm to on bus $(i)")
+                        #info(_LOGGER, "fix vm to on bus $(i)")
                     end
                     if qg <= qmin && bus["vm"] < bus["vm_base"]
                         bus["vm_fixed"] = true
@@ -536,7 +536,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
                         for gen in bus_gens[i]
                             gen["qg_fixed"] = false
                         end
-                        #info(LOGGER, "fix vm to on bus $(i)")
+                        #info(_LOGGER, "fix vm to on bus $(i)")
                     end
                 end
 
@@ -566,7 +566,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
 
 
         if pg_switched || qg_switched || vm_switched
-            debug(LOGGER, "bus or gen switched: $iteration")
+            debug(_LOGGER, "bus or gen switched: $iteration")
             time_start = time()
 
             pf_fixed_all = all(gen["pg_fixed"] for gen in active_response_gens)
@@ -578,23 +578,23 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
             else
                 result = run_pf_fixed_bp_slack_acr(network, solver, solution_processors=[sol_data_model!])
             end
-            debug(LOGGER, "pf solve time: $(time() - time_start)")
+            debug(_LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
                 correct_qg!(network, result["solution"], bus_gens=bus_gens)
                 PowerModels.update_data!(network, result["solution"])
                 final_result = result
             else
-                warn(LOGGER, "$(network["cont_label"]) contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
+                warn(_LOGGER, "$(network["cont_label"]) contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
                 break
             end
 
             push!(deltas, result["solution"]["delta"])
             iteration += 1
             if iteration >= iteration_limit
-                warn(LOGGER, "hit iteration limit")
+                warn(_LOGGER, "hit iteration limit")
             end
             if length(deltas) > 3 && isapprox(deltas[end-2], deltas[end])
-                warn(LOGGER, "cycle detected, stopping")
+                warn(_LOGGER, "cycle detected, stopping")
                 break
             end
         end
@@ -606,7 +606,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
             bus_sol = final_result["solution"]["bus"][i]
             if bus_sol["vm"] - vm_bound_tol >= bus["vmax"] || bus_sol["vm"] + vm_bound_tol <= bus["vmin"]
                 vm_bound_vio = true
-                warn(LOGGER, "$(network["cont_label"]) vm bound out of range on bus $(i): $(bus["vmin"]) - $(bus_sol["vm"]) - $(bus["vmax"])")
+                warn(_LOGGER, "$(network["cont_label"]) vm bound out of range on bus $(i): $(bus["vmin"]) - $(bus_sol["vm"]) - $(bus["vmax"])")
             end
         end
     end
@@ -617,19 +617,19 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
             gen_sol = final_result["solution"]["gen"][i]
             if gen_sol["qg"] - qg_bound_tol >= gen["qmax"] || gen_sol["qg"] + qg_bound_tol <= gen["qmin"]
                 qg_bound_vio = true
-                warn(LOGGER, "$(network["cont_label"]) qg bound out of range on gen $(i): $(gen["qmin"]) - $(gen_sol["qg"]) - $(gen["qmax"])")
+                warn(_LOGGER, "$(network["cont_label"]) qg bound out of range on gen $(i): $(gen["qmin"]) - $(gen_sol["qg"]) - $(gen["qmax"])")
             end
         end
     end
 
     if vm_bound_vio || qg_bound_vio
-        warn(LOGGER, "$(network["cont_label"]) running voltage profile correction")
+        warn(_LOGGER, "$(network["cont_label"]) running voltage profile correction")
         result = run_fixpoint_opf!(network_backup, pg_lost, solver, iteration_limit=iteration_limit)
         if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
             PowerModels.update_data!(network, result["solution"])
             final_result = result
         else
-            warn(LOGGER, "$(network["cont_label"]) voltage profile correction solver FAILED with status $(result["termination_status"])")
+            warn(_LOGGER, "$(network["cont_label"]) voltage profile correction solver FAILED with status $(result["termination_status"])")
         end
     end
 
@@ -655,7 +655,7 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
     # TODO set bounds bounds on alpha and total gen capacity
     var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=0.0)
     #var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=ref(pm, :delta_start))
-    #Memento.info(LOGGER, "post variable time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "post variable time: $(time() - start_time)")
     sol(pm)[:delta] = var(pm)[:delta]
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
@@ -677,14 +677,14 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
     for i in ids(pm, :ref_buses)
         PowerModels.constraint_theta_ref(pm, i)
     end
-    #Memento.info(LOGGER, "misc constraints time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
     start_time = time()
     for i in ids(pm, :branch)
         expression_branch_power_yt_from_goc(pm, i)
         expression_branch_power_yt_to(pm, i)
     end
-    #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
 
     start_time = time()
@@ -713,14 +713,14 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
     end
     var(pm, pm.cnw)[:pg] = pg
     var(pm, pm.cnw)[:qg] = qg
-    #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
 
     start_time = time()
     for (i,bus) in ref(pm, :bus)
         PowerModels.constraint_power_balance(pm, i)
     end
-    #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "power balance constraint time: $(time() - start_time)")
 end
 
 
@@ -751,7 +751,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
     # end
 
     if !all(ref(pm, :gen, i)["pg_fixed"] for i in active_response_gens)
-        Memento.error(LOGGER, "fixed_pf_nbf_rect2_ds model requires all response_gens have pg_fixed set to true")
+        Memento.error(_LOGGER, "fixed_pf_nbf_rect2_ds model requires all response_gens have pg_fixed set to true")
     end
     var(pm)[:p_slack] = @variable(pm.model, p_slack, base_name="p_slack", start=0.0)
 
@@ -769,7 +769,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
     for i in ids(pm, :ref_buses)
         PowerModels.constraint_theta_ref(pm, i)
     end
-    #Memento.info(LOGGER, "misc constraints time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
 
     start_time = time()
@@ -777,7 +777,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
         expression_branch_power_yt_from_goc(pm, i)
         expression_branch_power_yt_to(pm, i)
     end
-    #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
 
     start_time = time()
@@ -804,7 +804,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
             qg[i] = var(pm, :qg, i)
         end
     end
-    #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
 
     start_time = time()
@@ -832,7 +832,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
         @constraint(pm.model, p_slack + sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
         @constraint(pm.model,           sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
     end
-    #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "power balance constraint time: $(time() - start_time)")
 end
 
 
@@ -845,9 +845,9 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
     delta = apply_pg_response!(network, pg_lost)
     #delta = 0.0
 
-    debug(LOGGER, "pg lost: $(pg_lost)")
-    debug(LOGGER, "delta: $(network["delta"])")
-    debug(LOGGER, "pre-solve time: $(time() - time_start)")
+    debug(_LOGGER, "pg lost: $(pg_lost)")
+    debug(_LOGGER, "delta: $(network["delta"])")
+    debug(_LOGGER, "pre-solve time: $(time() - time_start)")
 
     base_solution = extract_solution(network)
     base_solution["delta"] = delta
@@ -880,13 +880,13 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
 
     time_start = time()
     result = run_opf_contingency_acp(network, solver, solution_processors=[sol_data_model!])
-    debug(LOGGER, "pf solve time: $(time() - time_start)")
+    debug(_LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
-        warn(LOGGER, "$(network["cont_label"]) voltage profile correction objective: $(result["objective"])")
+        warn(_LOGGER, "$(network["cont_label"]) voltage profile correction objective: $(result["objective"])")
         PowerModels.update_data!(network, result["solution"])
         final_result = result
     else
-        warn(LOGGER, "contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
+        warn(_LOGGER, "contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
         return final_result
     end
 
@@ -899,8 +899,8 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
     iteration = 1
     deltas = [result["solution"]["delta"]]
     while (pg_switched || qg_switched || vm_switched) && iteration <= iteration_limit
-        debug(LOGGER, "obj: $(result["objective"])")
-        debug(LOGGER, "delta: $(result["solution"]["delta"])")
+        debug(_LOGGER, "obj: $(result["objective"])")
+        debug(_LOGGER, "delta: $(result["solution"]["delta"])")
         pg_switched = false
         qg_switched = false
         vm_switched = false
@@ -913,19 +913,19 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
                     gen["pg"] = pg
                     gen["pg_fixed"] = false
                     pg_switched = true
-                    #info(LOGGER, "unfix pg on gen $(i)")
+                    #info(_LOGGER, "unfix pg on gen $(i)")
                 end
             else
                 if pg >= gen["pmax"]
                     gen["pg"] = gen["pmax"]
                     gen["pg_fixed"] = true
                     pg_switched = true
-                    #info(LOGGER, "fix pg to ub on gen $(i)")
+                    #info(_LOGGER, "fix pg to ub on gen $(i)")
                 elseif gen["pg"] <= gen["pmin"]
                     gen["pg"] = gen["pmin"]
                     gen["pg_fixed"] = true
                     pg_switched = true
-                    #info(LOGGER, "fix pg to lb on gen $(i)")
+                    #info(_LOGGER, "fix pg to lb on gen $(i)")
                 end
             end
         end
@@ -944,7 +944,7 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
                             gen["qg"] = gen["qmax"]
                             gen["qg_fixed"] = true
                         end
-                        #info(LOGGER, "fix qg to ub on bus $(i)")
+                        #info(_LOGGER, "fix qg to ub on bus $(i)")
                     end
 
                     if qg <= qmin
@@ -954,7 +954,7 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
                             gen["qg"] = gen["qmin"]
                             gen["qg_fixed"] = true
                         end
-                        #info(LOGGER, "fix qg to lb on bus $(i)")
+                        #info(_LOGGER, "fix qg to lb on bus $(i)")
                     end
                 else
                     if qg < qmax && qg > qmin
@@ -965,7 +965,7 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
                             gen["qg_fixed"] = false
                             gen["qg_start"] = gen["qg"]
                         end
-                        #info(LOGGER, "fix vm to on bus $(i)")
+                        #info(_LOGGER, "fix vm to on bus $(i)")
                     end
                     if qg >= qmax && bus["vm"] > bus["vm_base"]
                         bus["vm_fixed"] = true
@@ -973,7 +973,7 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
                         for gen in bus_gens[i]
                             gen["qg_fixed"] = false
                         end
-                        #info(LOGGER, "fix vm to on bus $(i)")
+                        #info(_LOGGER, "fix vm to on bus $(i)")
                     end
                     if qg <= qmin && bus["vm"] < bus["vm_base"]
                         bus["vm_fixed"] = true
@@ -981,7 +981,7 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
                         for gen in bus_gens[i]
                             gen["qg_fixed"] = false
                         end
-                        #info(LOGGER, "fix vm to on bus $(i)")
+                        #info(_LOGGER, "fix vm to on bus $(i)")
                     end
                 end
             end
@@ -1000,27 +1000,27 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
 
 
         if pg_switched || qg_switched || vm_switched
-            debug(LOGGER, "bus or gen swtiched: $iteration")
+            debug(_LOGGER, "bus or gen swtiched: $iteration")
             time_start = time()
             #result = run_fixed_pf_nbf_rect(network, solver, solution_processors=[sol_data_model!])
             result = run_pf_fixed_acr(network, solver, solution_processors=[sol_data_model!])
-            debug(LOGGER, "pf solve time: $(time() - time_start)")
+            debug(_LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
                 correct_qg!(network, result["solution"], bus_gens=bus_gens)
                 PowerModels.update_data!(network, result["solution"])
                 final_result = result
             else
-                warn(LOGGER, "contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
+                warn(_LOGGER, "contingency pf solver FAILED with status $(result["termination_status"]) on iteration 0")
                 break
             end
 
             push!(deltas, result["solution"]["delta"])
             iteration += 1
             if iteration >= iteration_limit
-                warn(LOGGER, "hit iteration limit")
+                warn(_LOGGER, "hit iteration limit")
             end
             if length(deltas) > 3 && isapprox(deltas[end-2], deltas[end])
-                warn(LOGGER, "cycle detected, stopping")
+                warn(_LOGGER, "cycle detected, stopping")
                 break
             end
         end
@@ -1105,7 +1105,7 @@ function build_opf_contingency(pm::AbstractPowerModel)
         expression_branch_power_yt_from_goc(pm, i)
         expression_branch_power_yt_to(pm, i)
     end
-    #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
     pg = Dict{Int,Any}()
     qg = Dict{Int,Any}()

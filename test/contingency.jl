@@ -34,7 +34,7 @@
         pg_missing = cont_gen["pg"]
 
         #println("")
-        #info(LOGGER, "generation removed: $(pg_missing)")
+        #println("generation removed: $(pg_missing)")
 
         apply_pg_response!(network_cont, area_gens, pg_missing)
 
@@ -47,8 +47,8 @@
 
         pg_comp = comp_pg_response_total(network_cont, area_gens)
 
-        #info(LOGGER, "delta $delta")
-        #info(LOGGER, "gen $(pg_target) / $(pg_total) / $(pg_comp)")
+        #println("delta $delta")
+        #println("gen $(pg_target) / $(pg_total) / $(pg_comp)")
 
         @test isapprox(pg_target, pg_total)
         @test isapprox(pg_total, pg_comp)

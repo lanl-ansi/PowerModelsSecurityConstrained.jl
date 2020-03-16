@@ -34,7 +34,7 @@ function find_goc_files(ini_file; scenario_id="")
     )
 
     if !endswith(ini_file, ".ini")
-        warn(LOGGER, "given init file does not end with .ini, $(ini_file)")
+        warn(_LOGGER, "given init file does not end with .ini, $(ini_file)")
     end
 
     open(ini_file) do io
@@ -52,7 +52,7 @@ function find_goc_files(ini_file; scenario_id="")
             elseif startswith(line, "INL")
                 files["inl"] = strip(split(line,"=")[2])
             else
-                warn(LOGGER, "unknown input given in ini file: $(line)")
+                warn(_LOGGER, "unknown input given in ini file: $(line)")
             end
         end
     end
@@ -68,10 +68,10 @@ function find_goc_files(ini_file; scenario_id="")
 
     if length(scenario_id) == 0
         scenario_id = scenario_dirs[1]
-        info(LOGGER, "no scenario specified, selected directory \"$(scenario_id)\"")
+        info(_LOGGER, "no scenario specified, selected directory \"$(scenario_id)\"")
     else
         if !(scenario_id in scenario_dirs)
-            error(LOGGER, "$(scenario_id) not found in $(scenario_dirs)")
+            error(_LOGGER, "$(scenario_id) not found in $(scenario_dirs)")
         end
     end
 
@@ -81,7 +81,7 @@ function find_goc_files(ini_file; scenario_id="")
         elseif path == "x"
             files[id] = joinpath(ini_dir, scenario_id)
         else
-            error(LOGGER, "unknown file path directive $(path) for file $(id)")
+            error(_LOGGER, "unknown file path directive $(path) for file $(id)")
         end
     end
 
@@ -101,13 +101,13 @@ function parse_goc_files(con_file, inl_file, raw_file, rop_file; ini_file="", sc
         "inl" => inl_file
     )
 
-    info(LOGGER, "Parsing Files")
-    info(LOGGER, "  raw: $(files["raw"])")
-    info(LOGGER, "  rop: $(files["rop"])")
-    info(LOGGER, "  inl: $(files["inl"])")
-    info(LOGGER, "  con: $(files["con"])")
+    info(_LOGGER, "Parsing Files")
+    info(_LOGGER, "  raw: $(files["raw"])")
+    info(_LOGGER, "  rop: $(files["rop"])")
+    info(_LOGGER, "  inl: $(files["inl"])")
+    info(_LOGGER, "  con: $(files["con"])")
 
-    info(LOGGER, "skipping power models data warnings")
+    info(_LOGGER, "skipping power models data warnings")
     pm_logger_level = getlevel(getlogger(PowerModels))
     setlevel!(getlogger(PowerModels), "error")
     network_model = PowerModels.parse_file(files["raw"], import_all=true)
@@ -130,7 +130,7 @@ function parse_goc_opf_files(ini_file; scenario_id="")
     )
 
     if !endswith(ini_file, ".ini")
-        warn(LOGGER, "given init file does not end with .ini, $(ini_file)")
+        warn(_LOGGER, "given init file does not end with .ini, $(ini_file)")
     end
 
     open(ini_file) do io
@@ -144,7 +144,7 @@ function parse_goc_opf_files(ini_file; scenario_id="")
             elseif startswith(line, "RAW")
                 files["raw"] = strip(split(line,"=")[2])
             else
-                warn(LOGGER, "unknown input given in ini file: $(line)")
+                warn(_LOGGER, "unknown input given in ini file: $(line)")
             end
         end
     end
@@ -160,10 +160,10 @@ function parse_goc_opf_files(ini_file; scenario_id="")
 
     if length(scenario_id) == 0
         scenario_id = scenario_dirs[1]
-        info(LOGGER, "no scenario specified, selected directory \"$(scenario_id)\"")
+        info(_LOGGER, "no scenario specified, selected directory \"$(scenario_id)\"")
     else
         if !(scenario_id in scenario_dirs)
-            error(LOGGER, "$(scenario_id) not found in $(scenario_dirs)")
+            error(_LOGGER, "$(scenario_id) not found in $(scenario_dirs)")
         end
     end
 
@@ -173,16 +173,16 @@ function parse_goc_opf_files(ini_file; scenario_id="")
         elseif path == "x"
             files[id] = joinpath(ini_dir, scenario_id)
         else
-            error(LOGGER, "unknown file path directive $(path) for file $(id)")
+            error(_LOGGER, "unknown file path directive $(path) for file $(id)")
         end
     end
 
     files["raw"] = joinpath(files["raw"], "case.raw")
     files["rop"] = joinpath(files["rop"], "case.rop")
 
-    info(LOGGER, "Parsing Files")
-    info(LOGGER, "  raw: $(files["raw"])")
-    info(LOGGER, "  rop: $(files["rop"])")
+    info(_LOGGER, "Parsing Files")
+    info(_LOGGER, "  raw: $(files["raw"])")
+    info(_LOGGER, "  rop: $(files["rop"])")
 
     network_model = PowerModels.parse_file(files["raw"], import_all=true)
     gen_cost = parse_rop_file(files["rop"])
@@ -205,7 +205,7 @@ function parse_inl_file(io::IO)
         #line = _remove_comment(line)
 
         if startswith(strip(line), "0")
-            debug(LOGGER, "inl file sentinel found")
+            debug(_LOGGER, "inl file sentinel found")
             break
         end
         line_parts = split(line, ",")
@@ -274,10 +274,10 @@ function parse_rop_file(io::IO)
         #line = _remove_comment(lines[line_idx])
         line = lines[line_idx]
         if startswith(strip(line), "0")
-            debug(LOGGER, "finished reading rop section $(active_section.second) with $(length(section_data[active_section.first])) items")
+            debug(_LOGGER, "finished reading rop section $(active_section.second) with $(length(section_data[active_section.first])) items")
             active_section_idx += 1
             if active_section_idx > length(_rop_sections)
-                debug(LOGGER, "finished reading known rop sections")
+                debug(_LOGGER, "finished reading known rop sections")
                 break
             end
             active_section = _rop_sections[active_section_idx]
@@ -302,7 +302,7 @@ function parse_rop_file(io::IO)
             push!(section_data[active_section.first], _parse_rop_pwl(pwl_line_parts, pwl_point_lines))
             line_idx += num_pwl_lines
         else
-            info(LOGGER, "skipping data line: $(line)")
+            info(_LOGGER, "skipping data line: $(line)")
         end
         line_idx += 1
     end
@@ -425,13 +425,13 @@ function parse_con_file(io::IO)
     while token_idx <= length(tokens)
         token = tokens[token_idx]
         if token == "END"
-            debug(LOGGER, "end of contingency file found")
+            debug(_LOGGER, "end of contingency file found")
             break
         elseif token == "CONTINGENCY"
             # start reading contingencies
 
             contingency_name = tokens[token_idx+1]
-            debug(LOGGER, "reading contingency $(contingency_name)")
+            debug(_LOGGER, "reading contingency $(contingency_name)")
 
             token_idx += 2
             token = tokens[token_idx]
@@ -446,7 +446,7 @@ function parse_con_file(io::IO)
 
                 #if !all(branch_tokens[idx] == val for (idx, val) in _branch_contigency_structure) && !all(branch_tokens[idx] == val for (idx, val) in _branch_contigency_structure_alt)
                 if any(branch_tokens[idx] != val for (idx, val) in _branch_contigency_structure)
-                    error(LOGGER, "incorrect branch contingency structure: $(branch_tokens)")
+                    error(_LOGGER, "incorrect branch contingency structure: $(branch_tokens)")
                 end
 
                 bus_i = parse(Int, branch_tokens[5])
@@ -477,7 +477,7 @@ function parse_con_file(io::IO)
                 #println(generator_tokens)
 
                 if any(generator_tokens[idx] != val for (idx, val) in _generator_contigency_structure)
-                    error(LOGGER, "incorrect generator contingency structure: $(generator_tokens)")
+                    error(_LOGGER, "incorrect generator contingency structure: $(generator_tokens)")
                 end
 
                 gen_id = generator_tokens[3]
@@ -497,19 +497,19 @@ function parse_con_file(io::IO)
 
                 token_idx += 5
             elseif token == "END"
-                warn(LOGGER, "no action provided for contingency $(contingency_name)")
+                warn(_LOGGER, "no action provided for contingency $(contingency_name)")
                 token_idx -= 1
             else
-                warn(LOGGER, "unrecognized token $(token)")
+                warn(_LOGGER, "unrecognized token $(token)")
             end
 
             token_idx += 1
             token = tokens[token_idx]
             if token != "END"
-                error(LOGGER, "expected END token at end of CONTINGENCY, got $(token)")
+                error(_LOGGER, "expected END token at end of CONTINGENCY, got $(token)")
             end
         else
-            warn(LOGGER, "unrecognized token $(token)")
+            warn(_LOGGER, "unrecognized token $(token)")
         end
         token_idx += 1
     end
@@ -541,7 +541,7 @@ function parse_solution1_file(io::IO)
     while idx <= length(lines)
         line = lines[idx]
         if length(strip(line)) == 0
-            warn(LOGGER, "skipping blank line in solution1 file ($(idx))")
+            warn(_LOGGER, "skipping blank line in solution1 file ($(idx))")
         elseif skip_next
             skip_next = false
         elseif startswith(strip(line), "--")
@@ -569,7 +569,7 @@ function parse_solution1_file(io::IO)
                 )
                 push!(gen_data_list, gen_data)
             else
-                warn(LOGGER, "skipping line in solution1 file ($(idx)): $(line)")
+                warn(_LOGGER, "skipping line in solution1 file ($(idx)): $(line)")
             end
         end
         idx += 1
@@ -633,7 +633,7 @@ function build_pm_model(goc_data)
     end
 
     if length(gen_cost_models) != length(network["gen"])
-        error(LOGGER, "cost model data missing, network has $(length(network["gen"])) generators, the cost model has $(length(gen_cost_models)) generators")
+        error(_LOGGER, "cost model data missing, network has $(length(network["gen"])) generators, the cost model has $(length(gen_cost_models)) generators")
     end
 
     for (gen_id, cost_model) in gen_cost_models
@@ -656,7 +656,7 @@ function build_pm_model(goc_data)
     ##### Link Generator Participation Data #####
 
     if length(goc_data.response) != length(network["gen"])
-        error(LOGGER, "generator response model data missing, network has $(length(network["gen"])) generators, the response model has $(length(goc_data.response)) generators")
+        error(_LOGGER, "generator response model data missing, network has $(length(network["gen"])) generators, the response model has $(length(goc_data.response)) generators")
     end
 
     for gen_response in goc_data.response
@@ -728,7 +728,7 @@ function build_pm_model(goc_data)
             push!(generator_ids, (idx=pm_gen["index"], label=cont["label"], type="gen"))
 
         else
-            error(LOGGER, "unrecognized contingency component type $(cont["component"]) at contingency $(i)")
+            error(_LOGGER, "unrecognized contingency component type $(cont["component"]) at contingency $(i)")
         end
     end
 
@@ -751,11 +751,11 @@ function build_pm_model(goc_data)
         # test checks if a "switched shunt" in the orginal data model
         if shunt["dispatchable"]
             if shunt["bs"] < shunt["bmin"]
-                warn(LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmin"])")
+                warn(_LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmin"])")
                 shunt["bs"] = shunt["bmin"]
             end
             if shunt["bs"] > shunt["bmax"]
-                warn(LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmax"])")
+                warn(_LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmax"])")
                 shunt["bs"] = shunt["bmax"]
             end
         end
@@ -813,7 +813,7 @@ function build_pm_opf_model(goc_data)
     end
 
     if length(gen_cost_models) != length(network["gen"])
-        error(LOGGER, "cost model data missing, network has $(length(network["gen"])) generators, the cost model has $(length(gen_cost_models)) generators")
+        error(_LOGGER, "cost model data missing, network has $(length(network["gen"])) generators, the cost model has $(length(gen_cost_models)) generators")
     end
 
     for (gen_id, cost_model) in gen_cost_models
@@ -868,11 +868,11 @@ function build_pm_opf_model(goc_data)
         # test checks if a "switched shunt" in the orginal data model
         if shunt["dispatchable"]
             if shunt["bs"] < shunt["bmin"]
-                warn(LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmin"])")
+                warn(_LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmin"])")
                 shunt["bs"] = shunt["bmin"]
             end
             if shunt["bs"] > shunt["bmax"]
-                warn(LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmax"])")
+                warn(_LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmax"])")
                 shunt["bs"] = shunt["bmax"]
             end
         end
@@ -912,7 +912,7 @@ function check_network_solution(network)
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
             if bus["vm"] > bus["vmax"] || bus["vm"] < bus["vmin"]
-                error(LOGGER, "vm on $(bus["source_id"]) is not in bounds $(bus["vmin"]) to $(bus["vmax"]), given $(bus["vm"])")
+                error(_LOGGER, "vm on $(bus["source_id"]) is not in bounds $(bus["vmin"]) to $(bus["vmax"]), given $(bus["vm"])")
             end
         end
     end
@@ -924,7 +924,7 @@ function check_network_solution(network)
                     @assert shunt["gs"] == 0.0
                     @assert haskey(shunt, "bmin") && haskey(shunt, "bmax")
                     if shunt["bs"] > shunt["bmax"] || shunt["bs"] < shunt["bmin"]
-                        error(LOGGER, "bs on $(shunt["source_id"]) is not in bounds $(shunt["bmin"]) to $(shunt["bmax"]), given $(shunt["bs"])")
+                        error(_LOGGER, "bs on $(shunt["source_id"]) is not in bounds $(shunt["bmin"]) to $(shunt["bmax"]), given $(shunt["bs"])")
                     end
                 end
             end
@@ -934,11 +934,11 @@ function check_network_solution(network)
     for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
             if gen["pg"] > gen["pmax"] || gen["pg"] < gen["pmin"]
-                error(LOGGER, "pg on gen $(gen["source_id"]) not in bounds $(gen["pmin"]) to $(gen["pmax"]), given $(gen["pg"])")
+                error(_LOGGER, "pg on gen $(gen["source_id"]) not in bounds $(gen["pmin"]) to $(gen["pmax"]), given $(gen["pg"])")
             end
 
             if gen["qg"] > gen["qmax"] || gen["qg"] < gen["qmin"]
-                error(LOGGER, "pg on gen $(gen["source_id"]) not in bounds $(gen["qmin"]) to $(gen["qmax"]), given $(gen["qg"])")
+                error(_LOGGER, "pg on gen $(gen["source_id"]) not in bounds $(gen["qmin"]) to $(gen["qmax"]), given $(gen["qg"])")
             end
         end
     end
@@ -953,13 +953,13 @@ function correct_network_solution!(network)
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
             if bus["vm"] > bus["vmax"]
-                warn(LOGGER, "update vm on bus $(i) to be in bounds $(bus["vm"]) -> $(bus["vmax"])")
+                warn(_LOGGER, "update vm on bus $(i) to be in bounds $(bus["vm"]) -> $(bus["vmax"])")
                 push!(vm_changes, bus["vm"] - bus["vmax"])
                 bus["vm"] = bus["vmax"]
             end
 
             if bus["vm"] < bus["vmin"]
-                warn(LOGGER, "update vm on bus $(i) to be in bounds $(bus["vm"]) -> $(bus["vmin"])")
+                warn(_LOGGER, "update vm on bus $(i) to be in bounds $(bus["vm"]) -> $(bus["vmin"])")
                 push!(vm_changes, bus["vmin"] - bus["vm"])
                 bus["vm"] = bus["vmin"]
             end
@@ -976,18 +976,18 @@ function correct_network_solution!(network)
                 @assert shunt["gs"] == 0.0
                 @assert haskey(shunt, "bmin") && haskey(shunt, "bmax")
                 if shunt["bs"] > shunt["bmax"]
-                    warn(LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmax"])")
+                    warn(_LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmax"])")
                     push!(bs_changes, shunt["bs"] - shunt["bmax"])
                     shunt["bs"] = shunt["bmax"]
                 end
                 if shunt["bs"] < shunt["bmin"]
-                    warn(LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmin"])")
+                    warn(_LOGGER, "update bs on shunt $(i) to be in bounds $(shunt["bs"]) -> $(shunt["bmin"])")
                     push!(bs_changes, shunt["bmin"] - shunt["bs"])
                     shunt["bs"] = shunt["bmin"]
                 end
             end
         else
-            warn(LOGGER, "shunt $(i) missing dispatchable parameter")
+            warn(_LOGGER, "shunt $(i) missing dispatchable parameter")
         end
     end
 
@@ -996,23 +996,23 @@ function correct_network_solution!(network)
     for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
             if gen["pg"] > gen["pmax"]
-                warn(LOGGER, "update pg on gen $(i) to be in bounds $(gen["pg"]) -> $(gen["pmax"])")
+                warn(_LOGGER, "update pg on gen $(i) to be in bounds $(gen["pg"]) -> $(gen["pmax"])")
                 push!(pg_changes, gen["pg"] - gen["pmax"])
                 gen["pg"] = gen["pmax"]
             end
             if gen["pg"] < gen["pmin"]
-                warn(LOGGER, "update pg on gen $(i) to be in bounds $(gen["pg"]) -> $(gen["pmin"])")
+                warn(_LOGGER, "update pg on gen $(i) to be in bounds $(gen["pg"]) -> $(gen["pmin"])")
                 push!(pg_changes, gen["pmin"] - gen["pg"])
                 gen["pg"] = gen["pmin"]
             end
 
             if gen["qg"] > gen["qmax"]
-                warn(LOGGER, "update qg on gen $(i) to be in bounds $(gen["qg"]) -> $(gen["qmax"])")
+                warn(_LOGGER, "update qg on gen $(i) to be in bounds $(gen["qg"]) -> $(gen["qmax"])")
                 push!(qg_changes, gen["qg"] - gen["qmax"])
                 gen["qg"] = gen["qmax"]
             end
             if gen["qg"] < gen["qmin"]
-                warn(LOGGER, "update qg on gen $(i) to be in bounds $(gen["qg"]) -> $(gen["qmin"])")
+                warn(_LOGGER, "update qg on gen $(i) to be in bounds $(gen["qg"]) -> $(gen["qmin"])")
                 push!(qg_changes, gen["qmin"] - gen["qg"])
                 gen["qg"] = gen["qmin"]
             end
@@ -1102,16 +1102,16 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
                 if !isapprox(abs(qmin - qmax), 0.0)
                     if qg >= qmax && bus["vm"] - vm_eq_tol/10 > nw_bus["vm"]
                         #println(qmin, " ", qg, " ", qmax)
-                        #warn(LOGGER, "update qg $(qmin) $(qg) $(qmax)")
-                        warn(LOGGER, "update vm on bus $(i) in contingency $(label) to match set-point $(bus["vm"]) -> $(nw_bus["vm"]) due to qg upper bound and vm direction")
+                        #warn(_LOGGER, "update qg $(qmin) $(qg) $(qmax)")
+                        warn(_LOGGER, "update vm on bus $(i) in contingency $(label) to match set-point $(bus["vm"]) -> $(nw_bus["vm"]) due to qg upper bound and vm direction")
                         push!(vm_changes, abs(bus["vm"] - nw_bus["vm"]))
                         bus["vm"] = nw_bus["vm"]
                     end
 
                     if qg <= qmin && bus["vm"] + vm_eq_tol/10 < nw_bus["vm"]
                         #println(qmin, " ", qg, " ", qmax)
-                        #warn(LOGGER, "update qg $(qmin) $(qg) $(qmax)")
-                        warn(LOGGER, "update vm on bus $(i) in contingency $(label) to match set-point $(bus["vm"]) -> $(nw_bus["vm"]) due to qg lower bound and vm direction")
+                        #warn(_LOGGER, "update qg $(qmin) $(qg) $(qmax)")
+                        warn(_LOGGER, "update vm on bus $(i) in contingency $(label) to match set-point $(bus["vm"]) -> $(nw_bus["vm"]) due to qg lower bound and vm direction")
                         push!(vm_changes, abs(bus["vm"] - nw_bus["vm"]))
                         bus["vm"] = nw_bus["vm"]
                     end
@@ -1119,13 +1119,13 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
             end
 
             if bus["vm"] > nw_bus["vmax"]
-                warn(LOGGER, "update vm on bus $(i) in contingency $(label) to match ub $(bus["vm"]) -> $(nw_bus["vmax"]) due to out of bounds")
+                warn(_LOGGER, "update vm on bus $(i) in contingency $(label) to match ub $(bus["vm"]) -> $(nw_bus["vmax"]) due to out of bounds")
                 push!(vm_changes, bus["vm"] - nw_bus["vmax"])
                 bus["vm"] = nw_bus["vmax"]
             end
 
             if bus["vm"] < nw_bus["vmin"]
-                warn(LOGGER, "update vm on bus $(i) in contingency $(label) to match lb $(bus["vm"]) -> $(nw_bus["vmin"]) due to out of bounds")
+                warn(_LOGGER, "update vm on bus $(i) in contingency $(label) to match lb $(bus["vm"]) -> $(nw_bus["vmin"]) due to out of bounds")
                 push!(vm_changes, nw_bus["vmin"] - bus["vm"])
                 bus["vm"] = nw_bus["vmin"]
             end
@@ -1144,12 +1144,12 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
                 @assert nw_shunt["gs"] == 0.0
                 @assert haskey(nw_shunt, "bmin") && haskey(nw_shunt, "bmax")
                 if shunt["bs"] > nw_shunt["bmax"]
-                    warn(LOGGER, "update bs on shunt $(i) in contingency $(label) to be in bounds $(shunt["bs"]) -> $(nw_shunt["bmax"])")
+                    warn(_LOGGER, "update bs on shunt $(i) in contingency $(label) to be in bounds $(shunt["bs"]) -> $(nw_shunt["bmax"])")
                     push!(bs_changes, shunt["bs"] - nw_shunt["bmax"])
                     shunt["bs"] = nw_shunt["bmax"]
                 end
                 if shunt["bs"] < nw_shunt["bmin"]
-                    warn(LOGGER, "update bs on shunt $(i) in contingency $(label) to be in bounds $(shunt["bs"]) -> $(nw_shunt["bmin"])")
+                    warn(_LOGGER, "update bs on shunt $(i) in contingency $(label) to be in bounds $(shunt["bs"]) -> $(nw_shunt["bmin"])")
                     push!(bs_changes, nw_shunt["bmin"] - shunt["bs"])
                     shunt["bs"] = nw_shunt["bmin"]
                 end
@@ -1195,8 +1195,8 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
                 bus = cont_sol["bus"]["$(bus_id)"]
                 #if !isapprox(bus["vm"], nw_bus["vm"])
                 if !isapprox(bus["vm"], nw_bus["vm"], atol=vm_eq_tol/2)
-                    #debug(LOGGER, "bus $(bus_id) : vm_base $(nw_bus["vm"]) - vm $(bus["vm"]) : reactive bounds $(nw_gen["qmin"]) - $(gen["qg"]) - $(nw_gen["qmax"])")
-                    warn(LOGGER, "update vm on bus $(bus_id) in contingency $(label) to match base case $(bus["vm"]) -> $(nw_bus["vm"]) due to within reactive bounds")
+                    #debug(_LOGGER, "bus $(bus_id) : vm_base $(nw_bus["vm"]) - vm $(bus["vm"]) : reactive bounds $(nw_gen["qmin"]) - $(gen["qg"]) - $(nw_gen["qmax"])")
+                    warn(_LOGGER, "update vm on bus $(bus_id) in contingency $(label) to match base case $(bus["vm"]) -> $(nw_bus["vm"]) due to within reactive bounds")
                 end
                 bus["vm"] = nw_bus["vm"]
             end
@@ -1209,29 +1209,29 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
             end
 
             if !isapprox(gen["pg"], pg_calc, atol=1e-5)
-                warn(LOGGER, "pg value on gen $(i) $(nw_gen["source_id"]) in contingency $(label) is not consistent with the computed value given:$(gen["pg"]) calc:$(pg_calc)")
+                warn(_LOGGER, "pg value on gen $(i) $(nw_gen["source_id"]) in contingency $(label) is not consistent with the computed value given:$(gen["pg"]) calc:$(pg_calc)")
             end
 
             if gen["pg"] > nw_gen["pmax"]
-                warn(LOGGER, "update pg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match ub $(gen["pg"]) -> $(nw_gen["pmax"])")
+                warn(_LOGGER, "update pg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match ub $(gen["pg"]) -> $(nw_gen["pmax"])")
                 push!(pg_changes, gen["pg"] - nw_gen["pmax"])
                 gen["pg"] = nw_gen["pmax"]
             end
 
             if gen["pg"] < nw_gen["pmin"]
-                warn(LOGGER, "update pg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match lb $(gen["pg"]) -> $(nw_gen["pmin"])")
+                warn(_LOGGER, "update pg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match lb $(gen["pg"]) -> $(nw_gen["pmin"])")
                 push!(pg_changes, nw_gen["pmin"] - gen["pg"])
                 gen["pg"] = nw_gen["pmin"]
             end
 
             if gen["qg"] > nw_gen["qmax"]
-                warn(LOGGER, "update qg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match ub $(gen["qg"]) -> $(nw_gen["qmax"])")
+                warn(_LOGGER, "update qg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match ub $(gen["qg"]) -> $(nw_gen["qmax"])")
                 push!(qg_changes, gen["qg"] - nw_gen["qmax"])
                 gen["qg"] = nw_gen["qmax"]
             end
 
             if gen["qg"] < nw_gen["qmin"]
-                warn(LOGGER, "update qg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match lb $(gen["qg"]) -> $(nw_gen["qmin"])")
+                warn(_LOGGER, "update qg on gen $(i) $(nw_gen["source_id"]) in contingency $(label) to match lb $(gen["qg"]) -> $(nw_gen["qmin"])")
                 push!(qg_changes, nw_gen["qmin"] - gen["qg"])
                 gen["qg"] = nw_gen["qmin"]
             end
@@ -1285,7 +1285,7 @@ function _summary_changes(network, contingency, vm_changes, bs_changes, pg_chang
         "pg_mean",
         "qg_mean",
     ]
-    info(LOGGER, join(data, ", "))
+    info(_LOGGER, join(data, ", "))
 
     data = [
         "DATA_CHANGES",
@@ -1307,13 +1307,13 @@ function _summary_changes(network, contingency, vm_changes, bs_changes, pg_chang
         mean(pg_changes),
         mean(qg_changes),
     ]
-    info(LOGGER, join(data, ", "))
+    info(_LOGGER, join(data, ", "))
 end
 
 
 
 function write_solution(goc_data, network, contingencies; solution_1="", solution_2="")
-    error(LOGGER, "the write_solution function has been replaced by write_solution1, write_solution2")
+    error(_LOGGER, "the write_solution function has been replaced by write_solution1, write_solution2")
 end
 
 
@@ -1455,10 +1455,10 @@ end
 function remove_files(files)
     for file in files
         if isfile(file)
-            info(LOGGER, "deleting: $(file)")
+            info(_LOGGER, "deleting: $(file)")
             rm(file)
         else
-            info(LOGGER, "skipping file: $(file)")
+            info(_LOGGER, "skipping file: $(file)")
         end
     end
 end
@@ -1472,10 +1472,10 @@ function remove_solution_files(;output_dir="", solution1_file="solution1.txt", s
     end
 
     if isfile(solution1_path)
-        info(LOGGER, "deleting: $(solution1_path)")
+        info(_LOGGER, "deleting: $(solution1_path)")
         rm(solution1_path)
     else
-        info(LOGGER, "skipping file: $(solution1_path)")
+        info(_LOGGER, "skipping file: $(solution1_path)")
     end
 
 
@@ -1486,10 +1486,10 @@ function remove_solution_files(;output_dir="", solution1_file="solution1.txt", s
     end
 
     if isfile(solution2_path)
-        info(LOGGER, "deleting: $(solution2_path)")
+        info(_LOGGER, "deleting: $(solution2_path)")
         rm(solution2_path)
     else
-        info(LOGGER, "skipping file: $(solution2_path)")
+        info(_LOGGER, "skipping file: $(solution2_path)")
     end
 end
 
@@ -1502,10 +1502,10 @@ function remove_detail_file(;output_dir="", detail_file="detail.csv")
     end
 
     if isfile(detail_file_path)
-        info(LOGGER, "deleting: $(detail_file_path)")
+        info(_LOGGER, "deleting: $(detail_file_path)")
         rm(detail_file_path)
     else
-        info(LOGGER, "skipping file: $(detail_file_path)")
+        info(_LOGGER, "skipping file: $(detail_file_path)")
     end
 end
 
@@ -1543,10 +1543,10 @@ function read_solution1(network; output_dir="", state_file="solution1.txt")
 end
 
 function build_pm_solution(network, goc_sol_file::String)
-    info(LOGGER, "loading solution file: $(goc_sol_file)")
+    info(_LOGGER, "loading solution file: $(goc_sol_file)")
     goc_sol = parse_solution1_file(goc_sol_file)
 
-    info(LOGGER, "converting GOC solution to PowerModels solution")
+    info(_LOGGER, "converting GOC solution to PowerModels solution")
     pm_sol = build_pm_solution(network, goc_sol)
 
     return pm_sol

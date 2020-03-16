@@ -5,12 +5,12 @@ being the base case
 """
 function build_scopf_multinetwork(network)
     if InfrastructureModels.ismultinetwork(network)
-        error(LOGGER, "build scopf can only be used on single networks")
+        error(_LOGGER, "build scopf can only be used on single networks")
     end
 
     contingencies = length(network["gen_contingencies"]) + length(network["branch_contingencies"])
 
-    info(LOGGER, "building scopf multi-network with $(contingencies) networks")
+    info(_LOGGER, "building scopf multi-network with $(contingencies) networks")
 
     mn_data = PowerModels.replicate(network, contingencies)
     base_network = mn_data["nw"]["0"] = deepcopy(mn_data["nw"]["1"])
@@ -137,7 +137,7 @@ function activate_rate_a_violations!(network)
         if !haskey(branch, "rate_a")
             if (ac_flows["branch"][i]["pf"]^2 + ac_flows["branch"][i]["qf"]^2 > branch["rate_a_inactive"]^2 ||
                 ac_flows["branch"][i]["pt"]^2 + ac_flows["branch"][i]["qt"]^2 > branch["rate_a_inactive"]^2)
-                info(LOGGER, "add rate_a flow limit on branch $(i) $(branch["source_id"])")
+                info(_LOGGER, "add rate_a flow limit on branch $(i) $(branch["source_id"])")
                 #branch["rate_a"] = branch["rate_a_inactive"] - max(abs(ac_flows["branch"][i]["qf"]), abs(ac_flows["branch"][i]["qt"]))
                 branch["rate_a"] = branch["rate_a_inactive"]
                 push!(network["active_rates"], branch["index"])
@@ -148,7 +148,7 @@ function activate_rate_a_violations!(network)
             sm_to = sqrt(ac_flows["branch"][i]["pf"]^2 + ac_flows["branch"][i]["qf"]^2)
             vio = max(0.0, sm_fr - branch["rate_a"], sm_to - branch["rate_a"])
             if vio > 0.01
-                warn(LOGGER, "add rate_a flow limit violations $(vio) on branch $(i) $(branch["source_id"])")
+                warn(_LOGGER, "add rate_a flow limit violations $(vio) on branch $(i) $(branch["source_id"])")
             end
         end
     end
@@ -171,7 +171,7 @@ function correct_voltage_angles!(network)
     end
 
     if !isapprox(ref_bus["va"], 0.0, atol=1e-8)
-        warn(LOGGER, "shifting voltage angles by $(-ref_bus["va"]) to set reference bus to 0.0")
+        warn(_LOGGER, "shifting voltage angles by $(-ref_bus["va"]) to set reference bus to 0.0")
         shift_voltage_anlges!(network, -ref_bus["va"])
     end
 end
@@ -407,7 +407,7 @@ function compute_violations(network, solution; vm_digits=3)
                 #vio_flag = true
             end
             #if vio_flag
-            #    info(LOGGER, "$(i): $(bus["vmin"]) - $(sol_val) - $(bus["vmax"])")
+            #    info(_LOGGER, "$(i): $(bus["vmin"]) - $(sol_val) - $(bus["vmax"])")
             #end
         end
     end
@@ -466,7 +466,7 @@ function compute_violations(network, solution; vm_digits=3)
                 end
                 =#
                 #if vio_flag
-                #    info(LOGGER, "$(i), $(branch["f_bus"]), $(branch["t_bus"]): $(s_fr) / $(s_to) <= $(branch["rate_c"])")
+                #    info(_LOGGER, "$(i), $(branch["f_bus"]), $(branch["t_bus"]): $(s_fr) / $(s_to) <= $(branch["rate_c"])")
                 #end
             end
         end
@@ -496,7 +496,7 @@ function compute_violations_ratec(network, solution; vm_digits=3)
                 #vio_flag = true
             end
             #if vio_flag
-            #    info(LOGGER, "$(i): $(bus["vmin"]) - $(sol_val) - $(bus["vmax"])")
+            #    info(_LOGGER, "$(i): $(bus["vmin"]) - $(sol_val) - $(bus["vmax"])")
             #end
         end
     end
@@ -544,7 +544,7 @@ function compute_violations_ratec(network, solution; vm_digits=3)
                     #vio_flag = true
                 end
                 #if vio_flag
-                #    info(LOGGER, "$(i), $(branch["f_bus"]), $(branch["t_bus"]): $(s_fr) / $(s_to) <= $(branch["rate_c"])")
+                #    info(_LOGGER, "$(i), $(branch["f_bus"]), $(branch["t_bus"]): $(s_fr) / $(s_to) <= $(branch["rate_c"])")
                 #end
             end
         end

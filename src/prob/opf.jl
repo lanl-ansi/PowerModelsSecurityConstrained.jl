@@ -144,7 +144,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     for i in ids(pm, :ref_buses)
         PowerModels.constraint_theta_ref(pm, i)
     end
-    #Memento.info(LOGGER, "misc constraints time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
 
     start_time = time()
@@ -171,14 +171,14 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
             JuMP.@constraint(pm.model, p_to^2 + q_to^2 <= (rating + sm_slack)^2)
         end
     end
-    #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
         constraint_gen_active_deviation(pm, i)
     end
-    #Memento.info(LOGGER, "gen expr time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
 
     p = var(pm, :p)
@@ -204,7 +204,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
         @constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vvm[i])
         @constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vvm[i] + sum(bs[s]*vvm[i] for s in bus_shunts_var))
     end
-    #Memento.info(LOGGER, "power balance constraint time: $(time() - start_time)")
+    #Memento.info(_LOGGER, "power balance constraint time: $(time() - start_time)")
 
     vvm_delta = var(pm, :vvm_delta)
     sm_slack = var(pm, :sm_slack)

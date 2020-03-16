@@ -13,11 +13,16 @@ using PowerModels
 using InfrastructureModels
 
 
-const LOGGER = Memento.getlogger(@__MODULE__)
+const _LOGGER = Memento.getlogger(@__MODULE__)
 
-# Register the module level logger at runtime so that folks can access the logger via `getlogger(PowerModels)`
-# NOTE: If this line is not included then the precompiled `PowerModels._LOGGER` won't be registered at runtime.
-__init__() = Memento.register(LOGGER)
+# Register the module level _LOGGER at runtime so that folks can access the
+# _LOGGER via `get_LOGGER(PowerModelsSecurityConstrained)`
+# NOTE: If this line is not included then the precompiled
+# `PowerModelsSecurityConstrained.__LOGGER` won't be registered at runtime.
+function __init__()
+   #_LOGGER.name = "PMSC" # take note of discussion in issue #17
+   Memento.register(_LOGGER)
+end
 
 
 const vm_eq_tol = 1e-4
@@ -28,7 +33,7 @@ const pg_loss_tol = 1e-6
 
 "Suppresses information and warning messages output by PMSC, for fine grained control use the Memento package"
 function silence()
-    Memento.info(LOGGER, "Suppressing information and warning messages for the rest of this session.  Use the Memento package for more fine-grained control of logging.")
+    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.  Use the Memento package for more fine-grained control of logging.")
     Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
     Memento.setlevel!(Memento.getlogger(PowerModels), "error")
     Memento.setlevel!(Memento.getlogger(PowerModelsSecurityConstrained), "error")
