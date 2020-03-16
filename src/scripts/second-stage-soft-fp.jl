@@ -207,7 +207,7 @@ end
             network_tmp["response_gens"] = network_tmp["area_gens"][gen_bus["area"]]
 
             time_start = time()
-            result = run_fixpoint_pf_soft!(network_tmp, pg_lost, nlp_solver, iteration_limit=10)
+            result = run_fixpoint_pf_bqv!(network_tmp, pg_lost, nlp_solver, iteration_limit=10)
             debug(LOGGER, "second-stage contingency solve time: $(time() - time_start)")
 
             cont_sol = result["solution"]
@@ -250,7 +250,7 @@ end
             end
 
             time_start = time()
-            result = run_fixpoint_pf_soft!(network_tmp, 0.0, nlp_solver, iteration_limit=10)
+            result = run_fixpoint_pf_bqv!(network_tmp, 0.0, nlp_solver, iteration_limit=10)
             debug(LOGGER, "second-stage contingency solve time: $(time() - time_start)")
 
             cont_sol = result["solution"]

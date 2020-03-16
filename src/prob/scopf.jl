@@ -118,12 +118,12 @@ end
 
 
 "a variant of `run_scopf_cuts_dc_soft` with a different generator response function"
-function run_scopf_cuts_soft_2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_cuts_soft_2; kwargs...)
+function run_scopf_cuts_soft_bpv(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; kwargs...)
 end
 
 ""
-function build_scopf_cuts_soft_2(pm::AbstractPowerModel)
+function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)

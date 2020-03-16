@@ -389,7 +389,7 @@ function check_contingencies_branch_flow_remote_nd_first_lazy(cont_range, output
     network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
     network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
 
-    cuts = check_contingencies_branch_flow_ratec_nd_first_lazy(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
+    cuts = check_contingencies_branch_power_bpv(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
 
     return cuts
 end
@@ -401,7 +401,7 @@ participation factor based generator response model from the ARPA-e GOC
 Challenge 1 specification and instead injects active power equally at all buses
 in the network.
 """
-function check_contingencies_branch_flow_ratec_nd_first_lazy(network;
+function check_contingencies_branch_power_bpv(network;
         gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
         gen_flow_cuts=[], branch_flow_cuts=[]
@@ -668,7 +668,7 @@ function check_contingencies_branch_flow_remote(cont_range, output_dir, cut_limi
     network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
     network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
 
-    cuts = check_contingencies_branch_flow_ratec(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
+    cuts = check_contingencies_branch_power(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
 
     return cuts
 end
@@ -682,7 +682,7 @@ If a violation is found, computes a PTDF cut based on bus injections.  Uses the
 participation factor based generator response model from the ARPA-e GOC
 Challenge 1 specification.
 """
-function check_contingencies_branch_flow_ratec(network;
+function check_contingencies_branch_power(network;
         gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
         gen_flow_cuts=[], branch_flow_cuts=[]

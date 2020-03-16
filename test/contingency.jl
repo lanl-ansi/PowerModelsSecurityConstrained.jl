@@ -69,7 +69,7 @@ cuts_ratec_nd_first_lazy_branch = [0, 1]
     @test isapprox(result["termination_status"], OPTIMAL)
     update_active_power_data!(network, result["solution"])
 
-    cuts = check_contingencies_branch_flow_ratec_nd_first_lazy(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
+    cuts = check_contingencies_branch_power_bpv(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
 
     @test isapprox(length(cuts.gen_cuts), cuts_ratec_nd_first_lazy_gen[i])
     @test isapprox(length(cuts.branch_cuts), cuts_ratec_nd_first_lazy_branch[i])
@@ -87,7 +87,7 @@ cuts_ratec_branch = [0, 10]
     @test isapprox(result["termination_status"], OPTIMAL)
     update_active_power_data!(network, result["solution"])
 
-    cuts = check_contingencies_branch_flow_ratec(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
+    cuts = check_contingencies_branch_power(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
 
     @test isapprox(length(cuts.gen_cuts), cuts_ratec_gen[i])
     @test isapprox(length(cuts.branch_cuts), cuts_ratec_branch[i])
