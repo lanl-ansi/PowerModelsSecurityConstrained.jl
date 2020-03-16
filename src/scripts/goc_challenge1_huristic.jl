@@ -127,11 +127,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     line_flow_vio = true
     while line_flow_vio
 
-        result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver, solution_processors=[sol_data_model!])
+        result = run_opf_pg_pf_rect_5(network, nlp_solver, solution_processors=[sol_data_model!])
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
             warn(LOGGER, "base case AC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
             break
-            # result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed, solution_processors=[sol_data_model!])
+            # result = run_opf_pg_pf_rect_5(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
             # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
             #     break
@@ -346,12 +346,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
         line_flow_vio = true
         while line_flow_vio
-            result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver, solution_processors=[sol_data_model!])
+            result = run_opf_pg_pf_rect_5(network, nlp_solver, solution_processors=[sol_data_model!])
 
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
                 warn(LOGGER, "base case AC polish solve failed with status $(result["termination_status"])")
                 break
-                # result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed, solution_processors=[sol_data_model!])
+                # result = run_opf_pg_pf_rect_5(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
                 # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
                 #     break

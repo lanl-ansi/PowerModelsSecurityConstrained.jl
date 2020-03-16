@@ -6,6 +6,7 @@ PowerModelsSecurityConstrained.jl Change Log
 - Improved power balance constraint resilience
 - Reorganize code to standard PowerModels locations
 - Removed duplicate `objective_variable_pg_cost` implementation
+- Remove PowerModel parameters from fixed-formulation models
 - Generalized dc-only OPF and SCOPF formulations
 - Improved generality of contingency problem definitions
 - Updated `bsh` variable name to `bs`

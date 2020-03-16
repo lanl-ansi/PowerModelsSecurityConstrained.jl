@@ -102,7 +102,7 @@ opf_pg_pf_rect_objective = [122981.99, 9.480588301784407e6]
     deactivate_rate_a!(network)
     activate_rate_a_violations!(network)
 
-    result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+    result = run_opf_pg_pf_rect_5(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_pg_pf_rect_objective[i]; atol = 1e0)
@@ -114,7 +114,7 @@ end
     deactivate_rate_a!(network)
     activate_rate_a_violations!(network)
 
-    result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+    result = run_opf_pg_pf_rect_5(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_INFEASIBLE)
 end

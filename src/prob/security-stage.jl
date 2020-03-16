@@ -178,7 +178,7 @@ Instead conducting PV/PQ bus switching address disjunctive constraints.
 The solver simply adds extra reactive capability on buses where the voltage
 bounds cannot be enforced.
 """
-function run_fixpoint_pf_soft!(network, pg_lost, model_constructor, solver; iteration_limit=typemax(Int64))
+function run_fixpoint_pf_soft!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
 
     #delta = apply_pg_response!(network, pg_lost)
@@ -207,7 +207,7 @@ function run_fixpoint_pf_soft!(network, pg_lost, model_constructor, solver; iter
         info(LOGGER, "pf soft fixpoint iteration: $iteration")
 
         time_start = time()
-        result = run_pf_soft_rect(network, model_constructor, solver, solution_processors=[sol_data_model!])
+        result = run_pf_soft_rect(network, solver, solution_processors=[sol_data_model!])
         info(LOGGER, "solve pf time: $(time() - time_start)")
 
         if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
@@ -271,8 +271,8 @@ end
 
 
 ""
-function run_pf_soft_rect(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_pf_soft_rect; ref_extensions=[ref_add_goc!], kwargs...)
+function run_pf_soft_rect(file, solver; kwargs...)
+    return run_model(file, ACRPowerModel, solver, build_pf_soft_rect; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -313,8 +313,6 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
         expression_branch_power_yt_from_goc(pm, i)
         expression_branch_power_yt_to(pm, i)
     end
-    p = var(pm, :p)
-    q = var(pm, :q)
     #Memento.info(LOGGER, "flow expr time: $(time() - start_time)")
 
 
@@ -331,6 +329,8 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
 
 
     start_time = time()
+    p = var(pm, :p)
+    q = var(pm, :q)
     for (i,bus) in ref(pm, :bus)
         #PowerModels.constraint_power_balance(pm, i)
 
@@ -344,11 +344,6 @@ function build_pf_soft_rect(pm::AbstractPowerModel)
 
         bus_gs = Dict(k => ref(pm, :shunt, k, "gs") for k in bus_shunts)
         bus_bs = Dict(k => ref(pm, :shunt, k, "bs") for k in bus_shunts)
-
-        #p = var(pm, :p)
-        #q = var(pm, :q)
-        #pg = var(pm, :pg)
-        #qg = var(pm, :qg)
 
         @constraint(pm.model, p_slack + sum(p[a] for a in bus_arcs) == sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs))*(vr[i]^2 + vi[i]^2))
         @constraint(pm.model,           sum(q[a] for a in bus_arcs) == sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs))*(vr[i]^2 + vi[i]^2))
@@ -367,7 +362,7 @@ A power flow solver conforming to the ARPA-e GOC Challenge 1 second-stage
 specification.  The solver conducts multiple rounds of PV/PQ bus switching
 to heuristically enforce the disjunctive constraints.
 """
-function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iteration_limit=typemax(Int64))
+function run_fixpoint_pf_v2_3!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
 
     network_backup = deepcopy(network)
@@ -425,11 +420,11 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
 
     cont_pf_failed = false
     time_start = time()
-    #result = run_fixed_pf_nbf_rect(network, model_constructor, solver)
+    #result = run_fixed_pf_nbf_rect(network, solver)
     if !pf_fixed_all
-        result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
+        result = run_fixed_pf_nbf_rect2(network, solver, solution_processors=[sol_data_model!])
     else
-        result = run_fixed_pf_nbf_rect2_ds(network, model_constructor, solver, solution_processors=[sol_data_model!])
+        result = run_fixed_pf_nbf_rect2_ds(network, solver, solution_processors=[sol_data_model!])
     end
     debug(LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
@@ -576,12 +571,12 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
 
             pf_fixed_all = all(gen["pg_fixed"] for gen in active_response_gens)
 
-            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver, solution_processors=[sol_data_model!])
-            #result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
+            #result = run_fixed_pf_nbf_rect(network, solver, solution_processors=[sol_data_model!])
+            #result = run_fixed_pf_nbf_rect2(network, solver, solution_processors=[sol_data_model!])
             if !pf_fixed_all
-                result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
+                result = run_fixed_pf_nbf_rect2(network, solver, solution_processors=[sol_data_model!])
             else
-                result = run_fixed_pf_nbf_rect2_ds(network, model_constructor, solver, solution_processors=[sol_data_model!])
+                result = run_fixed_pf_nbf_rect2_ds(network, solver, solution_processors=[sol_data_model!])
             end
             debug(LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
@@ -629,7 +624,7 @@ function run_fixpoint_pf_v2_3!(network, pg_lost, model_constructor, solver; iter
 
     if vm_bound_vio || qg_bound_vio
         warn(LOGGER, "$(network["cont_label"]) running voltage profile correction")
-        result = run_fixpoint_pf_v5!(network_backup, pg_lost, model_constructor, solver, iteration_limit=iteration_limit)
+        result = run_fixpoint_pf_v5!(network_backup, pg_lost, solver, iteration_limit=iteration_limit)
         if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
             PowerModels.update_data!(network, result["solution"])
             final_result = result
@@ -645,8 +640,8 @@ end
 
 
 ""
-function run_fixed_pf_nbf_rect2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2; ref_extensions=[ref_add_goc!], kwargs...)
+function run_fixed_pf_nbf_rect2(file, solver; kwargs...)
+    return run_model(file, ACRPowerModel, solver, build_fixed_pf_nbf_rect2; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -730,8 +725,8 @@ end
 
 
 "a variant of fixed_pf_nbf_rect2 with a distributed active power slack"
-function run_fixed_pf_nbf_rect2_ds(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_fixed_pf_nbf_rect2_ds; ref_extensions=[ref_add_goc!], kwargs...)
+function run_fixed_pf_nbf_rect2_ds(file, solver; kwargs...)
+    return run_model(file, ACRPowerModel, solver, build_fixed_pf_nbf_rect2_ds; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -844,7 +839,7 @@ end
 
 
 
-function run_fixpoint_pf_v5!(network, pg_lost, model_constructor, solver; iteration_limit=typemax(Int64))
+function run_fixpoint_pf_v5!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
 
     delta = apply_pg_response!(network, pg_lost)
@@ -884,7 +879,7 @@ function run_fixpoint_pf_v5!(network, pg_lost, model_constructor, solver; iterat
 
 
     time_start = time()
-    result = run_contingency_opf4(network, ACPPowerModel, solver, solution_processors=[sol_data_model!])
+    result = run_contingency_opf4_polar(network, solver, solution_processors=[sol_data_model!])
     debug(LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
         warn(LOGGER, "$(network["cont_label"]) voltage profile correction objective: $(result["objective"])")
@@ -1007,8 +1002,8 @@ function run_fixpoint_pf_v5!(network, pg_lost, model_constructor, solver; iterat
         if pg_switched || qg_switched || vm_switched
             debug(LOGGER, "bus or gen swtiched: $iteration")
             time_start = time()
-            #result = run_fixed_pf_nbf_rect(network, model_constructor, solver, solution_processors=[sol_data_model!])
-            result = run_fixed_pf_nbf_rect2(network, model_constructor, solver, solution_processors=[sol_data_model!])
+            #result = run_fixed_pf_nbf_rect(network, solver, solution_processors=[sol_data_model!])
+            result = run_fixed_pf_nbf_rect2(network, solver, solution_processors=[sol_data_model!])
             debug(LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
                 correct_qg!(network, result["solution"], bus_gens=bus_gens)
@@ -1041,8 +1036,8 @@ end
 # this approach has a minor ipopt runtime performance hit, but extracting branch flow values is much faster
 
 "attempts to correct voltage profile only"
-function run_contingency_opf4(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_contingency_opf4; ref_extensions=[ref_add_goc!], kwargs...)
+function run_contingency_opf4_polar(file, solver; kwargs...)
+    return run_model(file, ACPPowerModel, solver, build_contingency_opf4; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""

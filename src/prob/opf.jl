@@ -99,8 +99,8 @@ AC Power Flow models in rectangular coordinates for faster derivative
 computations.  Support sparse collections of flow constrains for
 increased performance.
 """
-function run_opf_pg_pf_rect_5(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_opf_pg_pf_rect_5; ref_extensions=[ref_add_goc!], kwargs...)
+function run_opf_pg_pf_rect_5(file, solver; kwargs...)
+    return run_model(file, ACRPowerModel, solver, build_opf_pg_pf_rect_5; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
