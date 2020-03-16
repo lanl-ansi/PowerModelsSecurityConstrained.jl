@@ -20,8 +20,8 @@ const _LOGGER = Memento.getlogger(@__MODULE__)
 # NOTE: If this line is not included then the precompiled
 # `PowerModelsSecurityConstrained.__LOGGER` won't be registered at runtime.
 function __init__()
-   #_LOGGER.name = "PMSC" # take note of discussion in issue #17
    Memento.register(_LOGGER)
+   _LOGGER.name = "PMSC" # note must come after register, see discussion in issue #17
 end
 
 
