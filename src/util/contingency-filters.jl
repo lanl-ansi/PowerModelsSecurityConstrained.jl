@@ -363,7 +363,7 @@ end
 
 
 ""
-function check_contingencies_branch_flow_remote_nd_first_lazy(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+function check_contingencies_branch_power_bpv_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
     if length(network_global) <= 0 || length(contingency_order_global) <= 0
         error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
@@ -642,7 +642,7 @@ end
 
 
 ""
-function check_contingencies_branch_flow_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+function check_contingencies_branch_power_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
     if length(network_global) <= 0 || length(contingency_order_global) <= 0
         error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
