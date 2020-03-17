@@ -264,10 +264,8 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             info(LOGGER, "cut enumeration iteration: $(iteration)")
 
             write_active_flow_cuts(network_apo, output_dir=output_dir)
-            #cuts = pmap(check_contingencies_branch_flow_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
-            #cuts = pmap(check_contingencies_branch_flow_remote_nd, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
-            #cuts = pmap(check_contingencies_branch_flow_remote_nd_first, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
-            cuts = pmap(check_contingencies_branch_flow_remote_nd_first_lazy, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
+            #cuts = pmap(check_contingencies_branch_power_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
+            cuts = pmap(check_contingencies_branch_power_bpv_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
             time_filter += time() - time_filter_start
 
             cuts_found = sum(length(c.gen_cuts)+length(c.branch_cuts) for c in cuts)
@@ -297,7 +295,6 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
             time_solve_start = time()
             #result = run_scopf_cuts_soft(network_apo, DCPPowerModel, qp_solver)
-
             result = run_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver)
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")

@@ -2,18 +2,19 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- nothing
+
+### v0.4.0
 - Added `expression_branch_power_yt_from/to` for common branch flow expressions
+- Improved generality of contingency problem definitions
 - Improved power balance constraint resilience
+- Generalized dc-only OPF and SCOPF formulations
+- Updated `bsh` variable name to `bs`
+- Updated scope of data processing functions
 - Reorganize code to standard PowerModels locations
 - Removed duplicate `objective_variable_pg_cost` implementation
 - Remove PowerModel parameters from fixed-formulation models
-- Generalized dc-only OPF and SCOPF formulations
-- Improved generality of contingency problem definitions
-- Updated `bsh` variable name to `bs`
-- Updated scope of data processing functions
-
-### Staged
-- nothing
+- Renamed problem functions to have less cryptic names
 
 ### v0.3.2
 - Add variant of the `build_scopf_dc_cuts_soft` formulation
