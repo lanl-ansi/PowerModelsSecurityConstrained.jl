@@ -5,6 +5,7 @@ PowerModelsSecurityConstrained.jl Change Log
 - nothing
 
 ### v0.4.0
+- Added support for Memento v0.13, v1.0
 - Added `expression_branch_power_yt_from/to` for common branch flow expressions (#2)
 - Improved generality of contingency problem definitions (#2)
 - Improved power balance constraint resilience
