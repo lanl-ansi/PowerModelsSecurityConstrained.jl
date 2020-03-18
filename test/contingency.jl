@@ -34,7 +34,7 @@
         pg_missing = cont_gen["pg"]
 
         #println("")
-        #info(LOGGER, "generation removed: $(pg_missing)")
+        #println("generation removed: $(pg_missing)")
 
         apply_pg_response!(network_cont, area_gens, pg_missing)
 
@@ -47,8 +47,8 @@
 
         pg_comp = comp_pg_response_total(network_cont, area_gens)
 
-        #info(LOGGER, "delta $delta")
-        #info(LOGGER, "gen $(pg_target) / $(pg_total) / $(pg_comp)")
+        #println("delta $delta")
+        #println("gen $(pg_target) / $(pg_total) / $(pg_comp)")
 
         @test isapprox(pg_target, pg_total)
         @test isapprox(pg_total, pg_comp)
@@ -65,11 +65,11 @@ cuts_ratec_nd_first_lazy_branch = [0, 1]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
     update_active_power_data!(network, result["solution"])
 
-    cuts = check_contingencies_branch_flow_ratec_nd_first_lazy(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
+    cuts = check_contingencies_branch_power_bpv(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
 
     @test isapprox(length(cuts.gen_cuts), cuts_ratec_nd_first_lazy_gen[i])
     @test isapprox(length(cuts.branch_cuts), cuts_ratec_nd_first_lazy_branch[i])
@@ -83,11 +83,11 @@ cuts_ratec_branch = [0, 10]
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
     update_active_power_data!(network, result["solution"])
 
-    cuts = check_contingencies_branch_flow_ratec(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
+    cuts = check_contingencies_branch_power(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
 
     @test isapprox(length(cuts.gen_cuts), cuts_ratec_gen[i])
     @test isapprox(length(cuts.branch_cuts), cuts_ratec_branch[i])

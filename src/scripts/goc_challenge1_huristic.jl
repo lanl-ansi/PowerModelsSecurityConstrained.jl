@@ -4,6 +4,8 @@
 
 include("distributed.jl")
 
+include("common.jl")
+
 #include("second-stage-fp.jl")
 include("second-stage-soft-fp.jl")
 
@@ -64,11 +66,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     network_apo = deepcopy(network)
 
-    result = run_opf_cheap_dc(network_apo, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network_apo, DCPPowerModel, lp_solver)
     if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
         warn(LOGGER, "base case DC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
 
-        result = run_opf_cheap_dc(network_apo, DCPPowerModel, qp_solver_relaxed)
+        result = run_opf_cheap(network_apo, DCPPowerModel, qp_solver_relaxed)
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             warn(LOGGER, "relaxed base case DC-OPF solve failed with status $(result["termination_status"])")
             result = Dict(
@@ -125,11 +127,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     line_flow_vio = true
     while line_flow_vio
 
-        result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver, solution_processors=[sol_data_model!])
+        result = run_opf_cheap_lazy_acr(network, nlp_solver, solution_processors=[sol_data_model!])
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
             warn(LOGGER, "base case AC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
             break
-            # result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed, solution_processors=[sol_data_model!])
+            # result = run_opf_cheap_lazy_acr(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
             # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
             #     break
@@ -262,10 +264,8 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             info(LOGGER, "cut enumeration iteration: $(iteration)")
 
             write_active_flow_cuts(network_apo, output_dir=output_dir)
-            #cuts = pmap(check_contingencies_branch_flow_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
-            #cuts = pmap(check_contingencies_branch_flow_remote_nd, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
-            #cuts = pmap(check_contingencies_branch_flow_remote_nd_first, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
-            cuts = pmap(check_contingencies_branch_flow_remote_nd_first_lazy, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
+            #cuts = pmap(check_contingencies_branch_power_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
+            cuts = pmap(check_contingencies_branch_power_bpv_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
             time_filter += time() - time_filter_start
 
             cuts_found = sum(length(c.gen_cuts)+length(c.branch_cuts) for c in cuts)
@@ -294,13 +294,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             #end
 
             time_solve_start = time()
-            #result = run_scopf_cuts_dc_soft(network_apo, DCPPowerModel, qp_solver)
-
-            result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver)
+            #result = run_scopf_cuts_soft(network_apo, DCPPowerModel, qp_solver)
+            result = run_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver)
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")
 
-                result = run_scopf_cuts_dc_soft_2(network_apo, DCPPowerModel, qp_solver_relaxed)
+                result = run_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver_relaxed)
                 if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                     warn(LOGGER, "relaxed scopf solve failed with status $(result["termination_status"])")
                     break
@@ -344,12 +343,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
         line_flow_vio = true
         while line_flow_vio
-            result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver, solution_processors=[sol_data_model!])
+            result = run_opf_cheap_lazy_acr(network, nlp_solver, solution_processors=[sol_data_model!])
 
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
                 warn(LOGGER, "base case AC polish solve failed with status $(result["termination_status"])")
                 break
-                # result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver_relaxed, solution_processors=[sol_data_model!])
+                # result = run_opf_cheap_lazy_acr(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
                 # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
                 #     break

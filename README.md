@@ -8,6 +8,11 @@ Dev:
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://lanl-ansi.github.io/PowerModelsSecurityConstrained.jl/dev/)
 
 
+## Notes
+
+* This code does not currently support the following PowerModels components `storage`,`dcline`,`switch`.
+
+
 ## License
 
 This software is provided under a BSD license as part of the Grid Optimization

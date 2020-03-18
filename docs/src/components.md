@@ -22,8 +22,7 @@ are used as sub-processes in building contingency constrained solutions.
 ```@docs
 run_opf_shunt
 run_opf_cheap
-run_opf_cheap_dc
-run_opf_pg_pf_rect_5
+run_opf_cheap_lazy_acr
 ```
 
 ## Contingency Filters
@@ -31,8 +30,8 @@ run_opf_pg_pf_rect_5
 These are tools for checking for constraint violations in contingencies
 
 ```@docs
-check_contingencies_branch_flow_ratec
-check_contingencies_branch_flow_ratec_nd_first_lazy
+check_contingencies_branch_power
+check_contingencies_branch_power_bpv
 ```
 
 ## SCOPF Formulations
@@ -40,8 +39,8 @@ check_contingencies_branch_flow_ratec_nd_first_lazy
 These are contingency constrained OPF formulations.
 
 ```@docs
-run_scopf_cuts_dc_soft
-run_scopf_cuts_dc_soft_2
+run_scopf_cuts_soft
+run_scopf_cuts_soft_bpv
 ```
 
 ## Second-Stage Solvers
@@ -51,6 +50,6 @@ These solvers are usually more detailed on than the models used in the
 contingency filters.
 
 ```@docs
-run_fixpoint_pf_v2_3!
-run_fixpoint_pf_soft!
+run_fixpoint_pf_pvpq!
+run_fixpoint_pf_bqv!
 ```

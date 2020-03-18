@@ -10,34 +10,25 @@ approximation of the formulation's specification.
 This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
-function run_scopf_cuts_dc_soft(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft; kwargs...)
+function run_scopf_cuts_soft(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_cuts_soft; kwargs...)
 end
 
 ""
-function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
+function build_scopf_cuts_soft(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
-    PowerModels.variable_dcline_flow(pm)
 
-    branch_cut_vio = var(pm, 0)[:branch_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["branch_flow_cuts"])], base_name="branch_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
+    variable_branch_contigency_flow_violation(pm)
+    variable_gen_contigency_flow_violation(pm)
+    variable_gen_contigency_capacity_violation(pm)
 
-    gen_cut_vio = var(pm, 0)[:gen_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["gen_flow_cuts"])], base_name="gen_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
+    for i in ids(pm, :bus)
+        expression_bus_generation(pm, i)
+        expression_bus_withdrawal(pm, i)
+    end
 
-    gen_cap_vio = var(pm, 0)[:gen_cap_vio] = @variable(pm.model,
-        [i in 1:length(ref(pm, :gen_contingencies))], base_name="gen_cap_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
 
     PowerModels.constraint_model_voltage(pm)
 
@@ -59,39 +50,15 @@ function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
         PowerModels.constraint_thermal_limit_to(pm, i)
     end
 
-    #for i in ids(pm, :dcline, nw=0)
-    #    PowerModels.constraint_dcline(pm, i, nw=0)
-    #end
 
-    bus_injection = Dict{Int,Any}()
-    bus_withdrawal = Dict{Int,Any}()
-    for (i, bus) in ref(pm, :bus)
-        inj = 0.0
-        for g in ref(pm, :bus_gens, i)
-            inj += var(pm, :pg, g)
-        end
-        bus_injection[i] = inj
-
-        wd = 0.0
-        for l in ref(pm, :bus_loads, i)
-            wd += ref(pm, :load, l, "pd")
-        end
-        for s in ref(pm, :bus_shunts, i)
-            wd += ref(pm, :shunt, s, "gs")
-        end
-        bus_withdrawal[i] = wd
+    for (i,cut) in enumerate(ref(pm, :branch_flow_cuts))
+        constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm, i)
+        constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm, i)
     end
 
-    for (i,cut) in enumerate(pm.data["branch_flow_cuts"])
-        branch = ref(pm, :branch, cut.branch_id)
+    bus_withdrawal = var(pm, :bus_wdp)
 
-        #rate = branch["rate_a"]
-        rate = branch["rate_c"]
-        @constraint(pm.model,  sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + branch_cut_vio[i])
-        @constraint(pm.model, -sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + branch_cut_vio[i])
-    end
-
-    for (i,cut) in enumerate(pm.data["gen_flow_cuts"])
+    for (i,cut) in enumerate(ref(pm, :gen_flow_cuts))
         branch = ref(pm, :branch, cut.branch_id)
         gen = ref(pm, :gen, cut.gen_id)
         gen_bus = ref(pm, :bus, gen["gen_bus"])
@@ -115,8 +82,8 @@ function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
 
         #rate = branch["rate_a"]
         rate = branch["rate_c"]
-        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
-        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
     end
 
     for (i,gen_cont) in enumerate(ref(pm, :gen_contingencies))
@@ -128,7 +95,7 @@ function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
 
         # factor of 1.2 accounts for losses in a DC model
         #@constraint(pm.model, sum(gen["pmax"] - var(pm, :pg, g) for (g,gen) in response_gens) >= 1.2*var(pm, :pg, gen_cont.idx))
-        @constraint(pm.model, gen_cap_vio[i] + sum(gen["pmax"] - var(pm, :pg, g) for (g,gen) in response_gens) >= var(pm, :pg, gen_cont.idx))
+        @constraint(pm.model, var(pm, :gen_cont_cap_vio, i) + sum(gen["pmax"] - var(pm, :pg, g) for (g,gen) in response_gens) >= var(pm, :pg, gen_cont.idx))
         #@constraint(pm.model, sum(gen["pmin"] - var(pm, :pg, g) for (g,gen) in response_gens) <= var(pm, :pg, gen_cont.idx))
     end
 
@@ -136,40 +103,39 @@ function build_scopf_dc_cuts_soft(pm::AbstractPowerModel)
     objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, pm.cnw, :pg_cost)
+    branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
+    gen_cont_flow_vio = var(pm, pm.cnw, :gen_cont_flow_vio)
+    gen_cont_cap_vio = var(pm, pm.cnw, :gen_cont_cap_vio)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
-        sum( 5e5*branch_cut_vio[i] for i in 1:length(pm.data["branch_flow_cuts"]) ) +
-        sum( 5e5*gen_cut_vio[i] for i in 1:length(pm.data["gen_flow_cuts"]) ) + 
-        sum( 5e5*gen_cap_vio[i] for i in 1:length(ref(pm, :gen_contingencies)) )
+        sum( 5e5*branch_cont_flow_vio[i] for i in 1:length(ref(pm, :branch_flow_cuts)) ) +
+        sum( 5e5*gen_cont_flow_vio[i] for i in 1:length(ref(pm, :gen_flow_cuts)) ) + 
+        sum( 5e5*gen_cont_cap_vio[i] for i in 1:length(ref(pm, :gen_contingencies)) )
     )
 end
 
 
 
 "a variant of `run_scopf_cuts_dc_soft` with a different generator response function"
-function run_scopf_cuts_dc_soft_2(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_dc_cuts_soft_2; kwargs...)
+function run_scopf_cuts_soft_bpv(file, model_constructor, solver; kwargs...)
+    return run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; kwargs...)
 end
 
 ""
-function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
+function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
     PowerModels.variable_voltage(pm)
     PowerModels.variable_generation(pm)
     PowerModels.variable_branch_flow(pm)
-    PowerModels.variable_dcline_flow(pm)
 
-    branch_cut_vio = var(pm, 0)[:branch_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["branch_flow_cuts"])], base_name="branch_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
+    variable_branch_contigency_flow_violation(pm)
+    variable_gen_contigency_flow_violation(pm)
 
-    gen_cut_vio = var(pm, 0)[:gen_cut_vio] = @variable(pm.model,
-        [i in 1:length(pm.data["gen_flow_cuts"])], base_name="gen_cut_vio",
-        lower_bound = 0.0,
-        start = 0.0
-    )
+    for i in ids(pm, :bus)
+        expression_bus_generation(pm, i)
+        expression_bus_withdrawal(pm, i)
+    end
+
 
     PowerModels.constraint_model_voltage(pm)
 
@@ -191,41 +157,15 @@ function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
         PowerModels.constraint_thermal_limit_to(pm, i)
     end
 
-    #for i in ids(pm, :dcline, nw=0)
-    #    PowerModels.constraint_dcline(pm, i, nw=0)
-    #end
-
-    bus_injection = Dict{Int,Any}()
-    bus_withdrawal = Dict{Int,Any}()
-    for (i, bus) in ref(pm, :bus)
-        inj = 0.0
-        for g in ref(pm, :bus_gens, i)
-            inj += var(pm, :pg, g)
-        end
-        bus_injection[i] = inj
-
-        wd = 0.0
-        for l in ref(pm, :bus_loads, i)
-            wd += ref(pm, :load, l, "pd")
-        end
-        for s in ref(pm, :bus_shunts, i)
-            wd += ref(pm, :shunt, s, "gs")
-        end
-        bus_withdrawal[i] = wd
+    for (i,cut) in enumerate(ref(pm, :branch_flow_cuts))
+        constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm, i)
+        constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm, i)
     end
 
-    for (i,cut) in enumerate(pm.data["branch_flow_cuts"])
-        branch = ref(pm, :branch, cut.branch_id)
 
-        #rate = branch["rate_a"]
-        rate = branch["rate_c"]
-        @constraint(pm.model,  sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + branch_cut_vio[i])
-        @constraint(pm.model, -sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + branch_cut_vio[i])
-        #@constraint(pm.model,  sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
-        #@constraint(pm.model, -sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
-    end
+    bus_withdrawal = var(pm, :bus_wdp)
 
-    for (i,cut) in enumerate(pm.data["gen_flow_cuts"])
+    for (i,cut) in enumerate(ref(pm, :gen_flow_cuts))
         branch = ref(pm, :branch, cut.branch_id)
 
         bus_num = length(ref(pm, :bus))
@@ -242,8 +182,8 @@ function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
 
         #rate = branch["rate_a"]
         rate = branch["rate_c"]
-        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
-        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + gen_cut_vio[i])
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate + var(pm, :gen_cont_flow_vio, i))
         #@constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
         #@constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
     end
@@ -252,10 +192,12 @@ function build_scopf_dc_cuts_soft_2(pm::AbstractPowerModel)
     objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, pm.cnw, :pg_cost)
+    branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
+    gen_cont_flow_vio = var(pm, pm.cnw, :gen_cont_flow_vio)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
-        sum( 5e5*branch_cut_vio[i] for i in 1:length(pm.data["branch_flow_cuts"]) ) +
-        sum( 5e5*gen_cut_vio[i] for i in 1:length(pm.data["gen_flow_cuts"]) )
+        sum( 5e5*branch_cont_flow_vio[i] for i in 1:length(ref(pm, :branch_flow_cuts)) ) +
+        sum( 5e5*gen_cont_flow_vio[i] for i in 1:length(ref(pm, :gen_flow_cuts)) )
     )
 end

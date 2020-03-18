@@ -83,14 +83,14 @@ end
 opf_cheap_dc_objective = [14642.16, 26982.17]
 @testset "opf cheap_dc dc - $(i)" for (i,network) in enumerate(networks)
 
-    result = run_opf_cheap_dc(network, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
     @test isapprox(result["objective"], opf_cheap_dc_objective[i]; atol = 1e0)
 end
 
 @testset "opf shunt dc - infeasible" begin
-    result = run_opf_cheap_dc(network_infeasible, DCPPowerModel, lp_solver)
+    result = run_opf_cheap(network_infeasible, DCPPowerModel, lp_solver)
     @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
@@ -102,7 +102,7 @@ opf_pg_pf_rect_objective = [122981.99, 9.480588301784407e6]
     deactivate_rate_a!(network)
     activate_rate_a_violations!(network)
 
-    result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+    result = run_opf_cheap_lazy_acr(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_pg_pf_rect_objective[i]; atol = 1e0)
@@ -114,7 +114,7 @@ end
     deactivate_rate_a!(network)
     activate_rate_a_violations!(network)
 
-    result = run_opf_pg_pf_rect_5(network, ACRPowerModel, nlp_solver)
+    result = run_opf_cheap_lazy_acr(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_INFEASIBLE)
 end
