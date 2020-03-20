@@ -43,7 +43,7 @@ run_scopf_cuts_soft
 run_scopf_cuts_soft_bpv
 ```
 
-## Second-Stage Solvers
+## Contingency-Stage Solvers
 
 These are solvers for quickly solving large collections of contingencies.
 These solvers are usually more detailed on than the models used in the

@@ -45,7 +45,7 @@ end
 An OPF formulation conforming to the ARPA-e GOC Challenge 1 specification.
 Power balance are strictly enforced and the branch flow violations are
 penalized based on a conservative linear approximation of the formulation's
-specification.
+flow violation penalty specification.
 """
 function run_opf_cheap(file, model_constructor, solver; kwargs...)
     return run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
@@ -94,7 +94,7 @@ end
 
 
 """
-A variant of run_opf_cheap model, specialized for solving very large
+A variant of `run_opf_cheap` model, specialized for solving very large
 AC Power Flow models in rectangular coordinates for faster derivative
 computations.  Support sparse collections of flow constrains for
 increased performance.

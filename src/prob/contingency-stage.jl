@@ -172,11 +172,11 @@ gen_default = Dict(
 
 
 """
-A power flow solver inspired by the ARPA-e GOC Challenge 1 second-stage
+A power flow solver inspired by the ARPA-e GOC Challenge 1 contingency-stage
 specification but designed to be faster on large network cases.
-Instead conducting PV/PQ bus switching address disjunctive constraints.
-The solver simply adds extra reactive capability on buses where the voltage
-bounds cannot be enforced.
+Instead conducting PV/PQ bus switching address disjunctive constraints, this
+solver simply adds extra reactive capability on buses where the voltage
+bounds cannot be enforced and takes an associated power balance penalty.
 """
 function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
@@ -358,7 +358,7 @@ end
 
 
 """
-A power flow solver conforming to the ARPA-e GOC Challenge 1 second-stage
+A power flow solver conforming to the ARPA-e GOC Challenge 1 contingency-stage
 specification.  The solver conducts multiple rounds of PV/PQ bus switching
 to heuristically enforce the disjunctive constraints.
 """

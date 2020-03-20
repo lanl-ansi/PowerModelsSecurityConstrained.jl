@@ -396,7 +396,7 @@ end
 
 
 """
-A variant of check_contingencies_branch_flow_remote, which ignores the
+A variant of `check_contingencies_branch_flow_remote`, which ignores the
 participation factor based generator response model from the ARPA-e GOC
 Challenge 1 specification and instead injects active power equally at all buses
 in the network.
