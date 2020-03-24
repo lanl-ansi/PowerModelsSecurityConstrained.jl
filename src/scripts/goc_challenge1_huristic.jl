@@ -16,8 +16,14 @@ using JuMP
 using PowerModels
 
 using Ipopt
-#using Gurobi
 using Cbc
+
+try
+    using Gurobi
+catch
+    @info "Gurobi does not appear to be installed. The gurobi command line option will result in an error."
+end
+
 
 #@everywhere Memento.config("debug")
 #@everywhere setlevel!(LOGGER, "debug")
@@ -27,7 +33,7 @@ using Cbc
 #println("script startup time: $(time() - start_init)")
 
 
-function compute_solution1(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none")
+function compute_solution1(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none", gurobi=false)
     time_start = time()
     info(LOGGER, "time remaining: $(time_limit)")
 
@@ -52,10 +58,14 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     time_solve_start = time()
     nlp_solver = with_optimizer(Ipopt.Optimizer, tol=1e-6, mu_init=1e1)
     nlp_solver_relaxed = with_optimizer(Ipopt.Optimizer, tol=1e-6, mu_init=1e1)
-    #qp_solver = with_optimizer(Gurobi.Optimizer, OptimalityTol=1e-6, Method=2, Crossover=0)
-    #qp_solver_relaxed = with_optimizer(Gurobi.Optimizer, OptimalityTol=1e-6, Method=2, Crossover=0, BarConvTol=5e-3)
-    qp_solver = with_optimizer(Cbc.Optimizer)
-    qp_solver_relaxed = qp_solver
+
+    if gurobi
+        qp_solver = with_optimizer(Gurobi.Optimizer, OptimalityTol=1e-6, Method=2, Crossover=0)
+        qp_solver_relaxed = with_optimizer(Gurobi.Optimizer, OptimalityTol=1e-6, Method=2, Crossover=0, BarConvTol=5e-3)
+    else
+        qp_solver = with_optimizer(Cbc.Optimizer)
+        qp_solver_relaxed = qp_solver
+    end
     lp_solver = qp_solver
 
     time_filter = 0.0

@@ -10,6 +10,7 @@ function scopf_main(parsed_args)
     distribute = parsed_args["distribute"]
     skip_solution2 = parsed_args["skip-solution2"]
     remove_solutions = parsed_args["remove-solutions"]
+    gurobi = parsed_args["gurobi"]
 
     files, scenario_id = find_goc_files(ini_file, scenario_id=scenario)
 
@@ -19,7 +20,7 @@ function scopf_main(parsed_args)
     info(LOGGER, "output dir: $(output_dir)")
 
     time_sol1_start = time()
-    compute_solution1(files["con"], files["inl"], files["raw"], files["rop"], time_limit_sol1-60, scoring_method, "network name"; output_dir=output_dir, scenario_id=scenario_id)
+    compute_solution1(files["con"], files["inl"], files["raw"], files["rop"], time_limit_sol1-60, scoring_method, "network name"; output_dir=output_dir, scenario_id=scenario_id, gurobi=gurobi)
     time_sol1 = time() - time_sol1_start
 
     if !skip_solution2
@@ -64,6 +65,10 @@ function parse_scopf_commandline()
         "--remove-solutions"
             help = "delete the solution files after competition"
             action = :store_true
+        "--gurobi", "-g"
+            help = "use Gurobi for solving lp, qp and mip problems"
+            action = :store_true
+            #default = false
     end
 
     return parse_args(s)
