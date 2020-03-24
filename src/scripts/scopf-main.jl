@@ -36,7 +36,7 @@ end
 function parse_scopf_commandline()
     s = ArgParseSettings()
 
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "--file", "-f"
             help = "the data initiation file (.ini)"
             required = true

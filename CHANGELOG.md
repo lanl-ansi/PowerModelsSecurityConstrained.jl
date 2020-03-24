@@ -2,7 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- nothing
+- Minor fixes to cli interface in scripts
 
 ### v0.4.0
 - Added support for Memento v0.13, v1.0
