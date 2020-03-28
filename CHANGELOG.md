@@ -2,6 +2,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- nothing
+
+### v0.4.1
 - Updated InfrastructureModels from using to import
 - Added use Gurobi option to cli interface
 - Minor fixes to cli interface in scripts
