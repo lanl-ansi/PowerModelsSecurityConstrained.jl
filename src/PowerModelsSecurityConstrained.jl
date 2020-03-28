@@ -10,7 +10,7 @@ using JSON
 using JuMP
 
 using PowerModels
-using InfrastructureModels
+import InfrastructureModels; const _IM = InfrastructureModels
 
 
 const _LOGGER = Memento.getlogger(@__MODULE__)

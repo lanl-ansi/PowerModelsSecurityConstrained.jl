@@ -4,7 +4,7 @@ transforms a contigency list into explicit multinetwork data with network 0
 being the base case
 """
 function build_scopf_multinetwork(network)
-    if InfrastructureModels.ismultinetwork(network)
+    if _IM.ismultinetwork(network)
         error(_LOGGER, "build scopf can only be used on single networks")
     end
 
@@ -293,7 +293,7 @@ function calc_branch_flow_ac_goc(data::Dict{String,<:Any})
     @assert("per_unit" in keys(data) && data["per_unit"])
     @assert(!haskey(data, "conductors"))
 
-    if InfrastructureModels.ismultinetwork(data)
+    if _IM.ismultinetwork(data)
         nws = Dict{String,Any}()
         for (i,nw_data) in data["nw"]
             nws[i] = _calc_branch_flow_ac_goc(nw_data)

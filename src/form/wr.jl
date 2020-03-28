@@ -21,7 +21,7 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractWRModels, n::Int, i
     cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbs[s] for s in bus_shunts_var))
 
     for s in bus_shunts_var
-        InfrastructureModels.relaxation_product(pm.model, w, bs[s], wbs[s])
+        _IM.relaxation_product(pm.model, w, bs[s], wbs[s])
     end
 
     if report_duals(pm)
@@ -56,7 +56,7 @@ function constraint_power_balance_shunt_dispatch_soft(pm::AbstractWRModels, n::I
     @constraint(pm.model, -q_delta_abs <= - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*w + sum(wbs[s] for s in bus_shunts_var))
 
     for s in bus_shunts_var
-        InfrastructureModels.relaxation_product(pm.model, w, bs[s], wbs[s])
+        _IM.relaxation_product(pm.model, w, bs[s], wbs[s])
     end
 end
 

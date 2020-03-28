@@ -1,6 +1,6 @@
 
 function ref_add_goc!(pm::AbstractPowerModel)
-    if InfrastructureModels.ismultinetwork(pm.data)
+    if _IM.ismultinetwork(pm.data)
         nws_data = pm.data["nw"]
     else
         nws_data = Dict("0" => pm.data)

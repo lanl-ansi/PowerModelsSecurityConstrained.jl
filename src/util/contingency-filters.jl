@@ -407,7 +407,7 @@ function check_contingencies_branch_power_bpv(network;
         gen_flow_cuts=[], branch_flow_cuts=[]
         )
 
-    if InfrastructureModels.ismultinetwork(network)
+    if _IM.ismultinetwork(network)
         error(_LOGGER, "the branch flow cut generator can only be used on single networks")
     end
     time_contingencies_start = time()
@@ -688,7 +688,7 @@ function check_contingencies_branch_power(network;
         gen_flow_cuts=[], branch_flow_cuts=[]
         )
 
-    if InfrastructureModels.ismultinetwork(network)
+    if _IM.ismultinetwork(network)
         error(_LOGGER, "the branch flow cut generator can only be used on single networks")
     end
     time_contingencies_start = time()
