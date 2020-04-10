@@ -287,7 +287,7 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
     #@constraint(pm.model, var(pm, :delta) == 0.0)
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
-    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
+    _IM.sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     var(pm)[:p_slack] = @variable(pm.model, p_slack, base_name="p_slack", start=0.0)
 
@@ -659,7 +659,7 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
     sol(pm)[:delta] = var(pm)[:delta]
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
-    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
+    _IM.sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     start_time = time()
 
@@ -742,7 +742,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
     @constraint(pm.model, var(pm, :delta) == delta)
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
-    sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
+    _IM.sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     active_response_gens = intersect(ids(pm, :gen), ref(pm, :response_gens))
     # for i in active_response_gens

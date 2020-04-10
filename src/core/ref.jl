@@ -1,14 +1,14 @@
 
-function ref_add_goc!(pm::AbstractPowerModel)
-    if _IM.ismultinetwork(pm.data)
-        nws_data = pm.data["nw"]
+function ref_add_goc!(ref::Dict{Symbol,<:Any}, data::Dict{String,<:Any})
+    if _IM.ismultinetwork(data)
+        nws_data = data["nw"]
     else
-        nws_data = Dict("0" => pm.data)
+        nws_data = Dict("0" => data)
     end
 
     for (n, nw_data) in nws_data
         nw_id = parse(Int, n)
-        ref = pm.ref[:nw][nw_id]
+        ref = ref[:nw][nw_id]
 
         ref[:branch_sm_active] = Dict(x for x in ref[:branch] if haskey(x.second, "rate_a"))
 

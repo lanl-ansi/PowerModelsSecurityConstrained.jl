@@ -20,7 +20,7 @@ function variable_active_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bound
         end
     end
 
-    report && sol_component_value(pm, nw, :bus, :p_delta_abs, ids(pm, nw, :bus), p_delta_abs)
+    report && _IM.sol_component_value(pm, nw, :bus, :p_delta_abs, ids(pm, nw, :bus), p_delta_abs)
 end
 
 ""
@@ -37,7 +37,7 @@ function variable_reactive_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bou
         end
     end
 
-    report && sol_component_value(pm, nw, :bus, :q_delta_abs, ids(pm, nw, :bus), q_delta_abs)
+    report && _IM.sol_component_value(pm, nw, :bus, :q_delta_abs, ids(pm, nw, :bus), q_delta_abs)
 end
 
 
@@ -56,7 +56,7 @@ function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded
         end
     end
 
-    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bs)
+    report && _IM.sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bs)
 end
 
 ""
@@ -79,8 +79,8 @@ function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::B
         end
     end
 
-    report && sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bs)
-    report && sol_component_value(pm, nw, :shunt, :wbs, ids(pm, nw, :shunt_var), wbs)
+    report && _IM.sol_component_value(pm, nw, :shunt, :bs, ids(pm, nw, :shunt_var), bs)
+    report && _IM.sol_component_value(pm, nw, :shunt, :wbs, ids(pm, nw, :shunt_var), wbs)
 end
 
 
@@ -96,7 +96,7 @@ function variable_branch_flow_slack(pm::AbstractPowerModel; nw::Int=pm.cnw, boun
         end
     end
 
-    report && sol_component_value(pm, nw, :branch, :sm_slack, ids(pm, nw, :branch_sm_active), sm_slack)
+    report && _IM.sol_component_value(pm, nw, :branch, :sm_slack, ids(pm, nw, :branch_sm_active), sm_slack)
 end
 
 
@@ -106,7 +106,7 @@ function variable_vvm_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Boo
         start = comp_start_value(ref(pm, nw, :bus, i), "vvm_delta_start", 0.1)
     )
 
-    report && sol_component_value(pm, nw, :bus, :vvm_delta, ids(pm, nw, :bus), vvm_delta)
+    report && _IM.sol_component_value(pm, nw, :bus, :vvm_delta, ids(pm, nw, :bus), vvm_delta)
 end
 
 
@@ -116,7 +116,7 @@ function variable_pg_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool
         start = comp_start_value(ref(pm, nw, :gen, i), "pg_delta_start", 0.1)
     )
 
-    report && sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
+    report && _IM.sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
 end
 
 
@@ -133,7 +133,7 @@ function variable_branch_contigency_flow_violation(pm::AbstractPowerModel; nw::I
         end
     end
 
-    #report && sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
+    #report && _IM.sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
 end
 
 
@@ -149,7 +149,7 @@ function variable_gen_contigency_flow_violation(pm::AbstractPowerModel; nw::Int=
         end
     end
 
-    #report && sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
+    #report && _IM.sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
 end
 
 
@@ -165,6 +165,6 @@ function variable_gen_contigency_capacity_violation(pm::AbstractPowerModel; nw::
         end
     end
 
-    #report && sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
+    #report && _IM.sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
 end
 
