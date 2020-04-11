@@ -60,6 +60,7 @@ solution2_lines = [31,600]
     end
 
     result = run_fixpoint_pf_bqv!(network, pg_lost, nlp_solver)
+    #result = run_fixpoint_pf_bqv_native!(network, pg_lost, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)

@@ -743,6 +743,7 @@ function build_pm_model(goc_data)
     ##### Fix Broken Data #####
 
     PowerModels.correct_cost_functions!(network)
+    PowerModels.correct_bus_types!(network)
 
     # FYI, this breaks output API
     #PowerModels.propagate_topology_status!(network)

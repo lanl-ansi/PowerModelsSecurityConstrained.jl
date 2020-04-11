@@ -171,6 +171,124 @@ gen_default = Dict(
 )
 
 
+"variant of the bqv solver that uses native PF solver"
+function run_fixpoint_pf_bqv_native!(network, pg_lost, solver; iteration_limit=typemax(Int64))
+    time_start = time()
+
+    #delta = apply_pg_response!(network, pg_lost)
+    #delta = 0.0
+
+    #info(_LOGGER, "pg lost: $(pg_lost)")
+    #info(_LOGGER, "delta: $(network["delta"])")
+    #info(_LOGGER, "pre-solve time: $(time() - time_start)")
+
+    base_solution = extract_solution(network)
+    base_solution["delta"] = network["delta"]
+    result = Dict(
+        "termination_status" => LOCALLY_SOLVED,
+        "objective" => 0.0,
+        "solution" => base_solution
+    )
+
+    gen_idx_max = maximum(gen["index"] for (i,gen) in network["gen"])
+    gen_idx = trunc(Int, 10^ceil(log10(gen_idx_max)))
+
+    bus_gens = gens_by_bus(network)
+
+
+    iteration = 1
+    vm_fixed = true
+    while vm_fixed && iteration < iteration_limit
+        info(_LOGGER, "pf soft fixpoint iteration: $iteration")
+
+        time_start = time()
+        result = run_pf_bqv_native(network)
+        info(_LOGGER, "solve pf time: $(time() - time_start)")
+
+        if result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED
+            correct_qg!(network, result["solution"], bus_gens=bus_gens)
+            PowerModels.update_data!(network, result["solution"])
+        else
+            warn(_LOGGER, "solve issue with run_pf_bqv_acr, $(result["termination_status"])")
+            break
+        end
+
+        vm_fixed = false
+        for (i,bus) in network["bus"]
+            if bus["vm"] < bus["vmin"] - vm_bound_tol || bus["vm"] > bus["vmax"] + vm_bound_tol
+                active_gens = 0
+                if length(bus_gens[i]) > 0
+                    active_gens = sum(gen["gen_status"] != 0 for gen in bus_gens[i])
+                end
+                @assert(active_gens == 0)
+
+                bus["vm_fixed"] = true
+                current_vm = bus["vm"]
+                if bus["vm"] < bus["vmin"]
+                    bus["vm_base"] = bus["vmin"]
+                    bus["vm"] = bus["vmin"]
+                end
+                if bus["vm"] > bus["vmax"]
+                    bus["vm_base"] = bus["vmax"]
+                    bus["vm"] = bus["vmax"]
+                end
+
+                warn(_LOGGER, "bus $(i) voltage out of bounds $(current_vm) -> $(bus["vm"]), adding virtual generator $(gen_idx)")
+                gen_virtual = deepcopy(gen_default)
+                gen_virtual["index"] = gen_idx
+                gen_virtual["gen_bus"] = bus["index"]
+                push!(bus_gens[i], gen_virtual)
+
+                @assert(!haskey(network["gen"], "$(gen_idx)"))
+                network["gen"]["$(gen_idx)"] = gen_virtual
+                gen_idx += 1
+
+                bus["bus_type"] = 2
+
+                vm_fixed = true
+            end
+        end
+        iteration += 1
+    end
+
+    if iteration >= iteration_limit
+        warn(_LOGGER, "hit iteration limit")
+    end
+
+    for (i,gen) in collect(network["gen"])
+        if haskey(gen, "virtual") && gen["virtual"]
+            delete!(network["gen"], i)
+            delete!(result["solution"]["gen"], i)
+        end
+    end
+
+    return result
+end
+
+
+function run_pf_bqv_native(network)
+    correct_bus_types!(network)
+    set_ac_pf_start_values!(network)
+
+    #solution = compute_ac_pf(network, show_trace=true)
+    solution = compute_ac_pf(network)
+
+    if length(solution) > 1
+        return Dict(
+            "termination_status" => LOCALLY_SOLVED,
+            "objective" => 0.0,
+            "solution" => solution
+        )
+    else
+        return Dict(
+            "termination_status" => OTHER_ERROR,
+            "objective" => 0.0,
+            "solution" => solution
+        )
+    end
+end
+
+
 """
 A power flow solver inspired by the ARPA-e GOC Challenge 1 contingency-stage
 specification but designed to be faster on large network cases.
