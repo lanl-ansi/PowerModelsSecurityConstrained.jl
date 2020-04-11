@@ -125,8 +125,8 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     PowerModels.constraint_model_voltage(pm)
 
     for i in ids(pm, :branch)
-        expression_branch_power_yt_from_goc(pm, i)
-        expression_branch_power_yt_to(pm, i)
+        expression_branch_flow_yt_from_goc(pm, i)
+        expression_branch_flow_yt_to(pm, i)
     end
 
 

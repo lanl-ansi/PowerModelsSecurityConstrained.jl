@@ -310,8 +310,8 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_yt_from_goc(pm, i)
-        expression_branch_power_yt_to(pm, i)
+        expression_branch_flow_yt_from_goc(pm, i)
+        expression_branch_flow_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
@@ -681,8 +681,8 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_yt_from_goc(pm, i)
-        expression_branch_power_yt_to(pm, i)
+        expression_branch_flow_yt_from_goc(pm, i)
+        expression_branch_flow_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
@@ -774,8 +774,8 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_yt_from_goc(pm, i)
-        expression_branch_power_yt_to(pm, i)
+        expression_branch_flow_yt_from_goc(pm, i)
+        expression_branch_flow_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
@@ -1102,8 +1102,8 @@ function build_opf_contingency(pm::AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_yt_from_goc(pm, i)
-        expression_branch_power_yt_to(pm, i)
+        expression_branch_flow_yt_from_goc(pm, i)
+        expression_branch_flow_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
