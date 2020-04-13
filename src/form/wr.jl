@@ -24,7 +24,7 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractWRModels, n::Int, i
         _IM.relaxation_product(pm.model, w, bs[s], wbs[s])
     end
 
-    if report_duals(pm)
+    if _IM.report_duals(pm)
         sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
         sol(pm, n, :bus, i)[:lam_kcl_i] = cstr_q
     end

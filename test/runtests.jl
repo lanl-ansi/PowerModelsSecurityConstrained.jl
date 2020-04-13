@@ -8,6 +8,7 @@ using Test
 using Ipopt
 using Cbc
 
+Memento.setlevel!(Memento.getlogger(PowerModels.InfrastructureModels), "error")
 Memento.setlevel!(Memento.getlogger(PowerModels), "error")
 Memento.setlevel!(Memento.getlogger(PowerModelsSecurityConstrained), "error")
 
