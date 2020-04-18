@@ -44,7 +44,7 @@ end
 
 
 ""
-function expression_branch_flow_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_branch_power_ohms_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     if !haskey(var(pm, nw), :p)
         var(pm, nw)[:p] = Dict{Tuple{Int,Int,Int},Any}()
     end
@@ -65,9 +65,9 @@ function expression_branch_flow_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::
     tm = branch["tap"]
 
     if branch["transformer"]
-        expression_branch_flow_yt_from_goc(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+        expression_branch_power_ohms_yt_from_goc(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     else
-        expression_branch_flow_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+        _PM.expression_branch_power_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     end
 end
 

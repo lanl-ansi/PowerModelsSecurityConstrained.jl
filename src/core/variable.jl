@@ -42,7 +42,7 @@ end
 
 
 ""
-function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_shunt_admittance_imaginary(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     bs = var(pm, nw)[:bs] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bs",
         start = comp_start_value(ref(pm, nw, :shunt, i), "bs_start")
@@ -60,7 +60,7 @@ function variable_reactive_shunt(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded
 end
 
 ""
-function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_shunt_admittance_imaginary(pm::AbstractWModels; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     bs = var(pm, nw)[:bs] = @variable(pm.model,
         [i in ids(pm, nw, :shunt_var)], base_name="$(nw)_bs",
         start = comp_start_value(ref(pm, nw, :shunt, i), "bs_start")
@@ -84,7 +84,7 @@ function variable_reactive_shunt(pm::AbstractWModels; nw::Int=pm.cnw, bounded::B
 end
 
 
-function variable_branch_flow_slack(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_branch_power_slack(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     sm_slack = var(pm, nw)[:sm_slack] = JuMP.@variable(pm.model,
         [l in ids(pm, nw, :branch_sm_active)], base_name="$(nw)_sm_slack",
         start = comp_start_value(ref(pm, nw, :branch, l), "sm_slack_start")
@@ -121,7 +121,7 @@ end
 
 
 
-function variable_branch_contigency_flow_violation(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_branch_contigency_power_violation(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     branch_cont_flow_vio = var(pm, nw)[:branch_cont_flow_vio] = JuMP.@variable(pm.model,
         [i in 1:length(ref(pm, :branch_flow_cuts))], base_name="$(nw)_branch_cont_flow_vio",
         #start = comp_start_value(ref(pm, nw, :bus, i), "cont_branch_vio_start")
@@ -137,7 +137,7 @@ function variable_branch_contigency_flow_violation(pm::AbstractPowerModel; nw::I
 end
 
 
-function variable_gen_contigency_flow_violation(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_gen_contigency_power_violation(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     gen_cont_flow_vio = var(pm, nw)[:gen_cont_flow_vio] = JuMP.@variable(pm.model,
         [i in 1:length(ref(pm, :gen_flow_cuts))], base_name="$(nw)_gen_cont_flow_vio",
         #start = comp_start_value(ref(pm, nw, :bus, i), "cont_branch_vio_start")

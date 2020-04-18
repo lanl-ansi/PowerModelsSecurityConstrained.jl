@@ -16,12 +16,12 @@ end
 
 ""
 function build_scopf_cuts_soft(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
 
-    variable_branch_contigency_flow_violation(pm)
-    variable_gen_contigency_flow_violation(pm)
+    variable_branch_contigency_power_violation(pm)
+    variable_gen_contigency_power_violation(pm)
     variable_gen_contigency_capacity_violation(pm)
 
     for i in ids(pm, :bus)
@@ -30,10 +30,10 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
     end
 
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
     for i in ids(pm, :bus)
@@ -42,12 +42,12 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
 
     for i in ids(pm, :branch)
         PowerModels.constraint_ohms_yt_from(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
 
-        PowerModels.constraint_voltage_angle_difference(pm, i)
+        _PM.constraint_voltage_angle_difference(pm, i)
 
-        PowerModels.constraint_thermal_limit_from(pm, i)
-        PowerModels.constraint_thermal_limit_to(pm, i)
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
     end
 
 
@@ -124,12 +124,12 @@ end
 
 ""
 function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
 
-    variable_branch_contigency_flow_violation(pm)
-    variable_gen_contigency_flow_violation(pm)
+    variable_branch_contigency_power_violation(pm)
+    variable_gen_contigency_power_violation(pm)
 
     for i in ids(pm, :bus)
         expression_bus_generation(pm, i)
@@ -137,10 +137,10 @@ function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
     end
 
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
     for i in ids(pm, :bus)
@@ -149,12 +149,12 @@ function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
 
     for i in ids(pm, :branch)
         PowerModels.constraint_ohms_yt_from(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
 
-        PowerModels.constraint_voltage_angle_difference(pm, i)
+        _PM.constraint_voltage_angle_difference(pm, i)
 
-        PowerModels.constraint_thermal_limit_from(pm, i)
-        PowerModels.constraint_thermal_limit_to(pm, i)
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
     end
 
     for (i,cut) in enumerate(ref(pm, :branch_flow_cuts))

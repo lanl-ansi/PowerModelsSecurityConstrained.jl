@@ -9,8 +9,12 @@ using JSON
 
 using JuMP
 
-using PowerModels
-import InfrastructureModels; const _IM = InfrastructureModels
+import InfrastructureModels
+const _IM = InfrastructureModels
+
+using PowerModels; const _PM = PowerModels
+import PowerModels: ids, ref, var, con, sol
+
 
 
 const _LOGGER = Memento.getlogger(@__MODULE__)

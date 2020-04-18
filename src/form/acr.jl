@@ -50,7 +50,7 @@ end
 
 
 ""
-function expression_branch_flow_yt_from_goc(pm::AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function expression_branch_power_ohms_yt_from_goc(pm::AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     vr_fr = var(pm, n, :vr, f_bus)
     vr_to = var(pm, n, :vr, t_bus)
     vi_fr = var(pm, n, :vi, f_bus)

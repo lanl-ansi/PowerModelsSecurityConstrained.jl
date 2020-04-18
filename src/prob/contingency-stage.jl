@@ -277,9 +277,9 @@ end
 
 ""
 function build_pf_bqv_acr(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm, bounded=false)
-    PowerModels.variable_active_generation(pm, bounded=false)
-    PowerModels.variable_reactive_generation(pm, bounded=false)
+    _PM.variable_bus_voltage(pm, bounded=false)
+    _PM.variable_gen_power_real(pm, bounded=false)
+    _PM.variable_gen_power_imaginary(pm, bounded=false)
 
     delta = ref(pm, :delta)
     var(pm)[:delta] = @variable(pm.model, base_name="delta", start=0.0)
@@ -294,7 +294,7 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
     vr = var(pm, :vr)
     vi = var(pm, :vi)
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for (i,bus) in ref(pm, :bus)
         if bus["vm_fixed"]
@@ -303,15 +303,15 @@ function build_pf_bqv_acr(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
     #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_flow_yt_from_goc(pm, i)
-        expression_branch_flow_yt_to(pm, i)
+        expression_branch_power_ohms_yt_from_goc(pm, i)
+        _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
@@ -647,10 +647,10 @@ end
 ""
 function build_pf_fixed_acr(pm::AbstractPowerModel)
     start_time = time()
-    PowerModels.variable_voltage(pm, bounded=false)
-    PowerModels.variable_active_generation(pm, bounded=false)
-    PowerModels.variable_reactive_generation(pm, bounded=false)
-    #PowerModels.variable_branch_flow(pm, bounded=false)
+    _PM.variable_bus_voltage(pm, bounded=false)
+    _PM.variable_gen_power_real(pm, bounded=false)
+    _PM.variable_gen_power_imaginary(pm, bounded=false)
+    #_PM.variable_branch_power(pm, bounded=false)
 
     # TODO set bounds bounds on alpha and total gen capacity
     var(pm)[:delta] = @variable(pm.model, delta, base_name="delta", start=0.0)
@@ -666,7 +666,7 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
     vr = var(pm, :vr)
     vi = var(pm, :vi)
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for (i,bus) in ref(pm, :bus)
         if bus["vm_fixed"]
@@ -675,14 +675,14 @@ function build_pf_fixed_acr(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
     #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_flow_yt_from_goc(pm, i)
-        expression_branch_flow_yt_to(pm, i)
+        expression_branch_power_ohms_yt_from_goc(pm, i)
+        _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
@@ -731,10 +731,10 @@ end
 
 ""
 function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm, bounded=false)
-    PowerModels.variable_active_generation(pm, bounded=false)
-    PowerModels.variable_reactive_generation(pm, bounded=false)
-    #PowerModels.variable_branch_flow(pm, bounded=false)
+    _PM.variable_bus_voltage(pm, bounded=false)
+    _PM.variable_gen_power_real(pm, bounded=false)
+    _PM.variable_gen_power_imaginary(pm, bounded=false)
+    #_PM.variable_branch_power(pm, bounded=false)
 
     delta = ref(pm, :delta)
     var(pm)[:delta] = @variable(pm.model, base_name="delta", start=0.0)
@@ -758,7 +758,7 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
     vr = var(pm, :vr)
     vi = var(pm, :vi)
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for (i,bus) in ref(pm, :bus)
         if bus["vm_fixed"]
@@ -767,15 +767,15 @@ function build_pf_fixed_bp_slack_acr(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
     #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_flow_yt_from_goc(pm, i)
-        expression_branch_flow_yt_to(pm, i)
+        expression_branch_power_ohms_yt_from_goc(pm, i)
+        _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 
@@ -1042,12 +1042,12 @@ end
 
 ""
 function build_opf_contingency(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm, bounded=false)
-    PowerModels.variable_active_generation(pm, bounded=false)
-    PowerModels.variable_reactive_generation(pm, bounded=false)
-    #PowerModels.variable_branch_flow(pm, bounded=false)
+    _PM.variable_bus_voltage(pm, bounded=false)
+    _PM.variable_gen_power_real(pm, bounded=false)
+    _PM.variable_gen_power_imaginary(pm, bounded=false)
+    #_PM.variable_branch_power(pm, bounded=false)
 
-    variable_reactive_shunt(pm)
+    variable_shunt_admittance_imaginary(pm)
 
     qg_vio = @variable(pm.model,
         [i in ids(pm, :gen)], base_name="qg_vio",
@@ -1078,7 +1078,7 @@ function build_opf_contingency(pm::AbstractPowerModel)
         sum( 1e7*vm_vio[i] for (i,bus) in ref(pm, :bus) )
     )
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     vm = Dict{Int,Any}()
     for (i,bus) in ref(pm, :bus)
@@ -1096,14 +1096,14 @@ function build_opf_contingency(pm::AbstractPowerModel)
 
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_flow_yt_from_goc(pm, i)
-        expression_branch_flow_yt_to(pm, i)
+        expression_branch_power_ohms_yt_from_goc(pm, i)
+        _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
 

@@ -2,6 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- Updated to PowerModels v0.17
 - Added support for Memento v1.1
 
 ### v0.5.0
