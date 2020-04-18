@@ -111,8 +111,8 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     variable_branch_power_slack(pm)
     variable_shunt_admittance_imaginary(pm)
 
-    variable_vvm_delta(pm)
-    variable_pg_delta(pm)
+    variable_bus_voltage_magnitude_delta(pm)
+    variable_gen_power_real_delta(pm)
 
     vvm = var(pm)[:vvm] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="vvm",
@@ -176,7 +176,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
-        constraint_gen_active_deviation(pm, i)
+        constraint_gen_power_real_deviation(pm, i)
     end
     #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 

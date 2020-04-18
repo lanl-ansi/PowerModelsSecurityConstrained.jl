@@ -1,13 +1,13 @@
 
 "generates variables for both `active` and `reactive` bus deltas"
 function variable_bus_delta_abs(pm::AbstractPowerModel; kwargs...)
-    variable_active_delta_abs(pm; kwargs...)
-    variable_reactive_delta_abs(pm; kwargs...)
+    variable_bus_delta_abs_power_real(pm; kwargs...)
+    variable_bus_delta_abs_power_imaginary(pm; kwargs...)
 end
 
 
 ""
-function variable_active_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_bus_delta_abs_power_real(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     p_delta_abs = var(pm, nw)[:p_delta_abs] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="$(nw)_p_delta_abs",
         start = 0.0
@@ -24,7 +24,7 @@ function variable_active_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bound
 end
 
 ""
-function variable_reactive_delta_abs(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_bus_delta_abs_power_imaginary(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
      q_delta_abs = var(pm, nw)[:q_delta_abs] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="$(nw)_q_delta_abs",
         start = 0.0
@@ -100,7 +100,7 @@ function variable_branch_power_slack(pm::AbstractPowerModel; nw::Int=pm.cnw, bou
 end
 
 
-function variable_vvm_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_bus_voltage_magnitude_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     vvm_delta = var(pm, nw)[:vvm_delta] = JuMP.@variable(pm.model,
         [i in ids(pm, nw, :bus)], base_name="$(nw)_vvm_delta",
         start = comp_start_value(ref(pm, nw, :bus, i), "vvm_delta_start", 0.1)
@@ -110,7 +110,7 @@ function variable_vvm_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Boo
 end
 
 
-function variable_pg_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_gen_power_real_delta(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     pg_delta = var(pm, nw)[:pg_delta] = JuMP.@variable(pm.model,
         [i in ids(pm, nw, :gen)], base_name="$(nw)_pg_delta",
         start = comp_start_value(ref(pm, nw, :gen, i), "pg_delta_start", 0.1)

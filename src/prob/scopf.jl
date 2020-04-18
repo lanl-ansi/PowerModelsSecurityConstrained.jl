@@ -41,7 +41,7 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :branch)
-        PowerModels.constraint_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
@@ -148,7 +148,7 @@ function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :branch)
-        PowerModels.constraint_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)

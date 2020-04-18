@@ -21,7 +21,7 @@ end
 
 
 ""
-function constraint_gen_active_deviation(pm::AbstractPowerModel, n::Int, i, pg)
+function constraint_gen_power_real_deviation(pm::AbstractPowerModel, n::Int, i, pg)
     pg_var = var(pm, n, :pg, i)
     pg_delta = var(pm, n, :pg_delta, i)
 

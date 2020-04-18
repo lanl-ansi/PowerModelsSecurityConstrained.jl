@@ -60,7 +60,7 @@ function constraint_ohms_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.
     if branch["transformer"]
         constraint_ohms_yt_from_goc(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     else
-        PowerModels.constraint_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+        _PM.constraint_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     end
 end
 
@@ -94,10 +94,10 @@ end
 
 
 ""
-function constraint_gen_active_deviation(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_gen_power_real_deviation(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     gen = ref(pm, nw, :gen, i)
 
-    constraint_gen_active_deviation(pm, nw, i, gen["pg"])
+    constraint_gen_power_real_deviation(pm, nw, i, gen["pg"])
 end
 
 
