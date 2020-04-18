@@ -1,5 +1,5 @@
 ""
-function constraint_thermal_limit_from_soft(pm::AbstractPowerModel, n::Int, f_idx, rate_a)
+function constraint_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, n::Int, f_idx, rate_a)
     l,i,j = f_idx
     p_fr = var(pm, n, :p, f_idx)
     q_fr = var(pm, n, :q, f_idx)
@@ -10,7 +10,7 @@ end
 
 
 ""
-function constraint_thermal_limit_to_soft(pm::AbstractPowerModel, n::Int, t_idx, rate_a)
+function constraint_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, n::Int, t_idx, rate_a)
     l,i,j = t_idx
     p_to = var(pm, n, :p, t_idx)
     q_to = var(pm, n, :q, t_idx)
@@ -21,7 +21,7 @@ end
 
 
 ""
-function constraint_gen_power_real_deviation(pm::AbstractPowerModel, n::Int, i, pg)
+function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, n::Int, i, pg)
     pg_var = var(pm, n, :pg, i)
     pg_delta = var(pm, n, :pg_delta, i)
 
@@ -30,7 +30,7 @@ end
 
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::AbstractPowerModel, n::Int, i::Int, cut_map, rate)
+function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, n::Int, i::Int, cut_map, rate)
     bus_injection = var(pm, :bus_pg)
     bus_withdrawal = var(pm, :bus_wdp)
 
@@ -39,7 +39,7 @@ end
 
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::AbstractPowerModel, n::Int, i::Int, cut_map, rate)
+function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, n::Int, i::Int, cut_map, rate)
     bus_injection = var(pm, :bus_pg)
     bus_withdrawal = var(pm, :bus_wdp)
 

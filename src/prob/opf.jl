@@ -7,10 +7,10 @@ The primary departure from the PowerModels standard formulation is dispatchable
 bus shunts and a slight change in the transformer model.
 """
 function run_opf_shunt(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
-function build_opf_shunt(pm::AbstractPowerModel)
+function build_opf_shunt(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
@@ -48,11 +48,11 @@ penalized based on a conservative linear approximation of the formulation's
 flow violation penalty specification.
 """
 function run_opf_cheap(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 
-function build_opf_cheap(pm::AbstractPowerModel)
+function build_opf_cheap(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm, bounded=false)
@@ -81,7 +81,7 @@ function build_opf_cheap(pm::AbstractPowerModel)
     end
 
     ##### Setup Objective #####
-    objective_variable_pg_cost(pm)
+    _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, :pg_cost)
     sm_slack = var(pm, :sm_slack)
@@ -100,11 +100,11 @@ computations.  Support sparse collections of flow constrains for
 increased performance.
 """
 function run_opf_cheap_lazy_acr(file, solver; kwargs...)
-    return run_model(file, ACRPowerModel, solver, build_opf_cheap_lazy_acr; ref_extensions=[ref_add_goc!], kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_opf_cheap_lazy_acr; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
-function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
+function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power(pm)
 
@@ -187,7 +187,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     qg = var(pm, :qg)
     bs = var(pm, :bs)
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance(pm, i)
+        #_PM.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_gens = ref(pm, :bus_gens, i)

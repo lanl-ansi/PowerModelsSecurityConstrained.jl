@@ -1,12 +1,12 @@
 
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::AbstractActivePowerModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
-    p    = get(var(pm, n),    :p, Dict()); PowerModels._check_var_keys(p, bus_arcs, "active power", "branch")
-    pg   = get(var(pm, n),   :pg, Dict()); PowerModels._check_var_keys(pg, bus_gens, "active power", "generator")
-    ps   = get(var(pm, n),   :ps, Dict()); PowerModels._check_var_keys(ps, bus_storage, "active power", "storage")
-    psw  = get(var(pm, n),  :psw, Dict()); PowerModels._check_var_keys(psw, bus_arcs_sw, "active power", "switch")
-    p_dc = get(var(pm, n), :p_dc, Dict()); PowerModels._check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
+function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractActivePowerModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+    p    = get(var(pm, n),    :p, Dict()); _PM._check_var_keys(p, bus_arcs, "active power", "branch")
+    pg   = get(var(pm, n),   :pg, Dict()); _PM._check_var_keys(pg, bus_gens, "active power", "generator")
+    ps   = get(var(pm, n),   :ps, Dict()); _PM._check_var_keys(ps, bus_storage, "active power", "storage")
+    psw  = get(var(pm, n),  :psw, Dict()); _PM._check_var_keys(psw, bus_arcs_sw, "active power", "switch")
+    p_dc = get(var(pm, n), :p_dc, Dict()); _PM._check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
     cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*1.0)
 
@@ -18,7 +18,7 @@ end
 
 
 ""
-function constraint_thermal_limit_from_soft(pm::AbstractActivePowerModel, n::Int, f_idx, rate_a)
+function constraint_thermal_limit_from_soft(pm::_PM.AbstractActivePowerModel, n::Int, f_idx, rate_a)
     l,i,j = f_idx
     p_fr = var(pm, n, :p, f_idx)
     sm_slack = var(pm, :sm_slack, l)
@@ -27,7 +27,7 @@ function constraint_thermal_limit_from_soft(pm::AbstractActivePowerModel, n::Int
 end
 
 ""
-function constraint_thermal_limit_to_soft(pm::AbstractActivePowerModel, n::Int, t_idx, rate_a)
+function constraint_thermal_limit_to_soft(pm::_PM.AbstractActivePowerModel, n::Int, t_idx, rate_a)
     l,i,j = t_idx
     p_to = var(pm, n, :p, t_idx)
     sm_slack = var(pm, :sm_slack, l)
@@ -37,8 +37,8 @@ end
 
 
 ""
-function expression_bus_generation(pm::AbstractActivePowerModel, n::Int, i::Int, bus_gens)
-    pg = get(var(pm, n), :pg, Dict()); PowerModels._check_var_keys(pg, bus_gens, "active power", "generator")
+function expression_bus_generation(pm::_PM.AbstractActivePowerModel, n::Int, i::Int, bus_gens)
+    pg = get(var(pm, n), :pg, Dict()); _PM._check_var_keys(pg, bus_gens, "active power", "generator")
 
     pg_total = 0.0
     if length(bus_gens) > 0
@@ -50,8 +50,8 @@ end
 
 
 ""
-function expression_bus_withdrawal(pm::AbstractActivePowerModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
-    ps = get(var(pm, n), :ps, Dict()); PowerModels._check_var_keys(ps, bus_storage, "active power", "storage")
+function expression_bus_withdrawal(pm::_PM.AbstractActivePowerModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
+    ps = get(var(pm, n), :ps, Dict()); _PM._check_var_keys(ps, bus_storage, "active power", "storage")
 
     ps_total = 0.0
     if length(bus_storage) > 0

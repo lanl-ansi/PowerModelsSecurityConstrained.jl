@@ -114,7 +114,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         gen["pg_start"] = gen["pg"]
     end
 
-    gen_cost = PowerModels.calc_gen_cost(network)
+    gen_cost = calc_gen_cost(network)
     info(LOGGER, "generation cost: $(gen_cost)")
 
     time_dc_opf = time() - time_dc_opf_start
@@ -149,7 +149,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             #     warn(LOGGER, "relaxed base case AC-OPF solve status $(result["termination_status"])")
             # end
         end
-        PowerModels.update_data!(network, result["solution"])
+        update_data!(network, result["solution"])
 
         for (i,bus) in network["bus"]
             bus["vm_start"] = bus["vm"]
@@ -170,7 +170,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     info(LOGGER, "power balance cost: $(balance)")
 
 
-    #PowerModels.update_data!(network, result["solution"])
+    #update_data!(network, result["solution"])
     correct_network_solution!(network)
     write_solution1(network, output_dir=output_dir)
 
@@ -326,7 +326,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             balance = compute_power_balance_deltas!(network)
             info(LOGGER, "power balance cost: $(balance)")
 
-            gen_cost = PowerModels.calc_gen_cost(network)
+            gen_cost = calc_gen_cost(network)
             info(LOGGER, "generation cost: $(gen_cost)")
 
             time_iteration = time() - time_start_iteration
@@ -349,7 +349,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         #     error(LOGGER, "voltage profile solver failed")
         # end
         # sol = result["solution"]
-        # PowerModels.update_data!(network, sol)
+        # update_data!(network, sol)
 
         line_flow_vio = true
         while line_flow_vio
@@ -366,7 +366,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
                 #     warn(LOGGER, "relaxed base case AC-OPF solve status $(result["termination_status"])")
                 # end
             end
-            PowerModels.update_data!(network, result["solution"])
+            update_data!(network, result["solution"])
 
             for (i,bus) in network["bus"]
                 bus["vm_start"] = bus["vm"]
@@ -385,7 +385,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         balance = compute_power_balance_deltas!(network)
         info(LOGGER, "power balance cost: $(balance)")
 
-        gen_cost = PowerModels.calc_gen_cost(network)
+        gen_cost = calc_gen_cost(network)
         info(LOGGER, "generation cost: $(gen_cost)")
 
         correct_network_solution!(network)

@@ -1,7 +1,7 @@
 
 function compute_inverse_size(network)
     b0 = Base.gc_bytes()
-    network_ref = PowerModels.build_ref(network)
+    network_ref = _PM.build_ref(network)
     network_ref = network_ref[:nw][0]
     bus_idx2id, bus_id2idx = build_indices(network_ref[:bus])
     b_base = compute_B_sparse(network_ref, bus_idx2id, bus_id2idx)
@@ -369,7 +369,7 @@ function check_contingencies_branch_power_bpv_remote(cont_range, output_dir, cut
     end
 
     sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
-    PowerModels.update_data!(network_global, sol)
+    _PM.update_data!(network_global, sol)
 
     active_cuts = read_active_flow_cuts(output_dir=output_dir)
     gen_flow_cuts = []
@@ -429,7 +429,7 @@ function check_contingencies_branch_power_bpv(network;
     end
 
 
-    network_ref = PowerModels.build_ref(network)
+    network_ref = _PM.build_ref(network)
     network_ref = network_ref[:nw][0]
 
 
@@ -517,7 +517,7 @@ function check_contingencies_branch_power_bpv(network;
             sol_branch["qt"] = 0.0
         end
 
-        #PowerModels.print_summary(sol_tmp)
+        #_PM.print_summary(sol_tmp)
 
         network["gen"]["$(cont.idx)"]["gen_status"] = 0
         vio = compute_violations_ratec(network, sol_tmp)
@@ -595,7 +595,7 @@ function check_contingencies_branch_power_bpv(network;
             sol_branch["qt"] = 0.0
         end
 
-        #PowerModels.print_summary(sol_tmp)
+        #_PM.print_summary(sol_tmp)
 
         network["branch"]["$(cont.idx)"]["br_status"] = 0
         vio = compute_violations_ratec(network, sol_tmp)
@@ -648,7 +648,7 @@ function check_contingencies_branch_power_remote(cont_range, output_dir, cut_lim
     end
 
     sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
-    PowerModels.update_data!(network_global, sol)
+    _PM.update_data!(network_global, sol)
 
     active_cuts = read_active_flow_cuts(output_dir=output_dir)
     gen_flow_cuts = []
@@ -710,7 +710,7 @@ function check_contingencies_branch_power(network;
     end
 
 
-    network_ref = PowerModels.build_ref(network)
+    network_ref = _PM.build_ref(network)
     network_ref = network_ref[:nw][0]
 
 
@@ -816,7 +816,7 @@ function check_contingencies_branch_power(network;
             sol_branch["qt"] = 0.0
         end
 
-        #PowerModels.print_summary(sol_tmp)
+        #_PM.print_summary(sol_tmp)
 
         network["gen"]["$(cont.idx)"]["gen_status"] = 0
         vio = compute_violations_ratec(network, sol_tmp)
@@ -900,7 +900,7 @@ function check_contingencies_branch_power(network;
             sol_branch["qt"] = 0.0
         end
 
-        #PowerModels.print_summary(sol_tmp)
+        #_PM.print_summary(sol_tmp)
 
         network["branch"]["$(cont.idx)"]["br_status"] = 0
         vio = compute_violations_ratec(network, sol_tmp)

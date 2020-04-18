@@ -1,5 +1,5 @@
 ""
-function constraint_power_balance_shunt_dispatch(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
@@ -21,7 +21,7 @@ function constraint_power_balance_shunt_dispatch(pm::AbstractPowerModel, i::Int;
 end
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
@@ -44,15 +44,15 @@ end
 
 
 ""
-function constraint_ohms_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
     f_idx = (i, f_bus, t_bus)
     t_idx = (i, t_bus, f_bus)
 
-    g, b = calc_branch_y(branch)
-    tr, ti = calc_branch_t(branch)
+    g, b = _PM.calc_branch_y(branch)
+    tr, ti = _PM.calc_branch_t(branch)
     g_fr = branch["g_fr"]
     b_fr = branch["b_fr"]
     tm = branch["tap"]
@@ -68,7 +68,7 @@ end
 
 
 ""
-function constraint_thermal_limit_from_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -81,7 +81,7 @@ end
 
 
 ""
-function constraint_thermal_limit_to_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -94,7 +94,7 @@ end
 
 
 ""
-function constraint_gen_power_real_deviation(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     gen = ref(pm, nw, :gen, i)
 
     constraint_gen_power_real_deviation(pm, nw, i, gen["pg"])
@@ -103,7 +103,7 @@ end
 
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     cut = ref(pm, :branch_flow_cuts, i)
     branch = ref(pm, nw, :branch, cut.branch_id)
 
@@ -113,7 +113,7 @@ function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::Abstract
 end
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     cut = ref(pm, :branch_flow_cuts, i)
     branch = ref(pm, nw, :branch, cut.branch_id)
 
@@ -124,7 +124,7 @@ end
 
 # revisit after issue #14 is closed
 # ""
-# function constraint_gen_contingency_ptdf_thermal_limit_from_soft(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+# function constraint_gen_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
 #     cut = ref(pm, :gen_flow_cuts, i)
 #     branch = ref(pm, nw, :branch, cut.branch_id)
 #     gen = ref(pm, :gen, cut.gen_id)
