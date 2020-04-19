@@ -2,6 +2,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- nothing
+
+### v0.6.0
 - Update to new function name convention of PowerModels v0.17 (breaking)
 - Updated to PowerModels v0.17 (breaking)
 - Added support for Memento v1.1
