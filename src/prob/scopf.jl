@@ -11,17 +11,17 @@ This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
 function run_scopf_cuts_soft(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_cuts_soft; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft; kwargs...)
 end
 
 ""
-function build_scopf_cuts_soft(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm)
+function build_scopf_cuts_soft(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
 
-    variable_branch_contigency_flow_violation(pm)
-    variable_gen_contigency_flow_violation(pm)
+    variable_branch_contigency_power_violation(pm)
+    variable_gen_contigency_power_violation(pm)
     variable_gen_contigency_capacity_violation(pm)
 
     for i in ids(pm, :bus)
@@ -30,24 +30,24 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
     end
 
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
     for i in ids(pm, :bus)
-        PowerModels.constraint_power_balance(pm, i)
+        _PM.constraint_power_balance(pm, i)
     end
 
     for i in ids(pm, :branch)
-        PowerModels.constraint_ohms_yt_from(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
+        _PM.constraint_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
 
-        PowerModels.constraint_voltage_angle_difference(pm, i)
+        _PM.constraint_voltage_angle_difference(pm, i)
 
-        PowerModels.constraint_thermal_limit_from(pm, i)
-        PowerModels.constraint_thermal_limit_to(pm, i)
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
     end
 
 
@@ -100,7 +100,7 @@ function build_scopf_cuts_soft(pm::AbstractPowerModel)
     end
 
     ##### Setup Objective #####
-    objective_variable_pg_cost(pm)
+    _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, pm.cnw, :pg_cost)
     branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
@@ -119,17 +119,17 @@ end
 
 "a variant of `run_scopf_cuts_dc_soft` with a different generator response function"
 function run_scopf_cuts_soft_bpv(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; kwargs...)
 end
 
 ""
-function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm)
+function build_scopf_cuts_soft_bpv(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
 
-    variable_branch_contigency_flow_violation(pm)
-    variable_gen_contigency_flow_violation(pm)
+    variable_branch_contigency_power_violation(pm)
+    variable_gen_contigency_power_violation(pm)
 
     for i in ids(pm, :bus)
         expression_bus_generation(pm, i)
@@ -137,24 +137,24 @@ function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
     end
 
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
     for i in ids(pm, :bus)
-        PowerModels.constraint_power_balance(pm, i)
+        _PM.constraint_power_balance(pm, i)
     end
 
     for i in ids(pm, :branch)
-        PowerModels.constraint_ohms_yt_from(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
+        _PM.constraint_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
 
-        PowerModels.constraint_voltage_angle_difference(pm, i)
+        _PM.constraint_voltage_angle_difference(pm, i)
 
-        PowerModels.constraint_thermal_limit_from(pm, i)
-        PowerModels.constraint_thermal_limit_to(pm, i)
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
     end
 
     for (i,cut) in enumerate(ref(pm, :branch_flow_cuts))
@@ -189,7 +189,7 @@ function build_scopf_cuts_soft_bpv(pm::AbstractPowerModel)
     end
 
     ##### Setup Objective #####
-    objective_variable_pg_cost(pm)
+    _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, pm.cnw, :pg_cost)
     branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)

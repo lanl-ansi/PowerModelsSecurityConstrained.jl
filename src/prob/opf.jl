@@ -7,22 +7,22 @@ The primary departure from the PowerModels standard formulation is dispatchable
 bus shunts and a slight change in the transformer model.
 """
 function run_opf_shunt(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
-function build_opf_shunt(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm)
+function build_opf_shunt(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
 
-    variable_reactive_shunt(pm)
+    variable_shunt_admittance_imaginary(pm)
 
-    PowerModels.objective_min_fuel_cost(pm)
+    _PM.objective_min_fuel_cost(pm)
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
     for i in ids(pm, :bus)
@@ -31,12 +31,12 @@ function build_opf_shunt(pm::AbstractPowerModel)
 
     for (i,branch) in ref(pm, :branch)
         constraint_ohms_yt_from_goc(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
 
-        PowerModels.constraint_voltage_angle_difference(pm, i)
+        _PM.constraint_voltage_angle_difference(pm, i)
 
-        PowerModels.constraint_thermal_limit_from(pm, i)
-        PowerModels.constraint_thermal_limit_to(pm, i)
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
     end
 end
 
@@ -48,22 +48,22 @@ penalized based on a conservative linear approximation of the formulation's
 flow violation penalty specification.
 """
 function run_opf_cheap(file, model_constructor, solver; kwargs...)
-    return run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 
-function build_opf_cheap(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm)
-    PowerModels.variable_generation(pm)
-    PowerModels.variable_branch_flow(pm, bounded=false)
+function build_opf_cheap(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm, bounded=false)
 
-    variable_branch_flow_slack(pm)
-    variable_reactive_shunt(pm)
+    variable_branch_power_slack(pm)
+    variable_shunt_admittance_imaginary(pm)
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
 
     for i in ids(pm, :bus)
@@ -72,16 +72,16 @@ function build_opf_cheap(pm::AbstractPowerModel)
 
     for (i,branch) in ref(pm, :branch)
         constraint_ohms_yt_from_goc(pm, i)
-        PowerModels.constraint_ohms_yt_to(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
 
-        PowerModels.constraint_voltage_angle_difference(pm, i)
+        _PM.constraint_voltage_angle_difference(pm, i)
 
         constraint_thermal_limit_from_soft(pm, i)
         constraint_thermal_limit_to_soft(pm, i)
     end
 
     ##### Setup Objective #####
-    objective_variable_pg_cost(pm)
+    _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, :pg_cost)
     sm_slack = var(pm, :sm_slack)
@@ -100,19 +100,19 @@ computations.  Support sparse collections of flow constrains for
 increased performance.
 """
 function run_opf_cheap_lazy_acr(file, solver; kwargs...)
-    return run_model(file, ACRPowerModel, solver, build_opf_cheap_lazy_acr; ref_extensions=[ref_add_goc!], kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_opf_cheap_lazy_acr; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
-function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
-    PowerModels.variable_voltage(pm, bounded=false)
-    PowerModels.variable_generation(pm)
+function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm, bounded=false)
+    _PM.variable_gen_power(pm)
 
-    variable_branch_flow_slack(pm)
-    variable_reactive_shunt(pm)
+    variable_branch_power_slack(pm)
+    variable_shunt_admittance_imaginary(pm)
 
-    variable_vvm_delta(pm)
-    variable_pg_delta(pm)
+    variable_bus_voltage_magnitude_delta(pm)
+    variable_gen_power_real_delta(pm)
 
     vvm = var(pm)[:vvm] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="vvm",
@@ -122,11 +122,11 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     )
 
 
-    PowerModels.constraint_model_voltage(pm)
+    _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :branch)
-        expression_branch_flow_yt_from_goc(pm, i)
-        expression_branch_flow_yt_to(pm, i)
+        expression_branch_power_ohms_yt_from_goc(pm, i)
+        _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
 
 
@@ -142,7 +142,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     end
 
     for i in ids(pm, :ref_buses)
-        PowerModels.constraint_theta_ref(pm, i)
+        _PM.constraint_theta_ref(pm, i)
     end
     #Memento.info(_LOGGER, "misc constraints time: $(time() - start_time)")
 
@@ -176,7 +176,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
-        constraint_gen_active_deviation(pm, i)
+        constraint_gen_power_real_deviation(pm, i)
     end
     #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
@@ -187,7 +187,7 @@ function build_opf_cheap_lazy_acr(pm::AbstractPowerModel)
     qg = var(pm, :qg)
     bs = var(pm, :bs)
     for (i,bus) in ref(pm, :bus)
-        #PowerModels.constraint_power_balance(pm, i)
+        #_PM.constraint_power_balance(pm, i)
 
         bus_arcs = ref(pm, :bus_arcs, i)
         bus_gens = ref(pm, :bus_gens, i)

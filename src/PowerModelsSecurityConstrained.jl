@@ -7,10 +7,15 @@ import Statistics: mean
 using Memento
 using JSON
 
-using JuMP
+import JuMP
+import JuMP: @variable, @constraint, @NLconstraint, @objective, @NLobjective, @expression, @NLexpression
 
-using PowerModels
-import InfrastructureModels; const _IM = InfrastructureModels
+import InfrastructureModels
+const _IM = InfrastructureModels
+
+import PowerModels; const _PM = PowerModels
+import PowerModels: ids, ref, var, con, sol
+
 
 
 const _LOGGER = Memento.getlogger(@__MODULE__)

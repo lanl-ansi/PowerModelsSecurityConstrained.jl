@@ -12,7 +12,7 @@ function build_scopf_multinetwork(network)
 
     info(_LOGGER, "building scopf multi-network with $(contingencies) networks")
 
-    mn_data = PowerModels.replicate(network, contingencies)
+    mn_data = _PM.replicate(network, contingencies)
     base_network = mn_data["nw"]["0"] = deepcopy(mn_data["nw"]["1"])
 
     for (n, network) in mn_data["nw"]
@@ -123,7 +123,7 @@ function activate_rate_a!(network)
 end
 
 function activate_rate_a_violations!(network)
-    ac_flows = PowerModels.calc_branch_flow_ac(network)
+    ac_flows = _PM.calc_branch_flow_ac(network)
     for (i,branch) in network["branch"]
         branch["pf_start"] = ac_flows["branch"][i]["pf"]
         branch["qf_start"] = ac_flows["branch"][i]["qf"]
@@ -323,8 +323,8 @@ function _calc_branch_flow_ac_goc(data::Dict{String,<:Any})
             f_bus = branch["f_bus"]
             t_bus = branch["t_bus"]
 
-            g, b = calc_branch_y(branch)
-            tr, ti = calc_branch_t(branch)
+            g, b = _PM.calc_branch_y(branch)
+            tr, ti = _PM.calc_branch_t(branch)
             g_fr = branch["g_fr"]
             b_fr = branch["b_fr"]
             g_to = branch["g_to"]
@@ -368,10 +368,10 @@ end
 
 function compute_power_balance_deltas!(network)
     flows = calc_branch_flow_ac_goc(network)
-    PowerModels.update_data!(network, flows)
+    _PM.update_data!(network, flows)
 
-    balance = PowerModels.calc_power_balance(network)
-    PowerModels.update_data!(network, balance)
+    balance = _PM.calc_power_balance(network)
+    _PM.update_data!(network, balance)
 
     p_delta_abs = [abs(bus["p_delta"]) for (i,bus) in network["bus"] if bus["bus_type"] != 4]
     q_delta_abs = [abs(bus["q_delta"]) for (i,bus) in network["bus"] if bus["bus_type"] != 4]

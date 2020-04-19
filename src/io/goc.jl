@@ -110,7 +110,7 @@ function parse_goc_files(con_file, inl_file, raw_file, rop_file; ini_file="", sc
     info(_LOGGER, "skipping power models data warnings")
     pm_logger_level = getlevel(getlogger(PowerModels))
     setlevel!(getlogger(PowerModels), "error")
-    network_model = PowerModels.parse_file(files["raw"], import_all=true)
+    network_model = _PM.parse_file(files["raw"], import_all=true)
     #network_model = parse_psse(files["raw"], import_all=true)
     #@time network_model = parse_psse(files["raw"], import_all=true)
 
@@ -184,7 +184,7 @@ function parse_goc_opf_files(ini_file; scenario_id="")
     info(_LOGGER, "  raw: $(files["raw"])")
     info(_LOGGER, "  rop: $(files["rop"])")
 
-    network_model = PowerModels.parse_file(files["raw"], import_all=true)
+    network_model = _PM.parse_file(files["raw"], import_all=true)
     gen_cost = parse_rop_file(files["rop"])
 
     return (ini_file=ini_file, scenario=scenario_id, network=network_model, cost=gen_cost, files=files)
@@ -742,10 +742,10 @@ function build_pm_model(goc_data)
 
     ##### Fix Broken Data #####
 
-    PowerModels.correct_cost_functions!(network)
+    _PM.correct_cost_functions!(network)
 
     # FYI, this breaks output API
-    #PowerModels.propagate_topology_status!(network)
+    #_PM.propagate_topology_status!(network)
 
     for (i,shunt) in network["shunt"]
         # test checks if a "switched shunt" in the orginal data model
@@ -859,10 +859,10 @@ function build_pm_opf_model(goc_data)
 
     ##### Fix Broken Data #####
 
-    PowerModels.correct_cost_functions!(network)
+    _PM.correct_cost_functions!(network)
 
     # FYI, this breaks output API
-    #PowerModels.propagate_topology_status!(network)
+    #_PM.propagate_topology_status!(network)
 
     for (i,shunt) in network["shunt"]
         # test checks if a "switched shunt" in the orginal data model
@@ -1247,7 +1247,7 @@ function correct_contingency_solution!(network, cont_sol; bus_gens = gens_by_bus
     cont_type = cont_sol["cont_type"]
     cont_idx = cont_sol["cont_comp_id"]
     network_tmp["branch"]["$(cont_idx)"]["br_status"] = 0
-    PowerModels.update_data!(network_tmp, cont_sol)
+    _PM.update_data!(network_tmp, cont_sol)
     deltas = compute_power_balance_deltas!(network_tmp)
     println("$(label): $(deltas)")
     =#

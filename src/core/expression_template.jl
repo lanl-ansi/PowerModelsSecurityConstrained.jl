@@ -1,7 +1,7 @@
 """
 defines power from generators at each bus, varies in contingencies
 """
-function expression_bus_generation(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_bus_generation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     if !haskey(var(pm, nw), :bus_pg)
         var(pm, nw)[:bus_pg] = Dict{Int,Any}()
     end
@@ -19,7 +19,7 @@ end
 """
 defines power from non-generator components at each bus, static in contingencies
 """
-function expression_bus_withdrawal(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_bus_withdrawal(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     if !haskey(var(pm, nw), :bus_wdp)
         var(pm, nw)[:bus_wdp] = Dict{Int,Any}()
     end
@@ -44,7 +44,7 @@ end
 
 
 ""
-function expression_branch_flow_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_branch_power_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     if !haskey(var(pm, nw), :p)
         var(pm, nw)[:p] = Dict{Tuple{Int,Int,Int},Any}()
     end
@@ -58,16 +58,16 @@ function expression_branch_flow_yt_from_goc(pm::AbstractPowerModel, i::Int; nw::
     f_idx = (i, f_bus, t_bus)
     t_idx = (i, t_bus, f_bus)
 
-    g, b = calc_branch_y(branch)
-    tr, ti = calc_branch_t(branch)
+    g, b = _PM.calc_branch_y(branch)
+    tr, ti = _PM.calc_branch_t(branch)
     g_fr = branch["g_fr"]
     b_fr = branch["b_fr"]
     tm = branch["tap"]
 
     if branch["transformer"]
-        expression_branch_flow_yt_from_goc(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+        expression_branch_power_ohms_yt_from_goc(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     else
-        expression_branch_flow_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+        _PM.expression_branch_power_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     end
 end
 
