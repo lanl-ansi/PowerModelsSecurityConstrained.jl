@@ -60,6 +60,10 @@ function add_remote_procs()
     if endswith(hostname, ".local")
         hostname = hostname[1:end-6]
     end
+    if endswith(hostname, ".localdomain")
+        hostname = hostname[1:end-12]
+    end
+
     node_names = [name for name in node_names if name != hostname]
 
     if length(node_names) > 0

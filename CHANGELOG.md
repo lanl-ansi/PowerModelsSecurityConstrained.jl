@@ -2,7 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- nothing
+- Improved distributed computation resilience to cluster configurations
 
 ### v0.6.0
 - Update to new function name convention of PowerModels v0.17 (breaking)
@@ -28,7 +28,7 @@ PowerModelsSecurityConstrained.jl Change Log
 - Updated logger printed name to PMSC (#17)
 - Reorganize code to standard PowerModels locations (#4)
 - Removed duplicate `objective_variable_pg_cost` implementation
-- Remove PowerModel parameters from fixed-formulation models
+- Removed PowerModel parameters from fixed-formulation models
 - Renamed problem functions to have less cryptic names (PR #18)
 
 ### v0.3.2
