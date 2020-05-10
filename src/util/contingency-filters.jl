@@ -940,6 +940,8 @@ end
 
 
 
+
+
 function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, branch::Dict{String,<:Any})
     branch_ptdf = Dict{Int,Any}()
     f_bus = branch["f_bus"]
@@ -954,6 +956,39 @@ function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, branch::Dict{Strin
     bus_injection = Dict(i => -b*(get(va_fr, i, 0.0) - get(va_to, i, 0.0)) for i in union(keys(va_fr), keys(va_to)))
 
     return bus_injection
+end
+
+
+""
+function check_contingencies_branch_power_pm_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+    if length(network_global) <= 0 || length(contingency_order_global) <= 0
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+    end
+
+    sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
+    _PM.update_data!(network_global, sol)
+
+    active_cuts = read_active_flow_cuts(output_dir=output_dir)
+    gen_flow_cuts = []
+    branch_flow_cuts = []
+    for cut in active_cuts
+        if cut.cont_type == "gen"
+            push!(gen_flow_cuts, cut)
+        elseif cut.cont_type == "branch"
+            push!(branch_flow_cuts, cut)
+        else
+            warn(_LOGGER, "unknown contingency type in cut $(cut)")
+        end
+    end
+
+    network = copy(network_global)
+    contingencies = contingency_order_global[cont_range]
+    network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
+    network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
+
+    cuts = check_contingencies_branch_power_pm(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
+
+    return cuts
 end
 
 
