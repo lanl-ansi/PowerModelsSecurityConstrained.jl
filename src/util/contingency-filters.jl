@@ -940,7 +940,6 @@ end
 
 
 
-
 function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, branch::Dict{String,<:Any})
     branch_ptdf = Dict{Int,Any}()
     f_bus = branch["f_bus"]
@@ -988,6 +987,8 @@ function check_contingencies_branch_power_pm(network;
 
     network_lal = deepcopy(network) #lal -> losses as loads
 
+    gen_pg_init = Dict(i => gen["pg"] for (i,gen) in network_lal["gen"])
+
     load_active = Dict(i => load for (i,load) in network_lal["load"] if load["status"] != 0)
 
     pd_total = sum(load["pd"] for (i,load) in load_active)
@@ -1030,23 +1031,26 @@ function check_contingencies_branch_power_pm(network;
         end
         #info(_LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
 
-        network_cont = deepcopy(network_lal)
+        #network_cont = deepcopy(network_lal)
+        for (i,gen) in network_lal["gen"]
+            gen["pg"] = gen_pg_init[i]
+        end
 
-        cont_gen = network_cont["gen"]["$(cont.idx)"]
+        cont_gen = network_lal["gen"]["$(cont.idx)"]
         pg_lost = cont_gen["pg"]
-        qg_lost = cont_gen["qg"]
+        #qg_lost = cont_gen["qg"]
 
         cont_gen["gen_status"] = 0
         cont_gen["pg"] = 0.0
-        cont_gen["qg"] = 0.0
+        #cont_gen["qg"] = 0.0
 
         #println()
-        #println(sum(gen["pg"] for (i,gen) in network_cont["gen"] if gen["gen_status"] != 0))
+        #println(sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0))
 
-        gen_bus = network_cont["bus"]["$(cont_gen["gen_bus"])"]
-        gen_set = network_cont["area_gens"][gen_bus["area"]]
+        gen_bus = network_lal["bus"]["$(cont_gen["gen_bus"])"]
+        gen_set = network_lal["area_gens"][gen_bus["area"]]
 
-        gen_active = Dict(i => gen for (i,gen) in network_cont["gen"] if gen["index"] != cont.idx && gen["index"] in gen_set && gen["gen_status"] != 0)
+        gen_active = Dict(i => gen for (i,gen) in network_lal["gen"] if gen["index"] != cont.idx && gen["index"] in gen_set && gen["gen_status"] != 0)
 
         alpha_gens = [gen["alpha"] for (i,gen) in gen_active]
         if length(alpha_gens) == 0 || isapprox(sum(alpha_gens), 0.0)
@@ -1056,41 +1060,40 @@ function check_contingencies_branch_power_pm(network;
 
         alpha_total = sum(alpha_gens)
         delta = pg_lost/alpha_total
-        network_cont["delta"] = delta
+        network_lal["delta"] = delta
         #info(_LOGGER, "$(pg_lost) - $(alpha_total) - $(delta)")
 
         for (i,gen) in gen_active
             gen["pg"] += gen["alpha"]*delta
-            gen["qg"] = 0.0
         end
 
-        #println(sum(gen["pg"] for (i,gen) in network_cont["gen"] if gen["gen_status"] != 0))
+        #println(sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0))
 
         try
-            solution = _PM.compute_dc_pf(network_cont)
-            _PM.update_data!(network_cont, solution)
+            solution = _PM.compute_dc_pf(network_lal)
+            _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
             continue
         end
 
-        flow = _PM.calc_branch_flow_dc(network_cont)
-        _PM.update_data!(network_cont, flow)
+        flow = _PM.calc_branch_flow_dc(network_lal)
+        _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations_ratec(network_cont, network_cont)
+        vio = compute_violations_ratec(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vios = branch_violations_sorted_ratec(network_cont, network_cont)
+            branch_vios = branch_violations_sorted_ratec(network_lal, network_lal)
             branch_vio = branch_vios[1]
 
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
                 info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
-                am = _PM.calc_susceptance_matrix(network_cont)
-                branch = network_cont["branch"]["$(branch_vio.branch_id)"]
+                am = _PM.calc_susceptance_matrix(network_lal)
+                branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
                 bus_injection = compute_branch_ptdf_single(am, branch)
                 cut = (gen_id=cont.idx, cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
@@ -1100,6 +1103,10 @@ function check_contingencies_branch_power_pm(network;
             end
 
         end
+
+        cont_gen["gen_status"] = 1
+        cont_gen["pg"] = pg_lost
+        network_lal["delta"] = 0.0
     end
 
     # work around for julia compiler bug
@@ -1119,41 +1126,41 @@ function check_contingencies_branch_power_pm(network;
 
         #info(_LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
 
-        network_cont = deepcopy(network_lal)
+        #network_cont = deepcopy(network_lal)
 
-        cont_branch = network_cont["branch"]["$(cont.idx)"]
+        cont_branch = network_lal["branch"]["$(cont.idx)"]
         cont_branch["br_status"] = 0
 
-        pf = get(cont_branch, "pf", 0.0)
-        pt = get(cont_branch, "pt", 0.0)
-        qf = get(cont_branch, "qf", 0.0)
-        qt = get(cont_branch, "qt", 0.0)
+        # pf = get(cont_branch, "pf", 0.0)
+        # pt = get(cont_branch, "pt", 0.0)
+        # qf = get(cont_branch, "qf", 0.0)
+        # qt = get(cont_branch, "qt", 0.0)
 
         try
-            solution = _PM.compute_dc_pf(network_cont)
-            _PM.update_data!(network_cont, solution)
+            solution = _PM.compute_dc_pf(network_lal)
+            _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
             continue
         end
 
-        flow = _PM.calc_branch_flow_dc(network_cont)
-        _PM.update_data!(network_cont, flow)
+        flow = _PM.calc_branch_flow_dc(network_lal)
+        _PM.update_data!(network_lal, flow)
 
 
         #_PM.print_summary(sol_tmp)
 
-        vio = compute_violations_ratec(network_cont, network_cont)
+        vio = compute_violations_ratec(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vio = branch_violations_sorted_ratec(network_cont, network_cont)[1]
+            branch_vio = branch_violations_sorted_ratec(network_lal, network_lal)[1]
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
                 info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
-                am = _PM.calc_susceptance_matrix(network_cont)
-                branch = network_cont["branch"]["$(branch_vio.branch_id)"]
+                am = _PM.calc_susceptance_matrix(network_lal)
+                branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
                 bus_injection = compute_branch_ptdf_single(am, branch)
                 cut = (cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
@@ -1162,6 +1169,8 @@ function check_contingencies_branch_power_pm(network;
                 warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
             end
         end
+
+        cont_branch["br_status"] = 1
     end
 
 
