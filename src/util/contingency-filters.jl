@@ -937,3 +937,243 @@ function check_contingencies_branch_power(network;
     return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
 end
 
+
+
+
+
+function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, branch::Dict{String,<:Any})
+    branch_ptdf = Dict{Int,Any}()
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+
+    b = imag(inv(branch["br_r"] + im * branch["br_x"]))
+
+    va_fr = _PM.injection_factors_va(am, f_bus)
+    va_to = _PM.injection_factors_va(am, t_bus)
+
+    # convert bus injection functions to PTDF style
+    bus_injection = Dict(i => -b*(get(va_fr, i, 0.0) - get(va_to, i, 0.0)) for i in union(keys(va_fr), keys(va_to)))
+
+    return bus_injection
+end
+
+
+function check_contingencies_branch_power_pm(network;
+        gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
+        gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
+        gen_flow_cuts=[], branch_flow_cuts=[]
+        )
+
+    if _IM.ismultinetwork(network)
+        error(_LOGGER, "the branch flow cut generator can only be used on single networks")
+    end
+    time_contingencies_start = time()
+
+    gen_cuts_active = Dict()
+    for gen_cut in gen_flow_cuts
+        if !haskey(gen_cuts_active, gen_cut.cont_label)
+            gen_cuts_active[gen_cut.cont_label] = Set{Int}()
+        end
+        push!(gen_cuts_active[gen_cut.cont_label], gen_cut.branch_id)
+    end
+
+    branch_cuts_active = Dict()
+    for branch_cut in branch_flow_cuts
+        if !haskey(branch_cuts_active, branch_cut.cont_label)
+            branch_cuts_active[branch_cut.cont_label] = Set{Int}()
+        end
+        push!(branch_cuts_active[branch_cut.cont_label], branch_cut.branch_id)
+    end
+
+
+    network_lal = deepcopy(network) #lal -> losses as loads
+
+    load_active = Dict(i => load for (i,load) in network_lal["load"] if load["status"] != 0)
+
+    pd_total = sum(load["pd"] for (i,load) in load_active)
+    p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
+    p_delta = 0.0
+
+    if p_losses > pg_loss_tol
+        load_count = length(load_active)
+        p_delta = p_losses/load_count
+        for (i,load) in load_active
+            load["pd"] += p_delta
+        end
+        warn(_LOGGER, "active power losses found $(p_losses) increasing loads by $(p_delta)")
+    end
+
+
+    gen_cont_total = length(network["gen_contingencies"])
+    branch_cont_total = length(network["branch_contingencies"])
+
+    gen_eval_limit = min(gen_eval_limit, gen_cont_total)
+    branch_eval_limit = min(branch_eval_limit, branch_cont_total)
+
+    gen_cap = Dict(gen["index"] => sqrt(max(abs(gen["pmin"]), abs(gen["pmax"]))^2 + max(abs(gen["qmin"]), abs(gen["qmax"]))^2) for (i,gen) in network["gen"])
+    network["gen_contingencies"] = sort(network["gen_contingencies"], rev=true, by=x -> gen_cap[x.idx])
+    gen_contingencies = network["gen_contingencies"][1:gen_eval_limit]
+
+    line_imp_mag = Dict(branch["index"] => branch["rate_a"]*sqrt(branch["br_r"]^2 + branch["br_x"]^2) for (i,branch) in network["branch"])
+    network["branch_contingencies"] = sort(network["branch_contingencies"], rev=true, by=x -> line_imp_mag[x.idx])
+    branch_contingencies = network["branch_contingencies"][1:branch_eval_limit]
+
+    gen_cuts = []
+    for (i,cont) in enumerate(gen_contingencies)
+        if length(gen_cuts) >= gen_flow_cut_limit
+            info(_LOGGER, "hit gen flow cut limit $(gen_flow_cut_limit)")
+            break
+        end
+        if length(gen_cuts) >= total_cut_limit
+            info(_LOGGER, "hit total cut limit $(total_cut_limit)")
+            break
+        end
+        #info(_LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
+
+        network_cont = deepcopy(network_lal)
+
+        cont_gen = network_cont["gen"]["$(cont.idx)"]
+        pg_lost = cont_gen["pg"]
+        qg_lost = cont_gen["qg"]
+
+        cont_gen["gen_status"] = 0
+        cont_gen["pg"] = 0.0
+        cont_gen["qg"] = 0.0
+
+        #println()
+        #println(sum(gen["pg"] for (i,gen) in network_cont["gen"] if gen["gen_status"] != 0))
+
+        gen_bus = network_cont["bus"]["$(cont_gen["gen_bus"])"]
+        gen_set = network_cont["area_gens"][gen_bus["area"]]
+
+        gen_active = Dict(i => gen for (i,gen) in network_cont["gen"] if gen["index"] != cont.idx && gen["index"] in gen_set && gen["gen_status"] != 0)
+
+        alpha_gens = [gen["alpha"] for (i,gen) in gen_active]
+        if length(alpha_gens) == 0 || isapprox(sum(alpha_gens), 0.0)
+            warn(_LOGGER, "no available active power response in cont $(cont.label), active gens $(length(alpha_gens))")
+            continue
+        end
+
+        alpha_total = sum(alpha_gens)
+        delta = pg_lost/alpha_total
+        network_cont["delta"] = delta
+        #info(_LOGGER, "$(pg_lost) - $(alpha_total) - $(delta)")
+
+        for (i,gen) in gen_active
+            gen["pg"] += gen["alpha"]*delta
+            gen["qg"] = 0.0
+        end
+
+        #println(sum(gen["pg"] for (i,gen) in network_cont["gen"] if gen["gen_status"] != 0))
+
+        try
+            solution = _PM.compute_dc_pf(network_cont)
+            _PM.update_data!(network_cont, solution)
+        catch exception
+            warn(_LOGGER, "linear solve failed on $(cont.label)")
+            continue
+        end
+
+        flow = _PM.calc_branch_flow_dc(network_cont)
+        _PM.update_data!(network_cont, flow)
+
+
+        vio = compute_violations_ratec(network_cont, network_cont)
+
+        #info(_LOGGER, "$(cont.label) violations $(vio)")
+        #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
+        if vio.sm > sm_threshold
+            branch_vios = branch_violations_sorted_ratec(network_cont, network_cont)
+            branch_vio = branch_vios[1]
+
+            if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
+                info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
+
+                am = _PM.calc_susceptance_matrix(network_cont)
+                branch = network_cont["branch"]["$(branch_vio.branch_id)"]
+
+                bus_injection = compute_branch_ptdf_single(am, branch)
+                cut = (gen_id=cont.idx, cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
+                push!(gen_cuts, cut)
+            else
+                warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
+            end
+
+        end
+    end
+
+    # work around for julia compiler bug
+    #num_buses = length(network_ref[:bus])
+    #b_cont = zeros(Float64, num_buses, num_buses)
+
+    branch_cuts = []
+    for (i,cont) in enumerate(branch_contingencies)
+        if length(branch_cuts) >= branch_flow_cut_limit
+            info(_LOGGER, "hit branch flow cut limit $(branch_flow_cut_limit)")
+            break
+        end
+        if length(gen_cuts) + length(branch_cuts) >= total_cut_limit
+            info(_LOGGER, "hit total cut limit $(total_cut_limit)")
+            break
+        end
+
+        #info(_LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
+
+        network_cont = deepcopy(network_lal)
+
+        cont_branch = network_cont["branch"]["$(cont.idx)"]
+        cont_branch["br_status"] = 0
+
+        pf = get(cont_branch, "pf", 0.0)
+        pt = get(cont_branch, "pt", 0.0)
+        qf = get(cont_branch, "qf", 0.0)
+        qt = get(cont_branch, "qt", 0.0)
+
+        try
+            solution = _PM.compute_dc_pf(network_cont)
+            _PM.update_data!(network_cont, solution)
+        catch exception
+            warn(_LOGGER, "linear solve failed on $(cont.label)")
+            continue
+        end
+
+        flow = _PM.calc_branch_flow_dc(network_cont)
+        _PM.update_data!(network_cont, flow)
+
+
+        #_PM.print_summary(sol_tmp)
+
+        vio = compute_violations_ratec(network_cont, network_cont)
+
+        #info(_LOGGER, "$(cont.label) violations $(vio)")
+        #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
+        if vio.sm > sm_threshold
+            branch_vio = branch_violations_sorted_ratec(network_cont, network_cont)[1]
+            if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
+                info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
+
+                am = _PM.calc_susceptance_matrix(network_cont)
+                branch = network_cont["branch"]["$(branch_vio.branch_id)"]
+
+                bus_injection = compute_branch_ptdf_single(am, branch)
+                cut = (cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
+                push!(branch_cuts, cut)
+            else
+                warn(_LOGGER, "skipping active flow cut on cont $(cont.label) branch $(branch_vio.branch_id) with constraint flow violations $(branch_vio.sm_vio)")
+            end
+        end
+    end
+
+
+    if p_delta != 0.0
+        warn(_LOGGER, "re-adjusting loads by $(-p_delta)")
+        for (i,load) in load_active
+            load["pd"] -= p_delta
+        end
+    end
+
+    time_contingencies = time() - time_contingencies_start
+    info(_LOGGER, "cont eval time: $(time_contingencies)")
+
+    return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
+end
