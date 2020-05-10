@@ -441,8 +441,14 @@ function compute_violations(network, solution; vm_digits=3)
         for (i,branch) in network["branch"]
             if branch["br_status"] != 0
                 branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+
+                s_fr = abs(branch_sol["pf"])
+                s_to = abs(branch_sol["pt"])
+
+                if !isnan(branch_sol["qf"]) && !isnan(branch_sol["qt"])
+                    s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
+                    s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+                end
 
                 # note true model is rate_c
                 #vio_flag = false
@@ -530,8 +536,15 @@ function compute_violations_ratec(network, solution; vm_digits=3)
         for (i,branch) in network["branch"]
             if branch["br_status"] != 0
                 branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+
+                s_fr = abs(branch_sol["pf"])
+                s_to = abs(branch_sol["pt"])
+
+                if !isnan(branch_sol["qf"]) && !isnan(branch_sol["qt"])
+                    s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
+                    s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+                end
+
 
                 # note true model is rate_c
                 #vio_flag = false
@@ -553,6 +566,7 @@ function compute_violations_ratec(network, solution; vm_digits=3)
     return (vm=vm_vio, pg=pg_vio, qg=qg_vio, sm=sm_vio)
 end
 
+
 "returns a sorted list of branch flow violations"
 function branch_violations_sorted(network, solution)
     branch_violations = []
@@ -561,8 +575,14 @@ function branch_violations_sorted(network, solution)
         for (i,branch) in network["branch"]
             if branch["br_status"] != 0
                 branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+
+                s_fr = abs(branch_sol["pf"])
+                s_to = abs(branch_sol["pt"])
+
+                if !isnan(branch_sol["qf"]) && !isnan(branch_sol["qt"])
+                    s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
+                    s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+                end
 
                 sm_vio = 0.0
                 # TODO update to rate_c
@@ -594,8 +614,14 @@ function branch_violations_sorted_ratec(network, solution)
         for (i,branch) in network["branch"]
             if branch["br_status"] != 0
                 branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+
+                s_fr = abs(branch_sol["pf"])
+                s_to = abs(branch_sol["pt"])
+
+                if !isnan(branch_sol["qf"]) && !isnan(branch_sol["qt"])
+                    s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
+                    s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+                end
 
                 sm_vio = 0.0
                 # TODO update to rate_c

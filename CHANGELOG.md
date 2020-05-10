@@ -2,6 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- Updated violation computations to support NaN reactive power values
 - Improved distributed computation resilience to cluster configurations
 
 ### v0.6.0
