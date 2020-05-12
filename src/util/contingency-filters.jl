@@ -1066,21 +1066,16 @@ function check_contingencies_branch_power_pm(network;
         end
         #info(_LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
 
-        #network_cont = deepcopy(network_lal)
         for (i,gen) in network_lal["gen"]
             gen["pg"] = gen_pg_init[i]
         end
 
         cont_gen = network_lal["gen"]["$(cont.idx)"]
         pg_lost = cont_gen["pg"]
-        #qg_lost = cont_gen["qg"]
 
         cont_gen["gen_status"] = 0
         cont_gen["pg"] = 0.0
-        #cont_gen["qg"] = 0.0
 
-        #println()
-        #println(sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0))
 
         gen_bus = network_lal["bus"]["$(cont_gen["gen_bus"])"]
         gen_set = network_lal["area_gens"][gen_bus["area"]]
@@ -1101,8 +1096,6 @@ function check_contingencies_branch_power_pm(network;
         for (i,gen) in gen_active
             gen["pg"] += gen["alpha"]*delta
         end
-
-        #println(sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0))
 
         try
             solution = _PM.compute_dc_pf(network_lal)
@@ -1144,9 +1137,6 @@ function check_contingencies_branch_power_pm(network;
         network_lal["delta"] = 0.0
     end
 
-    # work around for julia compiler bug
-    #num_buses = length(network_ref[:bus])
-    #b_cont = zeros(Float64, num_buses, num_buses)
 
     branch_cuts = []
     for (i,cont) in enumerate(branch_contingencies)
@@ -1161,15 +1151,8 @@ function check_contingencies_branch_power_pm(network;
 
         #info(_LOGGER, "working on ($(i)/$(branch_eval_limit)/$(branch_cont_total)): $(cont.label)")
 
-        #network_cont = deepcopy(network_lal)
-
         cont_branch = network_lal["branch"]["$(cont.idx)"]
         cont_branch["br_status"] = 0
-
-        # pf = get(cont_branch, "pf", 0.0)
-        # pt = get(cont_branch, "pt", 0.0)
-        # qf = get(cont_branch, "qf", 0.0)
-        # qt = get(cont_branch, "qt", 0.0)
 
         try
             solution = _PM.compute_dc_pf(network_lal)
@@ -1181,9 +1164,6 @@ function check_contingencies_branch_power_pm(network;
 
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
-
-
-        #_PM.print_summary(sol_tmp)
 
         vio = compute_violations_ratec(network_lal, network_lal)
 
