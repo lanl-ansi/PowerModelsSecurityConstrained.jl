@@ -76,24 +76,6 @@ cuts_ratec_nd_first_lazy_branch = [0, 10]
 end
 
 
-cuts_ratec_nd_first_lazy_gen = [0, 10]
-cuts_ratec_nd_first_lazy_branch = [0, 10]
-@testset "cuts ratec_nd_first_lazy - $(i)" for (i,network) in enumerate(networks)
-    network = deepcopy(network)
-    network["gen_flow_cuts"] = []
-    network["branch_flow_cuts"] = []
-
-    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
-    @test isapprox(result["termination_status"], OPTIMAL)
-    update_active_power_data!(network, result["solution"])
-
-    cuts = check_contingencies_branch_power_bpv_pm(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
-
-    @test isapprox(length(cuts.gen_cuts), cuts_ratec_nd_first_lazy_gen[i])
-    @test isapprox(length(cuts.branch_cuts), cuts_ratec_nd_first_lazy_branch[i])
-end
-
-
 cuts_ratec_gen = [0, 10]
 cuts_ratec_branch = [0, 10]
 @testset "cuts ratec - $(i)" for (i,network) in enumerate(networks)
@@ -106,24 +88,6 @@ cuts_ratec_branch = [0, 10]
     update_active_power_data!(network, result["solution"])
 
     cuts = check_contingencies_branch_power(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
-
-    @test isapprox(length(cuts.gen_cuts), cuts_ratec_gen[i])
-    @test isapprox(length(cuts.branch_cuts), cuts_ratec_branch[i])
-end
-
-
-cuts_ratec_gen = [0, 10]
-cuts_ratec_branch = [0, 10]
-@testset "cuts ratec pm - $(i)" for (i,network) in enumerate(networks)
-    network = deepcopy(network)
-    network["gen_flow_cuts"] = []
-    network["branch_flow_cuts"] = []
-
-    result = run_opf_cheap(network, DCPPowerModel, lp_solver)
-    @test isapprox(result["termination_status"], OPTIMAL)
-    update_active_power_data!(network, result["solution"])
-
-    cuts = check_contingencies_branch_power_pm(network, total_cut_limit=1000, gen_flow_cuts=[], branch_flow_cuts=[])
 
     @test isapprox(length(cuts.gen_cuts), cuts_ratec_gen[i])
     @test isapprox(length(cuts.branch_cuts), cuts_ratec_branch[i])

@@ -2,6 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- Updated contigency filters to use PowerModels PTDF cut tools (#21)
 - Updated violation computations to support NaN reactive power values
 - Improved distributed computation resilience to cluster configurations
 
