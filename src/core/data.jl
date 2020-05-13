@@ -3,7 +3,7 @@
 transforms a contigency list into explicit multinetwork data with network 0
 being the base case
 """
-function build_scopf_multinetwork(network)
+function build_scopf_multinetwork(network::Dict{String,<:Any})
     if _IM.ismultinetwork(network)
         error(_LOGGER, "build scopf can only be used on single networks")
     end
@@ -56,7 +56,7 @@ end
 
 # note this is simialr to bus_gen_lookup in PowerModels
 # core differences are taking network as an arg and filtering by gen_status
-function gens_by_bus(network)
+function gens_by_bus(network::Dict{String,<:Any})
     bus_gens = Dict(i => Any[] for (i,bus) in network["bus"])
     for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
@@ -69,7 +69,7 @@ end
 
 
 
-function tighten_constraints!(network)
+function tighten_constraints!(network::Dict{String,<:Any})
     for (i,bus) in network["bus"]
         if isapprox(bus["vmax"], bus["evhi"])
             bus["vmax_target"] = bus["vmax"] - 0.03
@@ -101,7 +101,7 @@ end
 
 
 
-function deactivate_rate_a!(network)
+function deactivate_rate_a!(network::Dict{String,<:Any})
     network["active_rates"] = Int[]
     for (i,branch) in network["branch"]
         branch["rate_a_inactive"] = branch["rate_a"]
@@ -109,7 +109,7 @@ function deactivate_rate_a!(network)
     end
 end
 
-function activate_rate_a!(network)
+function activate_rate_a!(network::Dict{String,<:Any})
     if haskey(network, "active_rates")
         delete!(network, "active_rates")
     end
@@ -122,7 +122,7 @@ function activate_rate_a!(network)
     end
 end
 
-function activate_rate_a_violations!(network)
+function activate_rate_a_violations!(network::Dict{String,<:Any})
     ac_flows = _PM.calc_branch_flow_ac(network)
     for (i,branch) in network["branch"]
         branch["pf_start"] = ac_flows["branch"][i]["pf"]
@@ -161,7 +161,7 @@ end
 assumes there is one reference bus and one connected component and adjusts voltage
 angles to be centered around zero at the reference bus.
 """
-function correct_voltage_angles!(network)
+function correct_voltage_angles!(network::Dict{String,<:Any})
     ref_bus = -1
     for (i,bus) in network["bus"]
         if bus["bus_type"] == 3
@@ -178,7 +178,7 @@ end
 
 
 "shift networks voltage angles by a specified amount"
-function shift_voltage_anlges!(network, shift::Number)
+function shift_voltage_anlges!(network::Dict{String,<:Any}, shift::Number)
     for (i,bus) in network["bus"]
         bus["va"] = bus["va"] + shift
     end
@@ -220,7 +220,7 @@ function set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
 end
 
 
-function update_active_power_data!(network, data; branch_flow=false)
+function update_active_power_data!(network::Dict{String,<:Any}, data::Dict{String,<:Any}; branch_flow=false)
     for (i,bus) in data["bus"]
         nw_bus = network["bus"][i]
         nw_bus["va"] = bus["va"]
@@ -241,7 +241,7 @@ function update_active_power_data!(network, data; branch_flow=false)
 end
 
 
-function extract_solution(network; branch_flow=false)
+function extract_solution(network::Dict{String,<:Any}; branch_flow=false)
     sol = Dict{String,Any}()
 
     sol["bus"] = Dict{String,Any}()
@@ -366,7 +366,7 @@ function _calc_branch_flow_ac_goc(data::Dict{String,<:Any})
     return Dict{String,Any}("branch" => flows)
 end
 
-function compute_power_balance_deltas!(network)
+function compute_power_balance_deltas!(network::Dict{String,<:Any})
     flows = calc_branch_flow_ac_goc(network)
     _PM.update_data!(network, flows)
 
@@ -387,7 +387,7 @@ end
 
 
 
-function compute_violations(network, solution; vm_digits=3)
+function compute_violations(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; vm_digits=3)
 
     vm_vio = 0.0
     for (i,bus) in network["bus"]
@@ -483,7 +483,7 @@ end
 
 
 
-function compute_violations_ratec(network, solution; vm_digits=3)
+function compute_violations_ratec(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; vm_digits=3)
     vm_vio = 0.0
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
@@ -568,7 +568,7 @@ end
 
 
 "returns a sorted list of branch flow violations"
-function branch_violations_sorted(network, solution)
+function branch_violations_sorted(network::Dict{String,<:Any}, solution::Dict{String,<:Any})
     branch_violations = []
 
     if haskey(solution, "branch")
@@ -607,7 +607,7 @@ end
 
 
 "returns a sorted list of branch flow violations"
-function branch_violations_sorted_ratec(network, solution)
+function branch_violations_sorted_ratec(network::Dict{String,<:Any}, solution::Dict{String,<:Any})
     branch_violations = []
 
     if haskey(solution, "branch")
