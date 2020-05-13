@@ -5,6 +5,7 @@ PowerModelsSecurityConstrained.jl Change Log
 - Updated contigency filters to use PowerModels PTDF cut tools (#21)
 - Updated violation computations to support NaN reactive power values
 - Improved distributed computation resilience to cluster configurations
+- Fixed SCOPF formulations to allow shunt optimization
 
 ### v0.6.0
 - Update to new function name convention of PowerModels v0.17 (breaking)

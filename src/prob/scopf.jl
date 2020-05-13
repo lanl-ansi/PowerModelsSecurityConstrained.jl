@@ -1,9 +1,10 @@
 
+
 """
-An acadmic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
-A DC power flow approximation is used. Power balance and line flow constraints
-are strictly enforced in the first stage and contingency stages.
-Contingency branch flow constraints are enforced by PTDF cuts.
+An academic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
+Power balance and line flow constraints are strictly enforced in the first
+stage and contingency stages. Contingency branch flow constraints are enforced
+by PTDF cuts using the DC power flow approximation.
 
 This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
@@ -102,7 +103,7 @@ This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
 function run_scopf_cuts_soft(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -110,6 +111,8 @@ function build_scopf_cuts_soft(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
+
+    variable_shunt_admittance_imaginary(pm)
 
     variable_branch_contigency_power_violation(pm)
     variable_gen_contigency_power_violation(pm)
@@ -128,11 +131,11 @@ function build_scopf_cuts_soft(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        _PM.constraint_power_balance(pm, i)
+        constraint_power_balance_shunt_dispatch(pm, i)
     end
 
     for i in ids(pm, :branch)
-        _PM.constraint_ohms_yt_from(pm, i)
+        constraint_ohms_yt_from_goc(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
@@ -210,7 +213,7 @@ end
 
 "a variant of `run_scopf_cuts_dc_soft` with a different generator response function"
 function run_scopf_cuts_soft_bpv(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -218,6 +221,8 @@ function build_scopf_cuts_soft_bpv(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
+
+    variable_shunt_admittance_imaginary(pm)
 
     variable_branch_contigency_power_violation(pm)
     variable_gen_contigency_power_violation(pm)
@@ -235,11 +240,11 @@ function build_scopf_cuts_soft_bpv(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        _PM.constraint_power_balance(pm, i)
+        constraint_power_balance_shunt_dispatch(pm, i)
     end
 
     for i in ids(pm, :branch)
-        _PM.constraint_ohms_yt_from(pm, i)
+        constraint_ohms_yt_from_goc(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)

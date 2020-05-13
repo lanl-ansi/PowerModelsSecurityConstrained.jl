@@ -1,26 +1,17 @@
-function run_scopf_contigency_cuts(file::String, model_type::Type, optimizer; kwargs...)
-    data = _PM.parse_file(file)
-    return run_scopf_contigency_cuts!(data, model_type, optimizer; kwargs...)
-end
-
-function run_scopf_contigency_cuts!(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
-    
-end
-
 
 "Solves DC-SCOPF by adding branch-based PTDF cuts to the base-case iterativly"
-function run_scopf_ptdf_cuts(file::String, optimizer; kwargs...)
+function run_scopf_ptdf_cuts(file::String, model_type::Type, optimizer; kwargs...)
     data = _PM.parse_file(file)
     return run_scopf_ptdf_cuts!(data, optimizer; kwargs...)
 end
 
-function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
+function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
     time_start = time()
 
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = _PM.run_opf(network, _PM.DCPPowerModel, optimizer)
+    result = _PM.run_opf(network, model_type, optimizer)
     if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
         error(_LOGGER, "base-case OPF solve failed in run_scopf_ptdf_cuts, status $(result["termination_status"])")
     end
@@ -49,23 +40,13 @@ function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, optimizer; max_iter::
         info(_LOGGER, "active cuts: gen $(length(network["gen_flow_cuts"])), branch $(length(network["branch_flow_cuts"]))")
 
         time_solve_start = time()
-        #result = run_scopf_cuts_soft(network, _PM.DCPPowerModel, qp_solver)
-        result = run_scopf_cuts(network, _PM.DCPPowerModel, optimizer)
+        result = run_scopf_cuts(network, model_type, optimizer)
         if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
             warn(_LOGGER, "scopf solve failed with status $(result["termination_status"]), terminating fixed-point early")
             break
         end
         info(_LOGGER, "objective: $(result["objective"])")
         _PM.update_data!(network, result["solution"])
-
-        #balance = compute_power_balance_deltas!(network)
-        #info(_LOGGER, "power balance cost: $(balance)")
-
-        # gen_cost = calc_gen_cost(network)
-        # info(_LOGGER, "generation cost: $(gen_cost)")
-
-        # time_remaining = time_limit - (time() - time_start)
-        # info(_LOGGER, "time remaining: $(time_remaining)")
 
         time_iteration = time() - time_start_iteration
         time_remaining = time_limit - (time() - time_start)
