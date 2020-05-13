@@ -1,11 +1,7 @@
 
 function compute_inverse_size(network)
     b0 = Base.gc_bytes()
-    network_ref = _PM.build_ref(network)
-    network_ref = network_ref[:nw][0]
-    bus_idx2id, bus_id2idx = build_indices(network_ref[:bus])
-    b_base = compute_B_sparse(network_ref, bus_idx2id, bus_id2idx)
-    b_inv = compute_B_inverse(network_ref, bus_idx2id, bus_id2idx)
+    b_inv = _PM.calc_susceptance_matrix_inv(network)
     return Base.gc_bytes() - b0
 end
 
@@ -406,7 +402,7 @@ end
 
 
 ""
-function check_contingencies_branch_power_pm_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+function check_contingencies_branch_power_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
     if length(network_global) <= 0 || length(contingency_order_global) <= 0
         error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
@@ -659,7 +655,7 @@ end
 
 
 ""
-function check_contingencies_branch_power_bpv_pm_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+function check_contingencies_branch_power_bpv_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
     if length(network_global) <= 0 || length(contingency_order_global) <= 0
         error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
     end
