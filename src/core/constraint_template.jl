@@ -101,6 +101,26 @@ function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, i::Int;
 end
 
 
+""
+function constraint_branch_contingency_ptdf_thermal_limit_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    cut = ref(pm, :branch_flow_cuts, i)
+    branch = ref(pm, nw, :branch, cut.branch_id)
+
+    if haskey(branch, "rate_c")
+        constraint_branch_contingency_ptdf_thermal_limit_from(pm, nw, i, cut.bus_injection, branch["rate_c"])
+    end
+end
+
+""
+function constraint_branch_contingency_ptdf_thermal_limit_to(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    cut = ref(pm, :branch_flow_cuts, i)
+    branch = ref(pm, nw, :branch, cut.branch_id)
+
+    if haskey(branch, "rate_c")
+        constraint_branch_contingency_ptdf_thermal_limit_to(pm, nw, i, cut.bus_injection, branch["rate_c"])
+    end
+end
+
 
 ""
 function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)

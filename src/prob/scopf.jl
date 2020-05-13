@@ -1,4 +1,95 @@
 
+"""
+An acadmic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
+A DC power flow approximation is used. Power balance and line flow constraints
+are strictly enforced in the first stage and contingency stages.
+Contingency branch flow constraints are enforced by PTDF cuts.
+
+This formulation is used in conjunction with the contingency filters that
+generate PTDF cuts.
+"""
+function run_scopf_cuts(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts; kwargs...)
+end
+
+""
+function build_scopf_cuts(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
+
+    for i in ids(pm, :bus)
+        expression_bus_generation(pm, i)
+        expression_bus_withdrawal(pm, i)
+    end
+
+    _PM.constraint_model_voltage(pm)
+
+    for i in ids(pm, :ref_buses)
+        _PM.constraint_theta_ref(pm, i)
+    end
+
+    for i in ids(pm, :bus)
+        _PM.constraint_power_balance(pm, i)
+    end
+
+    for i in ids(pm, :branch)
+        _PM.constraint_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
+
+        _PM.constraint_voltage_angle_difference(pm, i)
+
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
+    end
+
+
+    for (i,cut) in enumerate(ref(pm, :branch_flow_cuts))
+        constraint_branch_contingency_ptdf_thermal_limit_from(pm, i)
+        constraint_branch_contingency_ptdf_thermal_limit_to(pm, i)
+    end
+
+    bus_withdrawal = var(pm, :bus_wdp)
+
+    for (i,cut) in enumerate(ref(pm, :gen_flow_cuts))
+        branch = ref(pm, :branch, cut.branch_id)
+        gen = ref(pm, :gen, cut.gen_id)
+        gen_bus = ref(pm, :bus, gen["gen_bus"])
+        gen_set = ref(pm, :area_gens)[gen_bus["area"]]
+        alpha_total = sum(gen["alpha"] for (i,gen) in ref(pm, :gen) if gen["index"] != cut.gen_id && i in gen_set)
+
+        cont_bus_injection = Dict{Int,Any}()
+        for (i, bus) in ref(pm, :bus)
+            inj = 0.0
+            for g in ref(pm, :bus_gens, i)
+                if g != cut.gen_id
+                    if g in gen_set
+                        inj += var(pm, :pg, g) + gen["alpha"]*var(pm, :pg, cut.gen_id)/alpha_total
+                    else
+                        inj += var(pm, :pg, g)
+                    end
+                end
+            end
+            cont_bus_injection[i] = inj
+        end
+
+        #rate = branch["rate_a"]
+        rate = branch["rate_c"]
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
+    end
+
+    ##### Setup Objective #####
+    _PM.objective_variable_pg_cost(pm)
+    # explicit network id needed because of conductor-less
+    pg_cost = var(pm, pm.cnw, :pg_cost)
+
+    @objective(pm.model, Min,
+        sum( pg_cost[i] for (i,gen) in ref(pm, :gen) )
+    )
+end
+
+
 
 """
 An SCOPF formulation conforming to the ARPA-e GOC Challenge 1 specification.

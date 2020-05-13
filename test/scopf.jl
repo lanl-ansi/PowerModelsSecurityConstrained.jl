@@ -2,6 +2,18 @@
 @testset "test scopf" begin
 
 
+scopf_dc_cuts_woc_objective = [14642.16, 37233.43]
+@testset "scopf cuts dc soft 2, without cuts - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_ptdf_cuts!(network, lp_solver)
+
+    @test isapprox(result["termination_status"], OPTIMAL)
+    @test isapprox(result["objective"], scopf_dc_cuts_woc_objective[i]; atol = 1e0)
+end
+
 
 scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
 @testset "scopf cuts dc soft 2, without cuts - $(i)" for (i,network) in enumerate(networks)

@@ -66,6 +66,7 @@ include("prob/scopf.jl")
 include("prob/contingency-stage.jl")
 
 include("util/contingency-filters.jl")
+include("util/scopf-iterative.jl")
 
 # this must come last to support automated export
 include("core/export.jl")

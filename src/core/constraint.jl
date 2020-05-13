@@ -29,6 +29,25 @@ function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, n::Int,
 end
 
 
+
+""
+function constraint_branch_contingency_ptdf_thermal_limit_from(pm::_PM.AbstractPowerModel, n::Int, i::Int, cut_map, rate)
+    bus_injection = var(pm, :bus_pg)
+    bus_withdrawal = var(pm, :bus_wdp)
+
+    @constraint(pm.model, sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut_map) <= rate)
+end
+
+
+""
+function constraint_branch_contingency_ptdf_thermal_limit_to(pm::_PM.AbstractPowerModel, n::Int, i::Int, cut_map, rate)
+    bus_injection = var(pm, :bus_pg)
+    bus_withdrawal = var(pm, :bus_wdp)
+
+    @constraint(pm.model, -sum(weight*(bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut_map) <= rate)
+end
+
+
 ""
 function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, n::Int, i::Int, cut_map, rate)
     bus_injection = var(pm, :bus_pg)
