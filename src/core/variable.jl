@@ -1,4 +1,17 @@
 
+"variable controling a linear genetor responce "
+function variable_response_delta(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, report::Bool=true)
+    delta = var(pm, nw)[:delta] = @variable(pm.model,
+        base_name="$(nw)_delta",
+        start = 0.0
+    )
+
+    if report
+        sol(pm, nw)[:delta] = delta
+    end
+end
+
+
 "generates variables for both `active` and `reactive` bus deltas"
 function variable_bus_delta_abs(pm::_PM.AbstractPowerModel; kwargs...)
     variable_bus_delta_abs_power_real(pm; kwargs...)

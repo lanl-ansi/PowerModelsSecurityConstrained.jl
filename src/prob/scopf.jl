@@ -1,21 +1,20 @@
 """
 An academic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
 Power balance and line flow constraints are strictly enforced in the first
-stage and contingency stages. Contingency branch flow constraints are enforced
-by PTDF cuts.
+stage and contingency stages.
 
-This formulation is used in conjunction with the contingency filters that
-generate PTDF cuts.
+This formulation is best used in conjunction with the contingency filters that
+find violated contingencies.
 """
 function run_scopf(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, post_scopf; multinetwork=true, kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf; multinetwork=true, kwargs...)
 end
 
-# enables support for v[1]
+# enables support for v[1], required for objective_variable_pg_cost when pg is an expression
 Base.getindex(v::JuMP.GenericAffExpr, i::Int64) = v
 
 ""
-function post_scopf(pm::_PM.AbstractPowerModel)
+function build_scopf(pm::_PM.AbstractPowerModel)
     # base-case network id is 0
 
     _PM.variable_bus_voltage(pm, nw=0)
@@ -49,39 +48,7 @@ function post_scopf(pm::_PM.AbstractPowerModel)
         _PM.variable_gen_power(pm, nw=nw, bounded=false)
         _PM.variable_branch_power(pm, nw=nw)
 
-        delta = var(pm, nw)[:delta] = @variable(pm.model, base_name="$(nw)_delta", start = 0.0)
-        sol(pm, nw)[:delta] = delta
-
-
-        if haskey(var(pm, nw=nw), :vm)
-            vm = Dict()
-            gen_buses = ref(pm, :gen_buses, nw=nw)
-            for (i,bus) in ref(pm, :bus, nw=nw)
-                if i in gen_buses
-                    vm[i] = var(pm, :vm, i, nw=0)
-                    @constraint(pm.model, var(pm, :vm, i, nw=nw) == var(pm, :vm, i, nw=0))
-                else
-                    vm[i] = var(pm, :vm, i, nw=nw)
-                end
-            end
-            var(pm, nw=nw)[:vm] = vm
-        end
-
-
-        pg = Dict{Int,Any}()
-        response_gens = ref(pm, :response_gens, nw=nw)
-        for (i,gen) in ref(pm, :gen, nw=nw)
-            pg_base = var(pm, :pg, i, nw=0)
-
-            if i in response_gens
-                pg[i] = pg_base + gen["alpha"]*delta
-                @constraint(pm.model, var(pm, :pg, i, nw=nw) == pg_base + gen["alpha"]*delta)
-            else
-                pg[i] = pg_base
-                @constraint(pm.model, var(pm, :pg, i, nw=nw) == pg_base)
-            end
-        end
-        var(pm, nw=nw)[:pg] = pg
+        variable_response_delta(pm, nw=nw)
 
 
         _PM.constraint_model_voltage(pm, nw=nw)
@@ -90,9 +57,29 @@ function post_scopf(pm::_PM.AbstractPowerModel)
             _PM.constraint_theta_ref(pm, i, nw=nw)
         end
 
+        gen_buses = ref(pm, :gen_buses, nw=nw)
         for i in ids(pm, :bus, nw=nw)
             _PM.constraint_power_balance(pm, i, nw=nw)
+
+            # if a bus has active generators, fix the voltage magnitude to the base case
+            if i in gen_buses
+                constraint_voltage_magnitude_link(pm, i, nw_1=0, nw_2=nw)
+            end
         end
+
+
+        response_gens = ref(pm, :response_gens, nw=nw)
+        for (i,gen) in ref(pm, :gen, nw=nw)
+            pg_base = var(pm, :pg, i, nw=0)
+
+            # setup the linear response function or fix value to base case
+            if i in response_gens
+                constraint_gen_power_real_response(pm, i, nw_1=0, nw_2=nw)
+            else
+                constraint_gen_power_real_link(pm, i, nw_1=0, nw_2=nw)
+            end
+        end
+
 
         for i in ids(pm, :branch, nw=nw)
             _PM.constraint_ohms_yt_from(pm, i, nw=nw)

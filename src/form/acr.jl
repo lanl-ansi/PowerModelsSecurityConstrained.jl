@@ -1,5 +1,17 @@
 
 ""
+function constraint_voltage_magnitude_link(pm::_PM.AbstractACRModel, n_1::Int, n_2::Int, i::Int)
+    vr_1 = var(pm, n_1, :vr, i)
+    vi_1 = var(pm, n_1, :vi, i)
+
+    vr_2 = var(pm, n_2, :vr, i)
+    vi_2 = var(pm, n_2, :vi, i)
+
+    JuMP.@constraint(pm.model, vr_1^2 + vi_1^2 == vr_2^2 + vi_2^2)
+end
+
+
+""
 function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractACRModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vi = var(pm, n, :vi, i)
     vr = var(pm, n, :vr, i)
@@ -59,4 +71,42 @@ function expression_branch_power_ohms_yt_from_goc(pm::_PM.AbstractACRModel, n::I
     var(pm, n, :p)[f_idx] =  (g/tm^2+g_fr)*(vr_fr^2 + vi_fr^2) + (-g*tr+b*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-b*tr-g*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
     var(pm, n, :q)[f_idx] = -(b/tm^2+b_fr)*(vr_fr^2 + vi_fr^2) - (-b*tr-g*ti)/tm^2*(vr_fr*vr_to + vi_fr*vi_to) + (-g*tr+b*ti)/tm^2*(vi_fr*vr_to - vr_fr*vi_to)
 end
+
+
+""
+function expression_bus_withdrawal(pm::_PM.AbstractACRModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
+    vr = var(pm, n, :vr, i)
+    vi = var(pm, n, :vi, i)
+    ps = get(var(pm, n), :ps, Dict()); _PM._check_var_keys(ps, bus_storage, "active power", "storage")
+    qs = get(var(pm, n), :qs, Dict()); _PM._check_var_keys(ps, bus_storage, "reactive power", "storage")
+
+    ps_total = 0.0
+    qs_total = 0.0
+    if length(bus_storage) > 0
+        ps_total = sum(ps[s] for s in bus_storage)
+        qs_total = sum(qs[s] for s in bus_storage)
+    end
+
+    pd_total = 0.0
+    qd_total = 0.0
+    if length(bus_pd) > 0
+        pd_total = sum(pd for pd in values(bus_pd))
+    end
+        if length(bus_qd) > 0
+        qd_total = sum(qd for qd in values(bus_qd))
+    end
+
+    gs_total = 0.0
+    bs_total = 0.0
+    if length(bus_gs) > 0
+        gs_total = sum(gs for gs in values(bus_gs))*(vr^2 + vi^2)
+    end
+    if length(bus_bs) > 0
+        bs_total = sum(bs for bs in values(bus_bs))*(vr^2 + vi^2)
+    end
+
+    var(pm, n, :bus_wdp)[i] = ps_total + pd_total + gs_total
+    var(pm, n, :bus_wdq)[i] = qs_total + qd_total + bs_total
+end
+
 

@@ -21,6 +21,25 @@ end
 
 
 ""
+function constraint_gen_power_real_link(pm::_PM.AbstractACPModel, n_1::Int, n_2::Int, i::Int)
+    pg_1 = var(pm, n_1, :pg, i)
+    pg_2 = var(pm, n_2, :pg, i)
+
+    JuMP.@constraint(pm.model, pg_1 == pg_2)
+end
+
+
+""
+function constraint_gen_power_real_response(pm::_PM.AbstractPowerModel, nw_1::Int, nw_2::Int, i::Int, alpha)
+    pg_base = var(pm, :pg, i, nw=nw_1)
+    pg = var(pm, :pg, i, nw=nw_2)
+    delta = var(pm, :delta, nw=nw_2)
+
+    @constraint(pm.model, pg == pg_base + alpha*delta)
+end
+
+
+""
 function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, n::Int, i, pg)
     pg_var = var(pm, n, :pg, i)
     pg_delta = var(pm, n, :pg_delta, i)
