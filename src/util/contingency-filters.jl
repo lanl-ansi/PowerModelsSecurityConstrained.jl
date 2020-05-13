@@ -339,7 +339,7 @@ function check_contingency_violations(network;
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
             info(_LOGGER, "adding contingency $(cont.label) due to constraint flow violations $(vio.sm)")
-            push!(gen_cuts, cont.label)
+            push!(gen_cuts, cont)
         end
 
         cont_gen["gen_status"] = 1
@@ -381,7 +381,7 @@ function check_contingency_violations(network;
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
             info(_LOGGER, "adding contingency $(cont.label) due to constraint flow violations $(vio.sm)")
-            push!(branch_cuts, cont.label)
+            push!(branch_cuts, cont)
         end
 
         cont_branch["br_status"] = 1
@@ -396,9 +396,9 @@ function check_contingency_violations(network;
     end
 
     time_contingencies = time() - time_contingencies_start
-    info(_LOGGER, "cont eval time: $(time_contingencies)")
+    info(_LOGGER, "contingency eval time: $(time_contingencies)")
 
-    return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
+    return (gen_contingencies=gen_cuts, branch_contingencies=branch_cuts)
 end
 
 
@@ -650,7 +650,7 @@ function check_contingencies_branch_power(network;
     end
 
     time_contingencies = time() - time_contingencies_start
-    info(_LOGGER, "cont eval time: $(time_contingencies)")
+    info(_LOGGER, "contingency eval time: $(time_contingencies)")
 
     return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
 end
@@ -910,7 +910,7 @@ function check_contingencies_branch_power_bpv(network;
     end
 
     time_contingencies = time() - time_contingencies_start
-    info(_LOGGER, "cont eval time: $(time_contingencies)")
+    info(_LOGGER, "contingency eval time: $(time_contingencies)")
 
     return (gen_cuts=gen_cuts, branch_cuts=branch_cuts)
 end

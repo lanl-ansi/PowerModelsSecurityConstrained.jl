@@ -1,3 +1,122 @@
+"""
+An academic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
+Power balance and line flow constraints are strictly enforced in the first
+stage and contingency stages. Contingency branch flow constraints are enforced
+by PTDF cuts.
+
+This formulation is used in conjunction with the contingency filters that
+generate PTDF cuts.
+"""
+function run_scopf(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, post_scopf; multinetwork=true, kwargs...)
+end
+
+# enables support for v[1]
+Base.getindex(v::JuMP.GenericAffExpr, i::Int64) = v
+
+""
+function post_scopf(pm::_PM.AbstractPowerModel)
+    # base-case network id is 0
+
+    _PM.variable_bus_voltage(pm, nw=0)
+    _PM.variable_gen_power(pm, nw=0)
+    _PM.variable_branch_power(pm, nw=0)
+
+    _PM.constraint_model_voltage(pm, nw=0)
+
+    for i in ids(pm, :ref_buses, nw=0)
+        _PM.constraint_theta_ref(pm, i, nw=0)
+    end
+
+    for i in ids(pm, :bus, nw=0)
+        _PM.constraint_power_balance(pm, i, nw=0)
+    end
+
+    for i in ids(pm, :branch, nw=0)
+        _PM.constraint_ohms_yt_from(pm, i, nw=0)
+        _PM.constraint_ohms_yt_to(pm, i, nw=0)
+
+        _PM.constraint_voltage_angle_difference(pm, i, nw=0)
+
+        _PM.constraint_thermal_limit_from(pm, i, nw=0)
+        _PM.constraint_thermal_limit_to(pm, i, nw=0)
+    end
+
+
+    contigency_ids = [id for id in nw_ids(pm) if id != 0]
+    for nw in contigency_ids
+        _PM.variable_bus_voltage(pm, nw=nw, bounded=false)
+        _PM.variable_gen_power(pm, nw=nw, bounded=false)
+        _PM.variable_branch_power(pm, nw=nw)
+
+        delta = var(pm, nw)[:delta] = @variable(pm.model, base_name="$(nw)_delta", start = 0.0)
+        sol(pm, nw)[:delta] = delta
+
+
+        if haskey(var(pm, nw=nw), :vm)
+            vm = Dict()
+            gen_buses = ref(pm, :gen_buses, nw=nw)
+            for (i,bus) in ref(pm, :bus, nw=nw)
+                if i in gen_buses
+                    vm[i] = var(pm, :vm, i, nw=0)
+                    @constraint(pm.model, var(pm, :vm, i, nw=nw) == var(pm, :vm, i, nw=0))
+                else
+                    vm[i] = var(pm, :vm, i, nw=nw)
+                end
+            end
+            var(pm, nw=nw)[:vm] = vm
+        end
+
+
+        pg = Dict{Int,Any}()
+        response_gens = ref(pm, :response_gens, nw=nw)
+        for (i,gen) in ref(pm, :gen, nw=nw)
+            pg_base = var(pm, :pg, i, nw=0)
+
+            if i in response_gens
+                pg[i] = pg_base + gen["alpha"]*delta
+                @constraint(pm.model, var(pm, :pg, i, nw=nw) == pg_base + gen["alpha"]*delta)
+            else
+                pg[i] = pg_base
+                @constraint(pm.model, var(pm, :pg, i, nw=nw) == pg_base)
+            end
+        end
+        var(pm, nw=nw)[:pg] = pg
+
+
+        _PM.constraint_model_voltage(pm, nw=nw)
+
+        for i in ids(pm, :ref_buses, nw=nw)
+            _PM.constraint_theta_ref(pm, i, nw=nw)
+        end
+
+        for i in ids(pm, :bus, nw=nw)
+            _PM.constraint_power_balance(pm, i, nw=nw)
+        end
+
+        for i in ids(pm, :branch, nw=nw)
+            _PM.constraint_ohms_yt_from(pm, i, nw=nw)
+            _PM.constraint_ohms_yt_to(pm, i, nw=nw)
+
+            _PM.constraint_voltage_angle_difference(pm, i, nw=nw)
+
+            _PM.constraint_thermal_limit_from(pm, i, nw=nw)
+            _PM.constraint_thermal_limit_to(pm, i, nw=nw)
+        end
+    end
+
+
+    ##### Setup Objective #####
+    _PM.objective_variable_pg_cost(pm)
+
+    # explicit network id needed because of conductor-less
+    pg_cost = var(pm, 0, :pg_cost)
+
+    @objective(pm.model, Min,
+        sum( pg_cost[i] for (i,gen) in ref(pm, 0, :gen) )
+    )
+end
+
 
 
 """
