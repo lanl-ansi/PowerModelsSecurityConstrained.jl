@@ -220,16 +220,35 @@ end
 
 
 
+
+""
+function check_contingency_violations_remote(cont_range, output_dir, contingency_limit=1, solution_file="solution1.txt")
+    if length(network_global) <= 0 || length(contingency_order_global) <= 0
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+    end
+
+    sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
+    _PM.update_data!(network_global, sol)
+
+    network = copy(network_global)
+    contingencies = contingency_order_global[cont_range]
+    network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
+    network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
+
+    contingencies = check_contingency_violations(network, contingency_limit=contingency_limit)
+
+    return contingencies
+end
+
+
 """
 Checks a given operating point against the contingencies to look for branch
 flow violations.  The DC Power Flow approximation is used for flow simulation.
 Returns a list of contigencies where a violation is found.
 """
 function check_contingency_violations(network;
-        gen_contingency_limit=10, branch_contingency_limit=10, total_contingency_limit=typemax(Int64),
-        gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
-        gen_contingency_active=Set{String}(), branch_contingency_active=Set{String}()
-        )
+        gen_contingency_limit=10, branch_contingency_limit=10, contingency_limit=typemax(Int64),
+        gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01)
 
     if _IM.ismultinetwork(network)
         error(_LOGGER, "the branch flow cut generator can only be used on single networks")
@@ -257,8 +276,8 @@ function check_contingency_violations(network;
     end
 
 
-    network_lal["gen_contingencies"] = [cont for cont in network_lal["gen_contingencies"] if !(cont.label in gen_contingency_active)]
-    network_lal["branch_contingencies"] = [cont for cont in network_lal["branch_contingencies"] if !(cont.label in branch_contingency_active)]
+    #network_lal["gen_contingencies"] = [cont for cont in network_lal["gen_contingencies"] if !(cont.label in gen_contingency_active)]
+    #network_lal["branch_contingencies"] = [cont for cont in network_lal["branch_contingencies"] if !(cont.label in branch_contingency_active)]
 
     gen_cont_total = length(network_lal["gen_contingencies"])
     branch_cont_total = length(network_lal["branch_contingencies"])
@@ -280,8 +299,8 @@ function check_contingency_violations(network;
             info(_LOGGER, "hit gen flow cut limit $(gen_contingency_limit)")
             break
         end
-        if length(gen_cuts) >= total_contingency_limit
-            info(_LOGGER, "hit total cut limit $(total_contingency_limit)")
+        if length(gen_cuts) >= contingency_limit
+            info(_LOGGER, "hit total cut limit $(contingency_limit)")
             break
         end
         #info(_LOGGER, "working on ($(i)/$(gen_eval_limit)/$(gen_cont_total)): $(cont.label)")
@@ -350,8 +369,8 @@ function check_contingency_violations(network;
             info(_LOGGER, "hit branch flow cut limit $(branch_contingency_limit)")
             break
         end
-        if length(gen_cuts) + length(branch_cuts) >= total_contingency_limit
-            info(_LOGGER, "hit total cut limit $(total_contingency_limit)")
+        if length(gen_cuts) + length(branch_cuts) >= contingency_limit
+            info(_LOGGER, "hit total cut limit $(contingency_limit)")
             break
         end
 
