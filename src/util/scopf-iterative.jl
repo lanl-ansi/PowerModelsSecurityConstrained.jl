@@ -40,7 +40,7 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
     while contingencies_found > 0
         time_start_iteration = time()
 
-        contingencies = check_contingency_violations(network_base, total_contingency_limit=iteration)
+        contingencies = check_contingency_violations(network_base, contingency_limit=iteration)
         #println(contingencies)
 
         contingencies_found = 0
