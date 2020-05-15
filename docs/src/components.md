@@ -30,6 +30,7 @@ run_opf_cheap_lazy_acr
 These are tools for checking for constraint violations in contingencies
 
 ```@docs
+check_contingency_violations
 check_contingencies_branch_power
 check_contingencies_branch_power_bpv
 ```
@@ -39,8 +40,11 @@ check_contingencies_branch_power_bpv
 These are contingency constrained OPF formulations.
 
 ```@docs
+run_scopf
 run_scopf_cuts_soft
 run_scopf_cuts_soft_bpv
+run_scopf_contigency_cuts
+run_scopf_ptdf_cuts!
 ```
 
 ## Contingency-Stage Solvers

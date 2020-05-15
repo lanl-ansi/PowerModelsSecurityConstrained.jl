@@ -3,6 +3,10 @@ function run_scopf_contigency_cuts(file::String, model_type::Type, optimizer; kw
     return run_scopf_contigency_cuts(data, model_type, optimizer; kwargs...)
 end
 
+"""
+Solves a SCOPF problem by iteratively checking for violated contingencies and
+resolving until a fixed-point is reached
+"""
 function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
     if _IM.ismultinetwork(network)
         error(_LOGGER, "run_scopf_contigency_cuts can only be used on single networks")
@@ -108,12 +112,18 @@ end
 
 
 
-"Solves DC-SCOPF by adding branch-based PTDF cuts to the base-case iterativly"
 function run_scopf_ptdf_cuts(file::String, model_type::Type, optimizer; kwargs...)
     data = _PM.parse_file(file)
     return run_scopf_ptdf_cuts!(data, optimizer; kwargs...)
 end
 
+"""
+Solves a SCOPF problem by iteratively checking for violated branch flow
+constraints in contingencies and resolving until a fixed-point is reached.
+
+The base-case model is formulation agnostic.  The flow cuts are based on PTDF
+and utilize the DC Power Flow assumption.
+"""
 function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
     if _IM.ismultinetwork(network)
         error(_LOGGER, "run_scopf_ptdf_cuts can only be used on single networks")

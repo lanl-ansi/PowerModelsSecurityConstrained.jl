@@ -21,7 +21,7 @@ end
 
 
 ""
-function constraint_gen_power_real_link(pm::_PM.AbstractACPModel, n_1::Int, n_2::Int, i::Int)
+function constraint_gen_power_real_link(pm::_PM.AbstractPowerModel, n_1::Int, n_2::Int, i::Int)
     pg_1 = var(pm, n_1, :pg, i)
     pg_2 = var(pm, n_2, :pg, i)
 
