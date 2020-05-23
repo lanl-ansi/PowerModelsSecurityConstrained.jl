@@ -23,9 +23,6 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
     network_active["gen_contingencies"] = []
     network_active["branch_contingencies"] = []
 
-    gen_contingency_active = Set{String}()
-    branch_contingency_active = Set{String}()
-
     multinetwork = build_scopf_multinetwork(network_active)
 
     result = run_scopf(multinetwork, model_type, optimizer)
@@ -33,9 +30,9 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
         error(_LOGGER, "base-case SCOPF solve failed in run_scopf_contigency_cuts, status $(result["termination_status"])")
     end
     #_PM.print_summary(result["solution"])
-    solution = result["solution"]
-    _PM.update_data!(network_base, result["solution"])
-    _PM.update_data!(network_active, result["solution"])
+    solution = result["solution"]["nw"]["0"]
+    _PM.update_data!(network_base, solution)
+    _PM.update_data!(network_active, solution)
 
     result["iterations"] = 0
 
