@@ -32,7 +32,7 @@ function load_network_global(con_file, inl_file, raw_file, rop_file, scenario_id
 end
 
 
-"build a static ordering of all contigencies"
+"build a static ordering of all contingencies"
 function contingency_order(network)
     gen_cont_order = sort(network["gen_contingencies"], by=(x) -> x.label)
     branch_cont_order = sort(network["branch_contingencies"], by=(x) -> x.label)
