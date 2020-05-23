@@ -267,7 +267,7 @@ end
 """
 Checks a given operating point against the contingencies to look for branch
 flow violations.  The DC Power Flow approximation is used for flow simulation.
-Returns a list of contigencies where a violation is found.
+Returns a list of contingencies where a violation is found.
 """
 function check_contingency_violations(network;
         gen_contingency_limit=10, branch_contingency_limit=10, contingency_limit=typemax(Int64),
@@ -358,7 +358,7 @@ function check_contingency_violations(network;
         _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations_ratec(network_lal, network_lal)
+        vio = compute_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
@@ -400,7 +400,7 @@ function check_contingency_violations(network;
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
 
-        vio = compute_violations_ratec(network_lal, network_lal)
+        vio = compute_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
@@ -576,12 +576,12 @@ function check_contingencies_branch_power(network;
         _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations_ratec(network_lal, network_lal)
+        vio = compute_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vios = branch_violations_sorted_ratec(network_lal, network_lal)
+            branch_vios = branch_violations_sorted(network_lal, network_lal)
             branch_vio = branch_vios[1]
 
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
@@ -632,12 +632,12 @@ function check_contingencies_branch_power(network;
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
 
-        vio = compute_violations_ratec(network_lal, network_lal)
+        vio = compute_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vio = branch_violations_sorted_ratec(network_lal, network_lal)[1]
+            branch_vio = branch_violations_sorted(network_lal, network_lal)[1]
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
                 info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
@@ -821,12 +821,12 @@ function check_contingencies_branch_power_bpv(network;
         _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations_ratec(network_lal, network_lal)
+        vio = compute_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vios = branch_violations_sorted_ratec(network_lal, network_lal)
+            branch_vios = branch_violations_sorted(network_lal, network_lal)
             branch_vio = branch_vios[1]
 
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
@@ -882,12 +882,12 @@ function check_contingencies_branch_power_bpv(network;
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
 
-        vio = compute_violations_ratec(network_lal, network_lal)
+        vio = compute_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vio = branch_violations_sorted_ratec(network_lal, network_lal)[1]
+            branch_vio = branch_violations_sorted(network_lal, network_lal)[1]
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
                 info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
