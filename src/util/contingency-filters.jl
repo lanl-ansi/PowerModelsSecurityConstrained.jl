@@ -201,6 +201,29 @@ end
 
 
 
+"ranks generator contingencies and down selects based on evaluation limits"
+function compute_gen_contingency_subset(network::Dict{String,<:Any}; gen_eval_limit=length(network["gen_contingencies"]))
+    gen_cap = Dict(gen["index"] => sqrt(max(abs(gen["pmin"]), abs(gen["pmax"]))^2 + max(abs(gen["qmin"]), abs(gen["qmax"]))^2) for (i,gen) in network["gen"])
+    gen_contingencies = sort(network["gen_contingencies"], rev=true, by=x -> gen_cap[x.idx])
+
+    gen_cont_limit = min(gen_eval_limit, length(network["gen_contingencies"]))
+    gen_contingencies = gen_contingencies[1:gen_cont_limit]
+
+    return gen_contingencies
+end
+
+"ranks branch contingencies and down selects based on evaluation limits"
+function compute_branch_contingency_subset(network::Dict{String,<:Any}; branch_eval_limit=length(network["branch_contingencies"]))
+    line_imp_mag = Dict(branch["index"] => branch["rate_a"]*sqrt(branch["br_r"]^2 + branch["br_x"]^2) for (i,branch) in network["branch"])
+    branch_contingencies = sort(network["branch_contingencies"], rev=true, by=x -> line_imp_mag[x.idx])
+
+    branch_cont_limit = min(branch_eval_limit, length(network["branch_contingencies"]))
+    branch_contingencies = branch_contingencies[1:branch_cont_limit]
+
+    return branch_contingencies
+end
+
+
 function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, branch::Dict{String,<:Any})
     branch_ptdf = Dict{Int,Any}()
     f_bus = branch["f_bus"]
@@ -276,22 +299,9 @@ function check_contingency_violations(network;
     end
 
 
-    #network_lal["gen_contingencies"] = [cont for cont in network_lal["gen_contingencies"] if !(cont.label in gen_contingency_active)]
-    #network_lal["branch_contingencies"] = [cont for cont in network_lal["branch_contingencies"] if !(cont.label in branch_contingency_active)]
 
-    gen_cont_total = length(network_lal["gen_contingencies"])
-    branch_cont_total = length(network_lal["branch_contingencies"])
-
-    gen_eval_limit = min(gen_eval_limit, gen_cont_total)
-    branch_eval_limit = min(branch_eval_limit, branch_cont_total)
-
-    gen_cap = Dict(gen["index"] => sqrt(max(abs(gen["pmin"]), abs(gen["pmax"]))^2 + max(abs(gen["qmin"]), abs(gen["qmax"]))^2) for (i,gen) in network["gen"])
-    network_lal["gen_contingencies"] = sort(network_lal["gen_contingencies"], rev=true, by=x -> gen_cap[x.idx])
-    gen_contingencies = network_lal["gen_contingencies"][1:gen_eval_limit]
-
-    line_imp_mag = Dict(branch["index"] => branch["rate_a"]*sqrt(branch["br_r"]^2 + branch["br_x"]^2) for (i,branch) in network["branch"])
-    network_lal["branch_contingencies"] = sort(network_lal["branch_contingencies"], rev=true, by=x -> line_imp_mag[x.idx])
-    branch_contingencies = network_lal["branch_contingencies"][1:branch_eval_limit]
+    gen_contingencies = compute_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
+    branch_contingencies = compute_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
 
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
@@ -508,19 +518,8 @@ function check_contingencies_branch_power(network;
     end
 
 
-    gen_cont_total = length(network_lal["gen_contingencies"])
-    branch_cont_total = length(network_lal["branch_contingencies"])
-
-    gen_eval_limit = min(gen_eval_limit, gen_cont_total)
-    branch_eval_limit = min(branch_eval_limit, branch_cont_total)
-
-    gen_cap = Dict(gen["index"] => sqrt(max(abs(gen["pmin"]), abs(gen["pmax"]))^2 + max(abs(gen["qmin"]), abs(gen["qmax"]))^2) for (i,gen) in network["gen"])
-    network_lal["gen_contingencies"] = sort(network_lal["gen_contingencies"], rev=true, by=x -> gen_cap[x.idx])
-    gen_contingencies = network_lal["gen_contingencies"][1:gen_eval_limit]
-
-    line_imp_mag = Dict(branch["index"] => branch["rate_a"]*sqrt(branch["br_r"]^2 + branch["br_x"]^2) for (i,branch) in network["branch"])
-    network_lal["branch_contingencies"] = sort(network_lal["branch_contingencies"], rev=true, by=x -> line_imp_mag[x.idx])
-    branch_contingencies = network_lal["branch_contingencies"][1:branch_eval_limit]
+    gen_contingencies = compute_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
+    branch_contingencies = compute_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
 
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
@@ -784,19 +783,8 @@ function check_contingencies_branch_power_bpv(network;
     end
 
 
-    gen_cont_total = length(network_lal["gen_contingencies"])
-    branch_cont_total = length(network_lal["branch_contingencies"])
-
-    gen_eval_limit = min(gen_eval_limit, gen_cont_total)
-    branch_eval_limit = min(branch_eval_limit, branch_cont_total)
-
-    gen_cap = Dict(gen["index"] => sqrt(max(abs(gen["pmin"]), abs(gen["pmax"]))^2 + max(abs(gen["qmin"]), abs(gen["qmax"]))^2) for (i,gen) in network["gen"])
-    network_lal["gen_contingencies"] = sort(network_lal["gen_contingencies"], rev=true, by=x -> gen_cap[x.idx])
-    gen_contingencies = network_lal["gen_contingencies"][1:gen_eval_limit]
-
-    line_imp_mag = Dict(branch["index"] => branch["rate_a"]*sqrt(branch["br_r"]^2 + branch["br_x"]^2) for (i,branch) in network["branch"])
-    network_lal["branch_contingencies"] = sort(network_lal["branch_contingencies"], rev=true, by=x -> line_imp_mag[x.idx])
-    branch_contingencies = network_lal["branch_contingencies"][1:branch_eval_limit]
+    gen_contingencies = compute_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
+    branch_contingencies = compute_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
 
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
