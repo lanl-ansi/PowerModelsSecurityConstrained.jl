@@ -226,7 +226,7 @@ end
 
 ""
 function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
-    _PM.variable_bus_voltage(pm, bounded=false)
+    _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm, bounded=false)
 
@@ -275,7 +275,7 @@ function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
     pg_delta = var(pm, :pg_delta)
 
     @objective(pm.model, Min,
-        sum( 5e7*vvm_delta[i]^2 for (i,bus) in ref(pm, :bus)) +
+        sum( 1e8*vvm_delta[i]^2 for (i,bus) in ref(pm, :bus)) +
         sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch)) +
         sum( 1e5*pg_delta[i]^2 for (i,gen) in ref(pm, :gen))
     )
