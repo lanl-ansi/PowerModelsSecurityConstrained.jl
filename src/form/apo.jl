@@ -1,4 +1,9 @@
 
+""
+function variable_shunt_admittance_imaginary(pm::_PM.AbstractActivePowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+# do nothing
+end
+
 
 ""
 function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractActivePowerModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
