@@ -95,7 +95,7 @@ end
 end
 
 
-opf_pg_pf_polar_objective = [131459.38, 9.529398662763817e6]
+opf_pg_pf_polar_objective = [191950.48, 9.885375854285985e6]
 @testset "opf pg pf polar 5 - $(i)" for (i,network) in enumerate(networks)
     result = run_opf_cheap_target_acp(network, nlp_solver)
 
