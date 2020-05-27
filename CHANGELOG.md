@@ -2,6 +2,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- nothing
+
+### v0.7.0
 - Added flexible multi-network SCOPF formulation (#19)
 - Added `run_opf_cheap_target_acp` OPF formulation
 - Updated contigency filters to use PowerModels PTDF cut tools (#21)
