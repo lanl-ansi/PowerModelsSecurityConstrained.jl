@@ -20,9 +20,8 @@ lp_solver = with_optimizer(Cbc.Optimizer, logLevel=0)
 
 
 ini_file = "../test/data/inputfiles.ini"
-case_01 = parse_goc_files(ini_file, scenario_id="scenario_01")
-case_02 = parse_goc_files(ini_file, scenario_id="scenario_02")
-cases = [case_01, case_02]
+scenarios = ["scenario_01", "scenario_02"]
+cases = [parse_goc_files(ini_file, scenario_id=sid) for sid in scenarios]
 
 networks = [build_pm_model(case) for case in cases]
 solutions = [read_solution1(networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(cases)]

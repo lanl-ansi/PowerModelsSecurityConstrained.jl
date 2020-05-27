@@ -1,6 +1,16 @@
 # Tests formulations in prob/opf
 @testset "test opf" begin
 
+opf_ac_objective = [14676.95, 27564.92]
+@testset "basic opf acp - $(i)" for (i,network) in enumerate(networks)
+    parse_goc_opf_files(ini_file, scenario_id=scenarios[i])
+    result = run_opf(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_ac_objective[i]; atol = 1e0)
+end
+
+
 opf_shunt_ac_objective = [14676.95, 27545.01]
 @testset "opf shunt acp - $(i)" for (i,network) in enumerate(networks)
 

@@ -1,6 +1,7 @@
-function run_scopf_contigency_cuts(file::String, model_type::Type, optimizer; kwargs...)
-    data = _PM.parse_file(file)
-    return run_scopf_contigency_cuts(data, model_type, optimizer; kwargs...)
+function run_scopf_contigency_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
+    goc_data = parse_goc_files(ini_file, scenario_id=scenario_id)
+    network = build_pm_model(goc_data)
+    return run_scopf_contigency_cuts(network, model_type, optimizer; kwargs...)
 end
 
 """
@@ -108,10 +109,10 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
 end
 
 
-
-function run_scopf_ptdf_cuts(file::String, model_type::Type, optimizer; kwargs...)
-    data = _PM.parse_file(file)
-    return run_scopf_ptdf_cuts!(data, optimizer; kwargs...)
+function run_scopf_ptdf_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
+    goc_data = parse_goc_files(ini_file, scenario_id=scenario_id)
+    network = build_pm_model(goc_data)
+    return run_scopf_ptdf_cuts!(network, model_type, optimizer; kwargs...)
 end
 
 """
