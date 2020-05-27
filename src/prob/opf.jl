@@ -216,3 +216,67 @@ function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
         sum( 1e5*pg_delta[i]^2 for (i,gen) in ref(pm, :gen))
     )
 end
+
+
+
+""
+function run_opf_cheap_target_acp(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_opf_cheap_target_acp; ref_extensions=[ref_add_goc!], kwargs...)
+end
+
+""
+function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm, bounded=false)
+
+    variable_branch_power_slack(pm)
+    variable_shunt_admittance_imaginary(pm)
+
+    variable_bus_voltage_magnitude_delta(pm)
+    variable_gen_power_real_delta(pm)
+
+    _PM.constraint_model_voltage(pm)
+
+    vm = var(pm, :vm)
+    for (i,bus) in ref(pm, :bus)
+        vm_midpoint = (bus["vmax"] + bus["vmin"])/2.0
+        vm_target = min(vm_midpoint + 0.04, bus["vmax"])
+
+        @constraint(pm.model, vm[i] == vm_target + var(pm, :vvm_delta, i))
+    end
+
+    for i in ids(pm, :ref_buses)
+        _PM.constraint_theta_ref(pm, i)
+    end
+
+    start_time = time()
+    for (i,gen) in ref(pm, :gen)
+        constraint_gen_power_real_deviation(pm, i)
+    end
+
+    for i in ids(pm, :bus)
+        constraint_power_balance_shunt_dispatch(pm, i)
+    end
+
+    for (i,branch) in ref(pm, :branch)
+        constraint_ohms_yt_from_goc(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
+
+        _PM.constraint_voltage_angle_difference(pm, i)
+
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
+    end
+
+
+    vvm_delta = var(pm, :vvm_delta)
+    sm_slack = var(pm, :sm_slack)
+    pg_delta = var(pm, :pg_delta)
+
+    @objective(pm.model, Min,
+        sum( 1e8*vvm_delta[i]^2 for (i,bus) in ref(pm, :bus)) +
+        sum( 5e5*sm_slack[i] for (i,branch) in ref(pm, :branch)) +
+        sum( 1e5*pg_delta[i]^2 for (i,gen) in ref(pm, :gen))
+    )
+end

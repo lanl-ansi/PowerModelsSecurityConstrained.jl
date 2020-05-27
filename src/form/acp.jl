@@ -1,5 +1,3 @@
-
-
 ""
 function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vm   = var(pm, n, :vm, i)
@@ -52,6 +50,14 @@ function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractACPModel, 
 
     @NLconstraint(pm.model,  q_delta_abs >= q_delta)
     @NLconstraint(pm.model, -q_delta_abs <= q_delta)
+end
+
+""
+function constraint_voltage_magnitude_link(pm::_PM.AbstractACPModel, n_1::Int, n_2::Int, i::Int)
+    vm_1 = var(pm, n_1, :vm, i)
+    vm_2 = var(pm, n_2, :vm, i)
+
+    JuMP.@constraint(pm.model, vm_1 == vm_2)
 end
 
 ""

@@ -65,6 +65,22 @@ function constraint_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int
 end
 
 
+"links the voltage voltage_magnitude of two networks together"
+function constraint_voltage_magnitude_link(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=0, nw_2::Int=pm.cnw)
+    constraint_voltage_magnitude_link(pm, nw_1, nw_2, i)
+end
+
+
+"links the voltage voltage_magnitude of two networks together"
+function constraint_gen_power_real_link(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=0, nw_2::Int=pm.cnw)
+    constraint_gen_power_real_link(pm, nw_1, nw_2, i)
+end
+
+"links the generator power of two networks together, with a linear response function"
+function constraint_gen_power_real_response(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=0, nw_2::Int=pm.cnw)
+    gen = ref(pm, nw_2, :gen, i)
+    constraint_gen_power_real_response(pm, nw_1, nw_2, i, gen["alpha"])
+end
 
 
 ""
@@ -100,6 +116,26 @@ function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, i::Int;
     constraint_gen_power_real_deviation(pm, nw, i, gen["pg"])
 end
 
+
+""
+function constraint_branch_contingency_ptdf_thermal_limit_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    cut = ref(pm, :branch_flow_cuts, i)
+    branch = ref(pm, nw, :branch, cut.branch_id)
+
+    if haskey(branch, "rate_c")
+        constraint_branch_contingency_ptdf_thermal_limit_from(pm, nw, i, cut.bus_injection, branch["rate_c"])
+    end
+end
+
+""
+function constraint_branch_contingency_ptdf_thermal_limit_to(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    cut = ref(pm, :branch_flow_cuts, i)
+    branch = ref(pm, nw, :branch, cut.branch_id)
+
+    if haskey(branch, "rate_c")
+        constraint_branch_contingency_ptdf_thermal_limit_to(pm, nw, i, cut.bus_injection, branch["rate_c"])
+    end
+end
 
 
 ""

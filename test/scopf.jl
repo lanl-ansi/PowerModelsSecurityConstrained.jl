@@ -2,9 +2,82 @@
 @testset "test scopf" begin
 
 
+scopf_cont_cuts_dc_objective = [14642.16, 32952.18]
+@testset "scopf contigency cuts dc - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_contigency_cuts(network, DCPPowerModel, lp_solver)
+
+    @test isapprox(result["termination_status"], OPTIMAL)
+    @test isapprox(result["objective"], scopf_cont_cuts_dc_objective[i]; atol = 1e0)
+end
+
+scopf_cont_cuts_ac_objective = [14676.95, 33281.21]
+@testset "scopf contigency cuts ac - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_contigency_cuts(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], scopf_cont_cuts_ac_objective[i]; atol = 1e0)
+end
+
+#scopf_cont_cuts_ac_objective = [14676.95, 33281.21]
+@testset "scopf contigency cuts ac - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_contigency_cuts(network, ACRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], scopf_cont_cuts_ac_objective[i]; atol = 1e0)
+end
+
+
+scopf_ptdf_cuts_dc_objective = [14642.16, 37233.43]
+@testset "scopf ptdf cuts dc - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_ptdf_cuts!(network, DCPPowerModel, lp_solver)
+
+    @test isapprox(result["termination_status"], OPTIMAL)
+    @test isapprox(result["objective"], scopf_ptdf_cuts_dc_objective[i]; atol = 1e0)
+end
+
+scopf_ptdf_cuts_ac_objective = [14676.95, 37808.75]
+@testset "scopf ptdf cuts ac - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_ptdf_cuts!(network, ACPPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], scopf_ptdf_cuts_ac_objective[i]; atol = 1e0)
+end
+
+#scopf_ptdf_cuts_ac_objective = [14676.95, 37808.75]
+@testset "scopf ptdf cuts ac - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_flow_cuts"] = []
+    network["branch_flow_cuts"] = []
+
+    result = run_scopf_ptdf_cuts!(network, ACRPowerModel, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], scopf_ptdf_cuts_ac_objective[i]; atol = 1e0)
+end
+
 
 scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
-@testset "scopf cuts dc soft 2, without cuts - $(i)" for (i,network) in enumerate(networks)
+@testset "scopf cuts dc soft, without cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -15,7 +88,7 @@ scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
     @test isapprox(result["objective"], scopf_dc_cuts_soft_woc_objective[i]; atol = 1e0)
 end
 
-@testset "scopf cuts dc soft 2, infeasible" begin
+@testset "scopf cuts dc soft, infeasible" begin
     network = deepcopy(network_infeasible)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -25,7 +98,7 @@ end
 end
 
 scopf_dc_cuts_soft_wc_objective = [14642.16, 37403.76]
-@testset "scopf cuts dc soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
+@testset "scopf cuts dc soft, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -48,8 +121,8 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 37403.76]
     @test isapprox(result["objective"], scopf_dc_cuts_soft_wc_objective[i]; atol = 1e0)
 end
 
-scopf_ac_cuts_soft_wc_objective = [14676.95, 37915.33]
-@testset "scopf cuts ac soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
+scopf_ac_cuts_soft_wc_objective = [14676.95, 37904.03]
+@testset "scopf cuts ac soft, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -73,9 +146,8 @@ scopf_ac_cuts_soft_wc_objective = [14676.95, 37915.33]
 end
 
 
-
 scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
-@testset "scopf cuts dc soft 2, without cuts - $(i)" for (i,network) in enumerate(networks)
+@testset "scopf cuts dc soft bpv, without cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -86,7 +158,7 @@ scopf_dc_cuts_soft_woc_objective = [14642.16, 26982.17]
     @test isapprox(result["objective"], scopf_dc_cuts_soft_woc_objective[i]; atol = 1e0)
 end
 
-@testset "scopf cuts dc soft 2, infeasible" begin
+@testset "scopf cuts dc soft bpv, infeasible" begin
     network = deepcopy(network_infeasible)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -95,8 +167,8 @@ end
     @test isapprox(result["termination_status"], INFEASIBLE)
 end
 
-scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
-@testset "scopf cuts dc soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
+scopf_dc_cuts_soft_wc_objective = [14642.16, 27258.16]
+@testset "scopf cuts dc soft bpv, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -119,8 +191,8 @@ scopf_dc_cuts_soft_wc_objective = [14642.16, 30737.94]
     @test isapprox(result["objective"], scopf_dc_cuts_soft_wc_objective[i]; atol = 1e0)
 end
 
-scopf_ac_cuts_soft_wc_objective = [14676.95, 28346.36]
-@testset "scopf cuts ac soft 2, with cuts - $(i)" for (i,network) in enumerate(networks)
+scopf_ac_cuts_soft_wc_objective = [14676.95, 28318.96]
+@testset "scopf cuts ac soft bpv, with cuts - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []

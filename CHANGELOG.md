@@ -2,7 +2,13 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- Added flexible multi-network SCOPF formulation (#19)
+- Added `run_opf_cheap_target_acp` OPF formulation
+- Updated contigency filters to use PowerModels PTDF cut tools (#21)
+- Updated violation computations to support NaN reactive power values
 - Improved distributed computation resilience to cluster configurations
+- Simplified `compute_violations` functions (breaking)
+- Fixed SCOPF formulations to allow shunt optimization
 
 ### v0.6.0
 - Update to new function name convention of PowerModels v0.17 (breaking)

@@ -58,8 +58,8 @@ end
 
 
 
-cuts_ratec_nd_first_lazy_gen = [0, 1]
-cuts_ratec_nd_first_lazy_branch = [0, 1]
+cuts_ratec_nd_first_lazy_gen = [0, 10]
+cuts_ratec_nd_first_lazy_branch = [0, 10]
 @testset "cuts ratec_nd_first_lazy - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []

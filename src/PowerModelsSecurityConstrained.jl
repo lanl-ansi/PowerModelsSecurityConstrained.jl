@@ -14,7 +14,7 @@ import InfrastructureModels
 const _IM = InfrastructureModels
 
 import PowerModels; const _PM = PowerModels
-import PowerModels: ids, ref, var, con, sol
+import PowerModels: ids, ref, var, con, sol, nw_ids
 
 
 
@@ -66,6 +66,7 @@ include("prob/scopf.jl")
 include("prob/contingency-stage.jl")
 
 include("util/contingency-filters.jl")
+include("util/scopf-iterative.jl")
 
 # this must come last to support automated export
 include("core/export.jl")

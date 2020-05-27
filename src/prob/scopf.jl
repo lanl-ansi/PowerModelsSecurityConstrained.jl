@@ -1,3 +1,201 @@
+"""
+An academic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
+Power balance and line flow constraints are strictly enforced in the first
+stage and contingency stages.
+
+This formulation is best used in conjunction with the contingency filters that
+find violated contingencies.
+"""
+function run_scopf(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf; multinetwork=true, kwargs...)
+end
+
+# enables support for v[1], required for objective_variable_pg_cost when pg is an expression
+Base.getindex(v::JuMP.GenericAffExpr, i::Int64) = v
+
+""
+function build_scopf(pm::_PM.AbstractPowerModel)
+    # base-case network id is 0
+
+    _PM.variable_bus_voltage(pm, nw=0)
+    _PM.variable_gen_power(pm, nw=0)
+    _PM.variable_branch_power(pm, nw=0)
+
+    _PM.constraint_model_voltage(pm, nw=0)
+
+    for i in ids(pm, :ref_buses, nw=0)
+        _PM.constraint_theta_ref(pm, i, nw=0)
+    end
+
+    for i in ids(pm, :bus, nw=0)
+        _PM.constraint_power_balance(pm, i, nw=0)
+    end
+
+    for i in ids(pm, :branch, nw=0)
+        _PM.constraint_ohms_yt_from(pm, i, nw=0)
+        _PM.constraint_ohms_yt_to(pm, i, nw=0)
+
+        _PM.constraint_voltage_angle_difference(pm, i, nw=0)
+
+        _PM.constraint_thermal_limit_from(pm, i, nw=0)
+        _PM.constraint_thermal_limit_to(pm, i, nw=0)
+    end
+
+
+    contigency_ids = [id for id in nw_ids(pm) if id != 0]
+    for nw in contigency_ids
+        _PM.variable_bus_voltage(pm, nw=nw, bounded=false)
+        _PM.variable_gen_power(pm, nw=nw, bounded=false)
+        _PM.variable_branch_power(pm, nw=nw)
+
+        variable_response_delta(pm, nw=nw)
+
+
+        _PM.constraint_model_voltage(pm, nw=nw)
+
+        for i in ids(pm, :ref_buses, nw=nw)
+            _PM.constraint_theta_ref(pm, i, nw=nw)
+        end
+
+        gen_buses = ref(pm, :gen_buses, nw=nw)
+        for i in ids(pm, :bus, nw=nw)
+            _PM.constraint_power_balance(pm, i, nw=nw)
+
+            # if a bus has active generators, fix the voltage magnitude to the base case
+            if i in gen_buses
+                constraint_voltage_magnitude_link(pm, i, nw_1=0, nw_2=nw)
+            end
+        end
+
+
+        response_gens = ref(pm, :response_gens, nw=nw)
+        for (i,gen) in ref(pm, :gen, nw=nw)
+            pg_base = var(pm, :pg, i, nw=0)
+
+            # setup the linear response function or fix value to base case
+            if i in response_gens
+                constraint_gen_power_real_response(pm, i, nw_1=0, nw_2=nw)
+            else
+                constraint_gen_power_real_link(pm, i, nw_1=0, nw_2=nw)
+            end
+        end
+
+
+        for i in ids(pm, :branch, nw=nw)
+            _PM.constraint_ohms_yt_from(pm, i, nw=nw)
+            _PM.constraint_ohms_yt_to(pm, i, nw=nw)
+
+            _PM.constraint_voltage_angle_difference(pm, i, nw=nw)
+
+            _PM.constraint_thermal_limit_from(pm, i, nw=nw)
+            _PM.constraint_thermal_limit_to(pm, i, nw=nw)
+        end
+    end
+
+
+    ##### Setup Objective #####
+    _PM.objective_variable_pg_cost(pm)
+
+    # explicit network id needed because of conductor-less
+    pg_cost = var(pm, 0, :pg_cost)
+
+    @objective(pm.model, Min,
+        sum( pg_cost[i] for (i,gen) in ref(pm, 0, :gen) )
+    )
+end
+
+
+
+"""
+An academic SCOPF formulation inspired by the ARPA-e GOC Challenge 1 specification.
+Power balance and line flow constraints are strictly enforced in the first
+stage and contingency stages. Contingency branch flow constraints are enforced
+by PTDF cuts using the DC power flow approximation.
+
+This formulation is used in conjunction with the contingency filters that
+generate PTDF cuts.
+"""
+function run_scopf_cuts(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts; kwargs...)
+end
+
+""
+function build_scopf_cuts(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
+
+    for i in ids(pm, :bus)
+        expression_bus_generation(pm, i)
+        expression_bus_withdrawal(pm, i)
+    end
+
+    _PM.constraint_model_voltage(pm)
+
+    for i in ids(pm, :ref_buses)
+        _PM.constraint_theta_ref(pm, i)
+    end
+
+    for i in ids(pm, :bus)
+        _PM.constraint_power_balance(pm, i)
+    end
+
+    for i in ids(pm, :branch)
+        _PM.constraint_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
+
+        _PM.constraint_voltage_angle_difference(pm, i)
+
+        _PM.constraint_thermal_limit_from(pm, i)
+        _PM.constraint_thermal_limit_to(pm, i)
+    end
+
+
+    for (i,cut) in enumerate(ref(pm, :branch_flow_cuts))
+        constraint_branch_contingency_ptdf_thermal_limit_from(pm, i)
+        constraint_branch_contingency_ptdf_thermal_limit_to(pm, i)
+    end
+
+    bus_withdrawal = var(pm, :bus_wdp)
+
+    for (i,cut) in enumerate(ref(pm, :gen_flow_cuts))
+        branch = ref(pm, :branch, cut.branch_id)
+        gen = ref(pm, :gen, cut.gen_id)
+        gen_bus = ref(pm, :bus, gen["gen_bus"])
+        gen_set = ref(pm, :area_gens)[gen_bus["area"]]
+        alpha_total = sum(gen["alpha"] for (i,gen) in ref(pm, :gen) if gen["index"] != cut.gen_id && i in gen_set)
+
+        cont_bus_injection = Dict{Int,Any}()
+        for (i, bus) in ref(pm, :bus)
+            inj = 0.0
+            for g in ref(pm, :bus_gens, i)
+                if g != cut.gen_id
+                    if g in gen_set
+                        inj += var(pm, :pg, g) + gen["alpha"]*var(pm, :pg, cut.gen_id)/alpha_total
+                    else
+                        inj += var(pm, :pg, g)
+                    end
+                end
+            end
+            cont_bus_injection[i] = inj
+        end
+
+        #rate = branch["rate_a"]
+        rate = branch["rate_c"]
+        @constraint(pm.model,  sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
+        @constraint(pm.model, -sum( weight*(cont_bus_injection[bus_id] - bus_withdrawal[bus_id]) for (bus_id, weight) in cut.bus_injection) <= rate)
+    end
+
+    ##### Setup Objective #####
+    _PM.objective_variable_pg_cost(pm)
+    # explicit network id needed because of conductor-less
+    pg_cost = var(pm, pm.cnw, :pg_cost)
+
+    @objective(pm.model, Min,
+        sum( pg_cost[i] for (i,gen) in ref(pm, :gen) )
+    )
+end
+
 
 
 """
@@ -11,7 +209,7 @@ This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
 function run_scopf_cuts_soft(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -19,6 +217,8 @@ function build_scopf_cuts_soft(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
+
+    variable_shunt_admittance_imaginary(pm)
 
     variable_branch_contigency_power_violation(pm)
     variable_gen_contigency_power_violation(pm)
@@ -37,11 +237,11 @@ function build_scopf_cuts_soft(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        _PM.constraint_power_balance(pm, i)
+        constraint_power_balance_shunt_dispatch(pm, i)
     end
 
     for i in ids(pm, :branch)
-        _PM.constraint_ohms_yt_from(pm, i)
+        constraint_ohms_yt_from_goc(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
@@ -119,7 +319,7 @@ end
 
 "a variant of `run_scopf_cuts_dc_soft` with a different generator response function"
 function run_scopf_cuts_soft_bpv(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_scopf_cuts_soft_bpv; ref_extensions=[ref_add_goc!], kwargs...)
 end
 
 ""
@@ -127,6 +327,8 @@ function build_scopf_cuts_soft_bpv(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
+
+    variable_shunt_admittance_imaginary(pm)
 
     variable_branch_contigency_power_violation(pm)
     variable_gen_contigency_power_violation(pm)
@@ -144,11 +346,11 @@ function build_scopf_cuts_soft_bpv(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        _PM.constraint_power_balance(pm, i)
+        constraint_power_balance_shunt_dispatch(pm, i)
     end
 
     for i in ids(pm, :branch)
-        _PM.constraint_ohms_yt_from(pm, i)
+        constraint_ohms_yt_from_goc(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)

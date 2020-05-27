@@ -3,50 +3,93 @@
 transforms a contigency list into explicit multinetwork data with network 0
 being the base case
 """
-function build_scopf_multinetwork(network)
+function build_scopf_multinetwork(network::Dict{String,<:Any})
     if _IM.ismultinetwork(network)
         error(_LOGGER, "build scopf can only be used on single networks")
     end
 
     contingencies = length(network["gen_contingencies"]) + length(network["branch_contingencies"])
 
-    info(_LOGGER, "building scopf multi-network with $(contingencies) networks")
+    info(_LOGGER, "building scopf multi-network with $(contingencies+1) networks")
 
-    mn_data = _PM.replicate(network, contingencies)
-    base_network = mn_data["nw"]["0"] = deepcopy(mn_data["nw"]["1"])
+    if contingencies > 0
+        mn_data = _PM.replicate(network, contingencies)
+        base_network = mn_data["nw"]["0"] = deepcopy(mn_data["nw"]["1"])
 
-    for (n, network) in mn_data["nw"]
-        if n == "0"
-            continue
-        end
-        for (i,bus) in network["bus"]
-            if haskey(bus, "evhi")
-                bus["vmax"] = bus["evhi"]
+        for (n, network) in mn_data["nw"]
+            if n == "0"
+                continue
             end
-            if haskey(bus, "evlo")
-                bus["vmin"] = bus["evlo"]
+
+            for (i,bus) in network["bus"]
+                if haskey(bus, "evhi")
+                    bus["vmax"] = bus["evhi"]
+                end
+                if haskey(bus, "evlo")
+                    bus["vmin"] = bus["evlo"]
+                end
+            end
+
+            for (i,branch) in network["branch"]
+                if haskey(branch, "rate_c")
+                    branch["rate_a"] = branch["rate_c"]
+                end
             end
         end
 
-        for (i,branch) in network["branch"]
-            if haskey(branch, "rate_c")
-                branch["rate_a"] = branch["rate_c"]
-            end
-        end
-    end
+        network_id = 1
+        for cont in base_network["gen_contingencies"]
+            cont_nw = mn_data["nw"]["$(network_id)"]
+            cont_nw["name"] = cont.label
+            cont_gen = cont_nw["gen"]["$(cont.idx)"]
+            cont_gen["gen_status"] = 0
 
-    network_id = 1
-    for cont in base_network["gen_contingencies"]
-        cont_nw = mn_data["nw"]["$(network_id)"]
-        cont_nw["name"] = cont.label
-        cont_nw["gen"]["$(cont.idx)"]["gen_status"] = 0
-        network_id += 1
-    end
-    for cont in base_network["branch_contingencies"]
-        cont_nw = mn_data["nw"]["$(network_id)"]
-        cont_nw["name"] = cont.label
-        cont_nw["branch"]["$(cont.idx)"]["br_status"] = 0
-        network_id += 1
+            gen_buses = Set{Int}()
+            for (i,gen) in cont_nw["gen"]
+                if gen["gen_status"] != 0
+                    push!(gen_buses, gen["gen_bus"])
+                end
+            end
+            cont_nw["gen_buses"] = gen_buses
+
+            network["response_gens"] = Set()
+            gen_bus = cont_nw["bus"]["$(cont_gen["gen_bus"])"]
+            cont_nw["response_gens"] = cont_nw["area_gens"][gen_bus["area"]]
+
+            network_id += 1
+        end
+        for cont in base_network["branch_contingencies"]
+            cont_nw = mn_data["nw"]["$(network_id)"]
+            cont_nw["name"] = cont.label
+            cont_branch = cont_nw["branch"]["$(cont.idx)"]
+            cont_branch["br_status"] = 0
+
+            gen_buses = Set{Int}()
+            for (i,gen) in cont_nw["gen"]
+                if gen["gen_status"] != 0
+                    push!(gen_buses, gen["gen_bus"])
+                end
+            end
+            cont_nw["gen_buses"] = gen_buses
+
+            fr_bus = cont_nw["bus"]["$(cont_branch["f_bus"])"]
+            to_bus = cont_nw["bus"]["$(cont_branch["t_bus"])"]
+
+            cont_nw["response_gens"] = Set()
+            if haskey(cont_nw["area_gens"], fr_bus["area"])
+                cont_nw["response_gens"] = cont_nw["area_gens"][fr_bus["area"]]
+            end
+            if haskey(network["area_gens"], to_bus["area"])
+                cont_nw["response_gens"] = union(cont_nw["response_gens"], cont_nw["area_gens"][to_bus["area"]])
+            end
+
+            network_id += 1
+        end
+
+    else
+        mn_data = _PM.replicate(network, 1)
+        mn_data["nw"]["0"] = mn_data["nw"]["1"]
+        delete!(mn_data["nw"], "1")
     end
 
     return mn_data
@@ -56,7 +99,7 @@ end
 
 # note this is simialr to bus_gen_lookup in PowerModels
 # core differences are taking network as an arg and filtering by gen_status
-function gens_by_bus(network)
+function gens_by_bus(network::Dict{String,<:Any})
     bus_gens = Dict(i => Any[] for (i,bus) in network["bus"])
     for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
@@ -69,7 +112,7 @@ end
 
 
 
-function tighten_constraints!(network)
+function tighten_constraints!(network::Dict{String,<:Any})
     for (i,bus) in network["bus"]
         if isapprox(bus["vmax"], bus["evhi"])
             bus["vmax_target"] = bus["vmax"] - 0.03
@@ -101,7 +144,7 @@ end
 
 
 
-function deactivate_rate_a!(network)
+function deactivate_rate_a!(network::Dict{String,<:Any})
     network["active_rates"] = Int[]
     for (i,branch) in network["branch"]
         branch["rate_a_inactive"] = branch["rate_a"]
@@ -109,7 +152,7 @@ function deactivate_rate_a!(network)
     end
 end
 
-function activate_rate_a!(network)
+function activate_rate_a!(network::Dict{String,<:Any})
     if haskey(network, "active_rates")
         delete!(network, "active_rates")
     end
@@ -122,7 +165,7 @@ function activate_rate_a!(network)
     end
 end
 
-function activate_rate_a_violations!(network)
+function activate_rate_a_violations!(network::Dict{String,<:Any})
     ac_flows = _PM.calc_branch_flow_ac(network)
     for (i,branch) in network["branch"]
         branch["pf_start"] = ac_flows["branch"][i]["pf"]
@@ -161,7 +204,7 @@ end
 assumes there is one reference bus and one connected component and adjusts voltage
 angles to be centered around zero at the reference bus.
 """
-function correct_voltage_angles!(network)
+function correct_voltage_angles!(network::Dict{String,<:Any})
     ref_bus = -1
     for (i,bus) in network["bus"]
         if bus["bus_type"] == 3
@@ -178,7 +221,7 @@ end
 
 
 "shift networks voltage angles by a specified amount"
-function shift_voltage_anlges!(network, shift::Number)
+function shift_voltage_anlges!(network::Dict{String,<:Any}, shift::Number)
     for (i,bus) in network["bus"]
         bus["va"] = bus["va"] + shift
     end
@@ -220,7 +263,7 @@ function set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
 end
 
 
-function update_active_power_data!(network, data; branch_flow=false)
+function update_active_power_data!(network::Dict{String,<:Any}, data::Dict{String,<:Any}; branch_flow=false)
     for (i,bus) in data["bus"]
         nw_bus = network["bus"][i]
         nw_bus["va"] = bus["va"]
@@ -241,7 +284,7 @@ function update_active_power_data!(network, data; branch_flow=false)
 end
 
 
-function extract_solution(network; branch_flow=false)
+function extract_solution(network::Dict{String,<:Any}; branch_flow=false)
     sol = Dict{String,Any}()
 
     sol["bus"] = Dict{String,Any}()
@@ -366,7 +409,7 @@ function _calc_branch_flow_ac_goc(data::Dict{String,<:Any})
     return Dict{String,Any}("branch" => flows)
 end
 
-function compute_power_balance_deltas!(network)
+function compute_power_balance_deltas!(network::Dict{String,<:Any})
     flows = calc_branch_flow_ac_goc(network)
     _PM.update_data!(network, flows)
 
@@ -386,9 +429,7 @@ end
 
 
 
-
-function compute_violations(network, solution; vm_digits=3)
-
+function compute_violations(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; vm_digits=3, rate_key="rate_c")
     vm_vio = 0.0
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
@@ -441,106 +482,25 @@ function compute_violations(network, solution; vm_digits=3)
         for (i,branch) in network["branch"]
             if branch["br_status"] != 0
                 branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+
+                s_fr = abs(branch_sol["pf"])
+                s_to = abs(branch_sol["pt"])
+
+                if !isnan(branch_sol["qf"]) && !isnan(branch_sol["qt"])
+                    s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
+                    s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+                end
 
                 # note true model is rate_c
                 #vio_flag = false
-                if s_fr > branch["rate_a"]
-                    sm_vio += s_fr - branch["rate_a"]
+                rating = branch[rate_key]
+
+                if s_fr > rating
+                    sm_vio += s_fr - rating
                     #vio_flag = true
                 end
-                if s_to > branch["rate_a"]
-                    sm_vio += s_to - branch["rate_a"]
-                    #vio_flag = true
-                end
-
-                #=
-                if s_fr > branch["rate_c"]
-                    sm_vio += s_fr - branch["rate_c"]
-                    #vio_flag = true
-                end
-                if s_to > branch["rate_c"]
-                    sm_vio += s_to - branch["rate_c"]
-                    #vio_flag = true
-                end
-                =#
-                #if vio_flag
-                #    info(_LOGGER, "$(i), $(branch["f_bus"]), $(branch["t_bus"]): $(s_fr) / $(s_to) <= $(branch["rate_c"])")
-                #end
-            end
-        end
-    end
-
-    return (vm=vm_vio, pg=pg_vio, qg=qg_vio, sm=sm_vio)
-end
-
-
-
-function compute_violations_ratec(network, solution; vm_digits=3)
-    vm_vio = 0.0
-    for (i,bus) in network["bus"]
-        if bus["bus_type"] != 4
-            bus_sol = solution["bus"][i]
-
-            # helps to account for minor errors in equality constraints
-            sol_val = round(bus_sol["vm"], digits=vm_digits)
-
-            #vio_flag = false
-            if sol_val < bus["vmin"]
-                vm_vio += bus["vmin"] - sol_val
-                #vio_flag = true
-            end
-            if sol_val > bus["vmax"]
-                vm_vio += sol_val - bus["vmax"]
-                #vio_flag = true
-            end
-            #if vio_flag
-            #    info(_LOGGER, "$(i): $(bus["vmin"]) - $(sol_val) - $(bus["vmax"])")
-            #end
-        end
-    end
-
-    pg_vio = 0.0
-    qg_vio = 0.0
-    for (i,gen) in network["gen"]
-        if gen["gen_status"] != 0
-            gen_sol = solution["gen"][i]
-
-            if gen_sol["pg"] < gen["pmin"]
-                pg_vio += gen["pmin"] - gen_sol["pg"]
-            end
-            if gen_sol["pg"] > gen["pmax"]
-                pg_vio += gen_sol["pg"] - gen["pmax"]
-            end
-
-            if gen_sol["qg"] < gen["qmin"]
-                qg_vio += gen["qmin"] - gen_sol["qg"]
-            end
-            if gen_sol["qg"] > gen["qmax"]
-                qg_vio += gen_sol["qg"] - gen["qmax"]
-            end
-        end
-    end
-
-
-    sm_vio = NaN
-    if haskey(solution, "branch")
-        sm_vio = 0.0
-        for (i,branch) in network["branch"]
-            if branch["br_status"] != 0
-                branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
-
-                # note true model is rate_c
-                #vio_flag = false
-                if s_fr > branch["rate_c"]
-                    sm_vio += s_fr - branch["rate_c"]
-                    #vio_flag = true
-                end
-                if s_to > branch["rate_c"]
-                    sm_vio += s_to - branch["rate_c"]
+                if s_to > rating
+                    sm_vio += s_to - rating
                     #vio_flag = true
                 end
                 #if vio_flag
@@ -552,25 +512,33 @@ function compute_violations_ratec(network, solution; vm_digits=3)
 
     return (vm=vm_vio, pg=pg_vio, qg=qg_vio, sm=sm_vio)
 end
+
 
 "returns a sorted list of branch flow violations"
-function branch_violations_sorted(network, solution)
+function branch_violations_sorted(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; rate_key="rate_c")
     branch_violations = []
 
     if haskey(solution, "branch")
         for (i,branch) in network["branch"]
             if branch["br_status"] != 0
                 branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+
+                s_fr = abs(branch_sol["pf"])
+                s_to = abs(branch_sol["pt"])
+
+                if !isnan(branch_sol["qf"]) && !isnan(branch_sol["qt"])
+                    s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
+                    s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
+                end
 
                 sm_vio = 0.0
-                # TODO update to rate_c
-                if s_fr > branch["rate_a"]
-                    sm_vio = s_fr - branch["rate_a"]
+
+                rating = branch[rate_key]
+                if s_fr > rating
+                    sm_vio = s_fr - rating
                 end
-                if s_to > branch["rate_a"] && s_to - branch["rate_a"] > sm_vio
-                    sm_vio = s_to - branch["rate_a"]
+                if s_to > rating && s_to - rating > sm_vio
+                    sm_vio = s_to - rating
                 end
 
                 if sm_vio > 0.0
@@ -584,37 +552,3 @@ function branch_violations_sorted(network, solution)
 
     return branch_violations
 end
-
-
-"returns a sorted list of branch flow violations"
-function branch_violations_sorted_ratec(network, solution)
-    branch_violations = []
-
-    if haskey(solution, "branch")
-        for (i,branch) in network["branch"]
-            if branch["br_status"] != 0
-                branch_sol = solution["branch"][i]
-                s_fr = sqrt(branch_sol["pf"]^2 + branch_sol["qf"]^2)
-                s_to = sqrt(branch_sol["pt"]^2 + branch_sol["qt"]^2)
-
-                sm_vio = 0.0
-                # TODO update to rate_c
-                if s_fr > branch["rate_c"]
-                    sm_vio = s_fr - branch["rate_c"]
-                end
-                if s_to > branch["rate_c"] && s_to - branch["rate_c"] > sm_vio
-                    sm_vio = s_to - branch["rate_c"]
-                end
-
-                if sm_vio > 0.0
-                    push!(branch_violations, (branch_id=branch["index"], sm_vio=sm_vio))
-                end
-            end
-        end
-    end
-
-    sort!(branch_violations, by=(x) -> -x.sm_vio)
-
-    return branch_violations
-end
-

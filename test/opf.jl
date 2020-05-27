@@ -95,6 +95,21 @@ end
 end
 
 
+opf_pg_pf_polar_objective = [191950.48, 9.885375854285985e6]
+@testset "opf pg pf polar 5 - $(i)" for (i,network) in enumerate(networks)
+    result = run_opf_cheap_target_acp(network, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_SOLVED)
+    @test isapprox(result["objective"], opf_pg_pf_polar_objective[i]; atol = 1e0)
+end
+
+@testset "opf pg pf polar 5 - infeasible" begin
+    result = run_opf_cheap_target_acp(network_infeasible, nlp_solver)
+
+    @test isapprox(result["termination_status"], LOCALLY_INFEASIBLE)
+end
+
+
 opf_pg_pf_rect_objective = [122981.99, 9.480588301784407e6]
 @testset "opf pg pf rect 5 - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
