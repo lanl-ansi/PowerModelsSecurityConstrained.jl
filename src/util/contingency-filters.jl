@@ -48,7 +48,7 @@ function contingency_order(network)
         # defaults are good
     elseif gen_cont_total == 0 && branch_cont_total != 0
         steps = branch_cont_total
-    elseif gen_cont_total != 0 < branch_cont_total == 0
+    elseif gen_cont_total != 0 && branch_cont_total == 0
         steps = gen_cont_total
     elseif gen_cont_total == branch_cont_total
         steps = branch_cont_total
@@ -61,7 +61,6 @@ function contingency_order(network)
         branch_rate = 1.0 
         steps = branch_cont_total
     end
-
 
     #println(gen_cont_total)
     #println(branch_cont_total)
@@ -89,27 +88,6 @@ function contingency_order(network)
         end
         branch_cont_start = branch_cont_end+1
     end
-
-    #=
-    for s in 1:steps
-        gen_cont_start = trunc(Int, ceil(1+(s-1)*gen_rate))
-        gen_cont_end = min(gen_cont_total, trunc(Int,ceil(s*gen_rate)))
-        #println(gen_cont_start:gen_cont_end)
-        for j in gen_cont_start:gen_cont_end
-            push!(cont_order, gen_cont_order[j])
-        end
-
-        branch_cont_start = trunc(Int, ceil(1+(s-1)*branch_rate))
-        branch_cont_end = min(branch_cont_total, trunc(Int,ceil(s*branch_rate)))
-        println("$(s) - $(branch_cont_start:branch_cont_end)")
-        for j in branch_cont_start:branch_cont_end
-            push!(cont_order, branch_cont_order[j])
-        end
-    end
-    =#
-
-    #println(length(cont_order))
-    #println(gen_cont_total + branch_cont_total)
 
     @assert(length(cont_order) == gen_cont_total + branch_cont_total)
 

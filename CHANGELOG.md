@@ -2,7 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- nothing
+- Fix bug in `contingency_order` logic
 
 ### v0.7.0
 - Added flexible multi-network SCOPF formulation (#19)
