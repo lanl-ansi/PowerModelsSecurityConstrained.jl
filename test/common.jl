@@ -69,11 +69,31 @@ end
     @test all(haskey(branch, "rate_a") for (i,branch) in network["branch"])
 end
 
+
 first_cont_id = [3, 203]
 @testset "contingency_order - $(i)" for (i,network) in enumerate(networks)
     order = contingency_order(network)
     @test isapprox(order[i].idx, first_cont_id[i]; atol = 1e0)
 end
+
+first_gen_cont_id = [3, 60]
+@testset "contingency_order, gen only - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["branch_contingencies"] = []
+
+    order = contingency_order(network)
+    @test isapprox(order[i].idx, first_gen_cont_id[i]; atol = 1e0)
+end
+
+first_branch_cont_id = [9, 61]
+@testset "contingency_order, branch only - $(i)" for (i,network) in enumerate(networks)
+    network = deepcopy(network)
+    network["gen_contingencies"] = []
+
+    order = contingency_order(network)
+    @test isapprox(order[i].idx, first_branch_cont_id[i]; atol = 1e0)
+end
+
 
 ref_bus_id = ["1", "17"]
 @testset "correct_voltage_angles - $(i)" for (i,network) in enumerate(networks)
