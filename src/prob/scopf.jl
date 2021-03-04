@@ -189,7 +189,7 @@ function build_scopf_cuts(pm::_PM.AbstractPowerModel)
     ##### Setup Objective #####
     _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
-    pg_cost = var(pm, pm.cnw, :pg_cost)
+    pg_cost = var(pm, :pg_cost)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) )
@@ -302,10 +302,10 @@ function build_scopf_cuts_soft(pm::_PM.AbstractPowerModel)
     ##### Setup Objective #####
     _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
-    pg_cost = var(pm, pm.cnw, :pg_cost)
-    branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
-    gen_cont_flow_vio = var(pm, pm.cnw, :gen_cont_flow_vio)
-    gen_cont_cap_vio = var(pm, pm.cnw, :gen_cont_cap_vio)
+    pg_cost = var(pm, :pg_cost)
+    branch_cont_flow_vio = var(pm, :branch_cont_flow_vio)
+    gen_cont_flow_vio = var(pm, :gen_cont_flow_vio)
+    gen_cont_cap_vio = var(pm, :gen_cont_cap_vio)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +
@@ -393,9 +393,9 @@ function build_scopf_cuts_soft_bpv(pm::_PM.AbstractPowerModel)
     ##### Setup Objective #####
     _PM.objective_variable_pg_cost(pm)
     # explicit network id needed because of conductor-less
-    pg_cost = var(pm, pm.cnw, :pg_cost)
-    branch_cont_flow_vio = var(pm, pm.cnw, :branch_cont_flow_vio)
-    gen_cont_flow_vio = var(pm, pm.cnw, :gen_cont_flow_vio)
+    pg_cost = var(pm, :pg_cost)
+    branch_cont_flow_vio = var(pm, :branch_cont_flow_vio)
+    gen_cont_flow_vio = var(pm, :gen_cont_flow_vio)
 
     @objective(pm.model, Min,
         sum( pg_cost[i] for (i,gen) in ref(pm, :gen) ) +

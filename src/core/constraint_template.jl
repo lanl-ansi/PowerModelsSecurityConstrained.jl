@@ -1,5 +1,5 @@
 ""
-function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
@@ -21,7 +21,7 @@ function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractPowerModel, i::
 end
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     bus = ref(pm, nw, :bus, i)
     bus_arcs = ref(pm, nw, :bus_arcs, i)
     bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
@@ -44,7 +44,7 @@ end
 
 
 ""
-function constraint_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -66,25 +66,25 @@ end
 
 
 "links the voltage voltage_magnitude of two networks together"
-function constraint_voltage_magnitude_link(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=0, nw_2::Int=pm.cnw)
+function constraint_voltage_magnitude_link(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=nw_id_default, nw_2::Int=nw_id_default)
     constraint_voltage_magnitude_link(pm, nw_1, nw_2, i)
 end
 
 
 "links the voltage voltage_magnitude of two networks together"
-function constraint_gen_power_real_link(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=0, nw_2::Int=pm.cnw)
+function constraint_gen_power_real_link(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=nw_id_default, nw_2::Int=nw_id_default)
     constraint_gen_power_real_link(pm, nw_1, nw_2, i)
 end
 
 "links the generator power of two networks together, with a linear response function"
-function constraint_gen_power_real_response(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=0, nw_2::Int=pm.cnw)
+function constraint_gen_power_real_response(pm::_PM.AbstractPowerModel, i::Int; nw_1::Int=nw_id_default, nw_2::Int=nw_id_default)
     gen = ref(pm, nw_2, :gen, i)
     constraint_gen_power_real_response(pm, nw_1, nw_2, i, gen["alpha"])
 end
 
 
 ""
-function constraint_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -97,7 +97,7 @@ end
 
 
 ""
-function constraint_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -110,7 +110,7 @@ end
 
 
 ""
-function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_gen_power_real_deviation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     gen = ref(pm, nw, :gen, i)
 
     constraint_gen_power_real_deviation(pm, nw, i, gen["pg"])
@@ -118,7 +118,7 @@ end
 
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_branch_contingency_ptdf_thermal_limit_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     cut = ref(pm, :branch_flow_cuts, i)
     branch = ref(pm, nw, :branch, cut.branch_id)
 
@@ -128,7 +128,7 @@ function constraint_branch_contingency_ptdf_thermal_limit_from(pm::_PM.AbstractP
 end
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_to(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_branch_contingency_ptdf_thermal_limit_to(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     cut = ref(pm, :branch_flow_cuts, i)
     branch = ref(pm, nw, :branch, cut.branch_id)
 
@@ -139,7 +139,7 @@ end
 
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     cut = ref(pm, :branch_flow_cuts, i)
     branch = ref(pm, nw, :branch, cut.branch_id)
 
@@ -149,7 +149,7 @@ function constraint_branch_contingency_ptdf_thermal_limit_from_soft(pm::_PM.Abst
 end
 
 ""
-function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function constraint_branch_contingency_ptdf_thermal_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     cut = ref(pm, :branch_flow_cuts, i)
     branch = ref(pm, nw, :branch, cut.branch_id)
 
@@ -160,7 +160,7 @@ end
 
 # revisit after issue #14 is closed
 # ""
-# function constraint_gen_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+# function constraint_gen_contingency_ptdf_thermal_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
 #     cut = ref(pm, :gen_flow_cuts, i)
 #     branch = ref(pm, nw, :branch, cut.branch_id)
 #     gen = ref(pm, :gen, cut.gen_id)

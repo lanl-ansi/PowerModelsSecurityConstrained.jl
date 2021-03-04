@@ -32,6 +32,8 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
     end
     #_PM.print_summary(result["solution"])
     solution = result["solution"]["nw"]["0"]
+    solution["per_unit"] = result["solution"]["per_unit"]
+
     _PM.update_data!(network_base, solution)
     _PM.update_data!(network_active, solution)
 
@@ -90,6 +92,8 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
         # end
         info(_LOGGER, "objective: $(result["objective"])")
         solution = result["solution"]["nw"]["0"]
+        solution["per_unit"] = result["solution"]["per_unit"]
+
         _PM.update_data!(network_base, solution)
         _PM.update_data!(network_active, solution)
 

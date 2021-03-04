@@ -1,6 +1,6 @@
 
 ""
-function variable_shunt_admittance_imaginary(pm::_PM.AbstractActivePowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_shunt_admittance_imaginary(pm::_PM.AbstractActivePowerModel; nw::Int=nw_id_default, bounded::Bool=true, report::Bool=true)
 # do nothing
 end
 

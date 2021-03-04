@@ -13,10 +13,10 @@ Memento.setlevel!(Memento.getlogger(PowerModels), "error")
 Memento.setlevel!(Memento.getlogger(PowerModelsSecurityConstrained), "error")
 
 
-nlp_solver = with_optimizer(Ipopt.Optimizer, tol=1e-6, print_level=0)
-#nlp_solver = with_optimizer(Ipopt.Optimizer, tol=1e-6)
-lp_solver = with_optimizer(Cbc.Optimizer, logLevel=0)
-#lp_solver = with_optimizer(Cbc.Optimizer)
+nlp_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
+#nlp_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6)
+lp_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel"=>0)
+#lp_solver = optimizer_with_attributes(Cbc.Optimizer)
 
 
 ini_file = "../test/data/inputfiles.ini"

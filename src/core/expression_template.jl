@@ -1,7 +1,7 @@
 """
 defines power from generators at each bus, varies in contingencies
 """
-function expression_bus_generation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_bus_generation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     if !haskey(var(pm, nw), :bus_pg)
         var(pm, nw)[:bus_pg] = Dict{Int,Any}()
     end
@@ -19,7 +19,7 @@ end
 """
 defines power from non-generator components at each bus, static in contingencies
 """
-function expression_bus_withdrawal(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_bus_withdrawal(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     if !haskey(var(pm, nw), :bus_wdp)
         var(pm, nw)[:bus_wdp] = Dict{Int,Any}()
     end
@@ -44,7 +44,7 @@ end
 
 
 ""
-function expression_branch_power_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+function expression_branch_power_ohms_yt_from_goc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     if !haskey(var(pm, nw), :p)
         var(pm, nw)[:p] = Dict{Tuple{Int,Int,Int},Any}()
     end

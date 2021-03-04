@@ -4,6 +4,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.8.0
+- Update to PowerModels v0.18
+
 ### v0.7.1
 - Fix bug in `contingency_order` logic
 

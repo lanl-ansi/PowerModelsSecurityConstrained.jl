@@ -14,7 +14,7 @@ import InfrastructureModels
 const _IM = InfrastructureModels
 
 import PowerModels; const _PM = PowerModels
-import PowerModels: ids, ref, var, con, sol, nw_ids
+import PowerModels: ids, ref, var, con, sol, nw_ids, nw_id_default
 
 
 

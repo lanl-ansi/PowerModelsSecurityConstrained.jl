@@ -287,7 +287,7 @@ function build_pf_bqv_acr(pm::_PM.AbstractPowerModel)
     #@constraint(pm.model, var(pm, :delta) == 0.0)
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
-    _IM.sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
+    _PM.sol_component_value(pm, nw_id_default, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     var(pm)[:p_slack] = @variable(pm.model, p_slack, base_name="p_slack", start=0.0)
 
@@ -659,7 +659,7 @@ function build_pf_fixed_acr(pm::_PM.AbstractPowerModel)
     sol(pm)[:delta] = var(pm)[:delta]
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
-    _IM.sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
+    _PM.sol_component_value(pm, nw_id_default, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     start_time = time()
 
@@ -711,8 +711,8 @@ function build_pf_fixed_acr(pm::_PM.AbstractPowerModel)
             qg[i] = var(pm, :qg, i)
         end
     end
-    var(pm, pm.cnw)[:pg] = pg
-    var(pm, pm.cnw)[:qg] = qg
+    var(pm)[:pg] = pg
+    var(pm)[:qg] = qg
     #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
 
@@ -742,7 +742,7 @@ function build_pf_fixed_bp_slack_acr(pm::_PM.AbstractPowerModel)
     @constraint(pm.model, var(pm, :delta) == delta)
 
     shunt_values = Dict(sid => ref(pm, :shunt, sid)["bs"] for sid in ids(pm, :shunt_var))
-    _IM.sol_component_value(pm, pm.cnw, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
+    _PM.sol_component_value(pm, nw_id_default, :shunt, :bs, ids(pm, :shunt_var), shunt_values)
 
     active_response_gens = intersect(ids(pm, :gen), ref(pm, :response_gens))
     # for i in active_response_gens
@@ -1092,7 +1092,7 @@ function build_opf_contingency(pm::_PM.AbstractPowerModel)
             vm[i] = var(pm, :vm, i)
         end
     end
-    var(pm, pm.cnw)[:vm] = vm
+    var(pm)[:vm] = vm
 
 
     for i in ids(pm, :ref_buses)
@@ -1128,8 +1128,8 @@ function build_opf_contingency(pm::_PM.AbstractPowerModel)
             qg[i] = var(pm, :qg, i)
         end
     end
-    var(pm, pm.cnw)[:pg] = pg
-    var(pm, pm.cnw)[:qg] = qg
+    var(pm)[:pg] = pg
+    var(pm)[:qg] = qg
 
 
     for (i,bus) in ref(pm, :bus)

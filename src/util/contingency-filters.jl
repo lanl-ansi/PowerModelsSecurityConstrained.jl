@@ -202,15 +202,15 @@ function compute_branch_contingency_subset(network::Dict{String,<:Any}; branch_e
 end
 
 
-function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, branch::Dict{String,<:Any})
+function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, ref_bus::Int, branch::Dict{String,<:Any})
     branch_ptdf = Dict{Int,Any}()
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
 
     b = imag(inv(branch["br_r"] + im * branch["br_x"]))
 
-    va_fr = _PM.injection_factors_va(am, f_bus)
-    va_to = _PM.injection_factors_va(am, t_bus)
+    va_fr = _PM.injection_factors_va(am, ref_bus, f_bus)
+    va_to = _PM.injection_factors_va(am, ref_bus, t_bus)
 
     # convert bus injection functions to PTDF style
     bus_injection = Dict(i => -b*(get(va_fr, i, 0.0) - get(va_to, i, 0.0)) for i in union(keys(va_fr), keys(va_to)))
@@ -258,6 +258,8 @@ function check_contingency_violations(network;
 
 
     network_lal = deepcopy(network) #lal -> losses as loads
+
+    ref_bus_id = _PM.reference_bus(network_lal)["index"]
 
     gen_pg_init = Dict(i => gen["pg"] for (i,gen) in network_lal["gen"])
 
@@ -325,7 +327,7 @@ function check_contingency_violations(network;
         end
 
         try
-            solution = _PM.compute_dc_pf(network_lal)
+            solution = _PM.compute_dc_pf(network_lal)["solution"]
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
@@ -368,7 +370,7 @@ function check_contingency_violations(network;
         cont_branch["br_status"] = 0
 
         try
-            solution = _PM.compute_dc_pf(network_lal)
+            solution = _PM.compute_dc_pf(network_lal)["solution"]
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
@@ -478,6 +480,8 @@ function check_contingencies_branch_power(network;
 
     network_lal = deepcopy(network) #lal -> losses as loads
 
+    ref_bus_id = _PM.reference_bus(network_lal)["index"]
+
     gen_pg_init = Dict(i => gen["pg"] for (i,gen) in network_lal["gen"])
 
     load_active = Dict(i => load for (i,load) in network_lal["load"] if load["status"] != 0)
@@ -543,7 +547,7 @@ function check_contingencies_branch_power(network;
         end
 
         try
-            solution = _PM.compute_dc_pf(network_lal)
+            solution = _PM.compute_dc_pf(network_lal)["solution"]
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
@@ -568,7 +572,7 @@ function check_contingencies_branch_power(network;
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, branch)
+                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (gen_id=cont.idx, cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(gen_cuts, cut)
             else
@@ -600,7 +604,7 @@ function check_contingencies_branch_power(network;
         cont_branch["br_status"] = 0
 
         try
-            solution = _PM.compute_dc_pf(network_lal)
+            solution = _PM.compute_dc_pf(network_lal)["solution"]
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
@@ -622,7 +626,7 @@ function check_contingencies_branch_power(network;
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, branch)
+                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(branch_cuts, cut)
             else
@@ -718,6 +722,7 @@ function check_contingencies_branch_power_bpv(network;
 
 
     network_lal = deepcopy(network) #lal -> losses as loads
+    ref_bus_id = _PM.reference_bus(network_lal)["index"]
     network_lal["delta"] = 0.0
 
     max_gen_id = maximum(parse(Int, i) for (i,gen) in network_lal["gen"])
@@ -788,7 +793,7 @@ function check_contingencies_branch_power_bpv(network;
         end
 
         try
-            solution = _PM.compute_dc_pf(network_lal)
+            solution = _PM.compute_dc_pf(network_lal)["solution"]
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
@@ -813,7 +818,7 @@ function check_contingencies_branch_power_bpv(network;
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, branch)
+                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (gen_id=cont.idx, cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(gen_cuts, cut)
             else
@@ -850,7 +855,7 @@ function check_contingencies_branch_power_bpv(network;
         cont_branch["br_status"] = 0
 
         try
-            solution = _PM.compute_dc_pf(network_lal)
+            solution = _PM.compute_dc_pf(network_lal)["solution"]
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
@@ -872,7 +877,7 @@ function check_contingencies_branch_power_bpv(network;
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, branch)
+                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(branch_cuts, cut)
             else
