@@ -29,6 +29,7 @@ solutions = [read_solution1(networks[i], output_dir=dirname(case.files["raw"])) 
 case_infeasible = parse_goc_files(ini_file, scenario_id="scenario_03")
 network_infeasible = build_pm_model(case_infeasible)
 
+
 @testset "PowerModelsSecurityConstrained" begin
 
     include("common.jl")
