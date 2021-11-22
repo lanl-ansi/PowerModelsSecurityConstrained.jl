@@ -2,7 +2,7 @@
 @testset "test scopf" begin
 
 
-scopf_cont_cuts_dc_objective = [14642.16, 32952.18]
+scopf_cont_cuts_dc_objective = [14642.16, 32887.05]
 @testset "scopf contigency cuts dc, from file - $(i)" for (i,network) in enumerate(networks)
     result = run_scopf_contigency_cuts(ini_file, DCPPowerModel, lp_solver, scenario_id=scenarios[i])
 
@@ -19,7 +19,7 @@ end
     @test isapprox(result["objective"], scopf_cont_cuts_dc_objective[i]; atol = 1e0)
 end
 
-scopf_cont_cuts_ac_objective = [14676.95, 33281.21]
+scopf_cont_cuts_ac_objective = [14676.95, 33193.91]
 @testset "scopf contigency cuts ac - $(i)" for (i,network) in enumerate(networks)
     network = deepcopy(network)
 
@@ -98,7 +98,7 @@ end
     network["branch_flow_cuts"] = []
 
     result = run_scopf_cuts_soft(network, DCPPowerModel, lp_solver)
-    @test isapprox(result["termination_status"], INFEASIBLE)
+    @test result["termination_status"] == INFEASIBLE || result["termination_status"] == INFEASIBLE_OR_UNBOUNDED
 end
 
 scopf_dc_cuts_soft_wc_objective = [14642.16, 37403.76]
@@ -164,7 +164,7 @@ end
     network["branch_flow_cuts"] = []
 
     result = run_scopf_cuts_soft_bpv(network, DCPPowerModel, lp_solver)
-    @test isapprox(result["termination_status"], INFEASIBLE)
+    @test result["termination_status"] == INFEASIBLE || result["termination_status"] == INFEASIBLE_OR_UNBOUNDED
 end
 
 scopf_dc_cuts_soft_wc_objective = [14642.16, 27258.16]
