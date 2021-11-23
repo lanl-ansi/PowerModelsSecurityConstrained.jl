@@ -94,7 +94,7 @@ function build_scopf(pm::_PM.AbstractPowerModel)
 
 
     ##### Setup Objective #####
-    _PM.objective_variable_pg_cost(pm)
+    objective_variable_pg_cost_basecase(pm)
 
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, 0, :pg_cost)
