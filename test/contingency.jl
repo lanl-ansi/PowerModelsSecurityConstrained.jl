@@ -1,9 +1,9 @@
 @testset "test contigency" begin
 
-@testset "pg response - $(i)" for (i,network) in enumerate(networks)
+@testset "pg response - $(i)" for (i,network) in enumerate(c1_networks)
 
     network = deepcopy(network)
-    PowerModels.update_data!(network, solutions[i])
+    PowerModels.update_data!(network, c1_solutions[i])
 
     for (i,gen) in network["gen"]
         gen["pg_base"] = gen["pg"]
@@ -60,7 +60,7 @@ end
 
 cuts_ratec_nd_first_lazy_gen = [0, 10]
 cuts_ratec_nd_first_lazy_branch = [0, 10]
-@testset "cuts ratec_nd_first_lazy - $(i)" for (i,network) in enumerate(networks)
+@testset "cuts ratec_nd_first_lazy - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
@@ -78,7 +78,7 @@ end
 
 cuts_ratec_gen = [0, 10]
 cuts_ratec_branch = [0, 10]
-@testset "cuts ratec - $(i)" for (i,network) in enumerate(networks)
+@testset "cuts ratec - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []

@@ -43,7 +43,7 @@ end
 
 
 solution2_lines = [31,600]
-@testset "write_solution2 - $(i)" for (i,network) in enumerate(networks)
+@testset "write_solution2 - $(i)" for (i,network) in enumerate(c1_networks)
     network = c1_contingency_stage_data(network)
 
     bus_gens = gens_by_bus(network)
@@ -83,7 +83,7 @@ solution2_lines = [31,600]
 end
 
 
-@testset "pf soft rect - $(i)" for (i,network) in enumerate(networks)
+@testset "pf soft rect - $(i)" for (i,network) in enumerate(c1_networks)
     network = c1_contingency_stage_data(network)
 
     result = run_c1_pf_bqv_acr(network, nlp_solver)
@@ -92,7 +92,7 @@ end
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
-@testset "pf soft rect fixedpoint - $(i)" for (i,network) in enumerate(networks)
+@testset "pf soft rect fixedpoint - $(i)" for (i,network) in enumerate(c1_networks)
     network = c1_contingency_stage_data(network)
     pg_lost = 0.0
 
@@ -103,7 +103,7 @@ end
 end
 
 @testset "pf soft rect fixedpoint - infeasible" begin
-    network = c1_contingency_stage_data(network_infeasible)
+    network = c1_contingency_stage_data(c1_network_infeasible)
     pg_lost = 0.0
 
     result = run_c1_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
@@ -113,7 +113,7 @@ end
 end
 
 
-@testset "pf fixed nbf rect2 - $(i)" for (i,network) in enumerate(networks)
+@testset "pf fixed nbf rect2 - $(i)" for (i,network) in enumerate(c1_networks)
     network = c1_contingency_stage_data(network)
 
     result = run_c1_pf_fixed_acr(network, nlp_solver)
@@ -122,7 +122,7 @@ end
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
-@testset "pf fixed nbf rect2 ds- $(i)" for (i,network) in enumerate(networks)
+@testset "pf fixed nbf rect2 ds- $(i)" for (i,network) in enumerate(c1_networks)
     network = c1_contingency_stage_data(network)
 
     for (i,gen) in network["gen"]
@@ -137,7 +137,7 @@ end
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
-@testset "pf v2_3 fixpoint - $(i)" for (i,network) in enumerate(networks)
+@testset "pf v2_3 fixpoint - $(i)" for (i,network) in enumerate(c1_networks)
     network = c1_contingency_stage_data(network)
     pg_lost = 0.0
 
@@ -148,7 +148,7 @@ end
 end
 
 @testset "pf v2_3 fixpoint - infeasible" begin
-    network = c1_contingency_stage_data(network_infeasible)
+    network = c1_contingency_stage_data(c1_network_infeasible)
     pg_lost = 0.0
 
     result = run_c1_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)

@@ -1,8 +1,8 @@
 @testset "test common" begin
 
-networks_opf = [build_c1_pm_opf_model(case) for case in cases]
+c1_networks_opf = [build_c1_pm_opf_model(case) for case in c1_cases]
 opf_ac_objective = [14676.9, 27564.91]
-@testset "opf ac - $(i)" for (i,network) in enumerate(networks_opf)
+@testset "opf ac - $(i)" for (i,network) in enumerate(c1_networks_opf)
 
     result = run_ac_opf(network, nlp_solver)
 
@@ -11,7 +11,7 @@ opf_ac_objective = [14676.9, 27564.91]
 end
 
 
-@testset "set_start_values - $(i)" for (i,network) in enumerate(networks_opf)
+@testset "set_start_values - $(i)" for (i,network) in enumerate(c1_networks_opf)
     network = deepcopy(network)
 
     c1_set_start_values!(network)
@@ -23,7 +23,7 @@ end
 
 
 opf_ac_tight_objective = [14676.9, 28347.12]
-@testset "opf ac tight - $(i)" for (i,network) in enumerate(networks_opf)
+@testset "opf ac tight - $(i)" for (i,network) in enumerate(c1_networks_opf)
     network = deepcopy(network)
 
     c1_tighten_constraints!(network)
@@ -35,7 +35,7 @@ end
 
 
 opf_ac_no_rate_a_objective = [14676.9, 27546.46]
-@testset "opf ac no flow limits - $(i)" for (i,network) in enumerate(networks_opf)
+@testset "opf ac no flow limits - $(i)" for (i,network) in enumerate(c1_networks_opf)
     network = deepcopy(network)
 
     deactivate_rate_a!(network)
@@ -47,7 +47,7 @@ end
 
 
 mn_size = [2, 20]
-@testset "build multinetwork - $(i)" for (i,network) in enumerate(networks)
+@testset "build multinetwork - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
 
     network["gen_contingencies"] = network["gen_contingencies"][1:min(10, length(network["gen_contingencies"]))]
@@ -59,7 +59,7 @@ mn_size = [2, 20]
 end
 
 
-@testset "rate_a deactivate / activate - $(i)" for (i,network) in enumerate(networks)
+@testset "rate_a deactivate / activate - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
 
     deactivate_rate_a!(network)
@@ -71,13 +71,13 @@ end
 
 
 first_cont_id = [3, 203]
-@testset "contingency_order - $(i)" for (i,network) in enumerate(networks)
+@testset "contingency_order - $(i)" for (i,network) in enumerate(c1_networks)
     order = c1_contingency_order(network)
     @test isapprox(order[i].idx, first_cont_id[i]; atol = 1e0)
 end
 
 first_gen_cont_id = [3, 60]
-@testset "contingency_order, gen only - $(i)" for (i,network) in enumerate(networks)
+@testset "contingency_order, gen only - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
     network["branch_contingencies"] = []
 
@@ -86,7 +86,7 @@ first_gen_cont_id = [3, 60]
 end
 
 first_branch_cont_id = [9, 61]
-@testset "contingency_order, branch only - $(i)" for (i,network) in enumerate(networks)
+@testset "contingency_order, branch only - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
     network["gen_contingencies"] = []
 
@@ -96,9 +96,9 @@ end
 
 
 ref_bus_id = ["1", "17"]
-@testset "correct_voltage_angles - $(i)" for (i,network) in enumerate(networks)
+@testset "correct_voltage_angles - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
-    update_data!(network, solutions[i])
+    update_data!(network, c1_solutions[i])
 
     correct_voltage_angles!(network)
 
@@ -109,7 +109,7 @@ end
 opf_p_delta_abs_max = [0.26746780838927353, 0.07392932526496376]
 opf_q_delta_abs_max = [0.41571449226280965, 1.1036712386853447]
 solution1_lines = [25,594]
-@testset "write_solution1 - $(i)" for (i,network) in enumerate(networks)
+@testset "write_solution1 - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
 
     #deactivate_rate_a!(network)
