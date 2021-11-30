@@ -59,7 +59,7 @@ function compute_c1_solution2(con_file::String, inl_file::String, raw_file::Stri
 
     # solution2_files = []
     # for pd in process_data
-    #     push!(solution2_files, c1_c1_solution2_solver(pd))
+    #     push!(solution2_files, c1_solution2_solver(pd))
     # end
 
     sort!(solution2_files)
@@ -104,7 +104,7 @@ function compute_c1_solution2(con_file::String, inl_file::String, raw_file::Stri
 end
 
 
-@everywhere function c1_c1_solution2_solver(process_data)
+@everywhere function c1_solution2_solver(process_data)
     #println(process_data)
     time_data_start = time()
     PowerModels.silence()

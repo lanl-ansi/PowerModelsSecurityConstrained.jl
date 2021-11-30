@@ -55,7 +55,7 @@ function compute_c1_solution2_fast(con_file::String, inl_file::String, raw_file:
     #end
 
 
-    solution2_files = pmap(c1_c1_solution2_solver_fast, process_data)
+    solution2_files = pmap(c1_solution2_solver_fast, process_data)
 
     sort!(solution2_files)
 
@@ -99,7 +99,7 @@ function compute_c1_solution2_fast(con_file::String, inl_file::String, raw_file:
 end
 
 
-@everywhere function c1_c1_c1_solution2_solver_fast(process_data)
+@everywhere function c1_solution2_solver_fast(process_data)
     #println(process_data)
     time_data_start = time()
     PowerModels.silence()

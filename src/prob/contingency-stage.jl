@@ -148,7 +148,7 @@ function c1_correct_qg!(network, solution; bus_gens=gens_by_bus(network))
 end
 
 
-c1_c1_gen_default = Dict(
+const c1_gen_default = Dict(
 #    "gen_bus" => 0,
 #    "index" => 0,
     "pg" => 0.0,
