@@ -1,5 +1,5 @@
 
-function compute_inverse_size(network)
+function compute_susceptance_matrix_inv_size(network)
     b0 = Base.gc_bytes()
     b_inv = _PM.calc_susceptance_matrix_inv(network)
     return Base.gc_bytes() - b0
@@ -7,13 +7,13 @@ end
 
 
 # a global network variable used for iterative computations
-network_global = Dict{String,Any}()
+c1_network_global = Dict{String,Any}()
 
 # a global contingency list used for iterative computations
-contingency_order_global = []
+c1_contingency_order_global = []
 
 ""
-function load_network_global(con_file, inl_file, raw_file, rop_file, scenario_id)
+function load_c1_network_global(con_file, inl_file, raw_file, rop_file, scenario_id)
     info(_LOGGER, "skipping goc and power models data warnings")
     pm_logger_level = getlevel(getlogger(PowerModels))
     goc_logger_level = getlevel(_LOGGER)
@@ -21,9 +21,9 @@ function load_network_global(con_file, inl_file, raw_file, rop_file, scenario_id
     setlevel!(getlogger(PowerModels), "error")
     setlevel!(_LOGGER, "error")
 
-    goc_data = parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
-    global network_global = build_pm_model(goc_data)
-    global contingency_order_global = contingency_order(network_global)
+    goc_data = parse_c1_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
+    global c1_network_global = build_c1_pm_model(goc_data)
+    global c1_contingency_order_global = c1_contingency_order(c1_network_global)
 
     setlevel!(getlogger(PowerModels), pm_logger_level)
     setlevel!(_LOGGER, goc_logger_level)
@@ -33,7 +33,7 @@ end
 
 
 "build a static ordering of all contingencies"
-function contingency_order(network)
+function c1_contingency_order(network)
     gen_cont_order = sort(network["gen_contingencies"], by=(x) -> x.label)
     branch_cont_order = sort(network["branch_contingencies"], by=(x) -> x.label)
 
@@ -95,7 +95,7 @@ function contingency_order(network)
 end
 
 
-function write_contingencies(network; output_dir="", file_name="contingencies.txt")
+function write_c1_contingencies(network; output_dir="", file_name="contingencies.txt")
     if length(output_dir) > 0
         file_path = joinpath(output_dir, file_name)
     else
@@ -112,7 +112,7 @@ function write_contingencies(network; output_dir="", file_name="contingencies.tx
     end
 end
 
-function write_active_flow_cuts(network; output_dir="", file_name="active_flow_cuts.txt")
+function write_c1_active_flow_cuts(network; output_dir="", file_name="active_flow_cuts.txt")
     if length(output_dir) > 0
         file_path = joinpath(output_dir, file_name)
     else
@@ -130,7 +130,7 @@ function write_active_flow_cuts(network; output_dir="", file_name="active_flow_c
     end
 end
 
-function read_active_flow_cuts(;output_dir="", file_name="active_flow_cuts.txt")
+function read_c1_active_flow_cuts(;output_dir="", file_name="active_flow_cuts.txt")
     if length(output_dir) > 0
         file_path = joinpath(output_dir, file_name)
     else
@@ -139,20 +139,20 @@ function read_active_flow_cuts(;output_dir="", file_name="active_flow_cuts.txt")
 
     if isfile(file_path)
         info(_LOGGER, "loading flow cuts file: $(file_path)")
-        return parse_flow_cuts_file(file_path)
+        return parse_c1_flow_cuts_file(file_path)
     else
         info(_LOGGER, "flow cuts file not found: $(file_path)")
         return []
     end
 end
 
-function parse_flow_cuts_file(file::String)
+function parse_c1_flow_cuts_file(file::String)
     open(file) do io
-        return parse_flow_cuts_file(io)
+        return parse_c1_flow_cuts_file(io)
     end
 end
 
-function parse_flow_cuts_file(io::IO)
+function parse_c1_flow_cuts_file(io::IO)
     cuts_list = []
 
     for line in readlines(io)
@@ -180,7 +180,7 @@ end
 
 
 "ranks generator contingencies and down selects based on evaluation limits"
-function compute_gen_contingency_subset(network::Dict{String,<:Any}; gen_eval_limit=length(network["gen_contingencies"]))
+function calc_c1_gen_contingency_subset(network::Dict{String,<:Any}; gen_eval_limit=length(network["gen_contingencies"]))
     gen_cap = Dict(gen["index"] => sqrt(max(abs(gen["pmin"]), abs(gen["pmax"]))^2 + max(abs(gen["qmin"]), abs(gen["qmax"]))^2) for (i,gen) in network["gen"])
     gen_contingencies = sort(network["gen_contingencies"], rev=true, by=x -> gen_cap[x.idx])
 
@@ -191,7 +191,7 @@ function compute_gen_contingency_subset(network::Dict{String,<:Any}; gen_eval_li
 end
 
 "ranks branch contingencies and down selects based on evaluation limits"
-function compute_branch_contingency_subset(network::Dict{String,<:Any}; branch_eval_limit=length(network["branch_contingencies"]))
+function calc_c1_branch_contingency_subset(network::Dict{String,<:Any}; branch_eval_limit=length(network["branch_contingencies"]))
     line_imp_mag = Dict(branch["index"] => branch["rate_a"]*sqrt(branch["br_r"]^2 + branch["br_x"]^2) for (i,branch) in network["branch"])
     branch_contingencies = sort(network["branch_contingencies"], rev=true, by=x -> line_imp_mag[x.idx])
 
@@ -202,7 +202,7 @@ function compute_branch_contingency_subset(network::Dict{String,<:Any}; branch_e
 end
 
 
-function compute_branch_ptdf_single(am::_PM.AdmittanceMatrix, ref_bus::Int, branch::Dict{String,<:Any})
+function calc_c1_branch_ptdf_single(am::_PM.AdmittanceMatrix, ref_bus::Int, branch::Dict{String,<:Any})
     branch_ptdf = Dict{Int,Any}()
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -223,20 +223,20 @@ end
 
 
 ""
-function check_contingency_violations_remote(cont_range, output_dir, contingency_limit=1, solution_file="solution1.txt")
-    if length(network_global) <= 0 || length(contingency_order_global) <= 0
-        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+function check_c1_contingency_violations_remote(cont_range, output_dir, contingency_limit=1, solution_file="solution1.txt")
+    if length(c1_network_global) <= 0 || length(c1_contingency_order_global) <= 0
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_c1_network_global")
     end
 
-    sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
-    _PM.update_data!(network_global, sol)
+    sol = read_c1_solution1(c1_network_global, output_dir=output_dir, state_file=solution_file)
+    _PM.update_data!(c1_network_global, sol)
 
-    network = copy(network_global)
-    contingencies = contingency_order_global[cont_range]
+    network = copy(c1_network_global)
+    contingencies = c1_contingency_order_global[cont_range]
     network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
     network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
 
-    contingencies = check_contingency_violations(network, contingency_limit=contingency_limit)
+    contingencies = check_c1_contingency_violations(network, contingency_limit=contingency_limit)
 
     return contingencies
 end
@@ -247,7 +247,7 @@ Checks a given operating point against the contingencies to look for branch
 flow violations.  The DC Power Flow approximation is used for flow simulation.
 Returns a list of contingencies where a violation is found.
 """
-function check_contingency_violations(network;
+function check_c1_contingency_violations(network;
         gen_contingency_limit=10, branch_contingency_limit=10, contingency_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01)
 
@@ -269,7 +269,7 @@ function check_contingency_violations(network;
     p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
     p_delta = 0.0
 
-    if p_losses > pg_loss_tol
+    if p_losses > c1_pg_loss_tol
         load_count = length(load_active)
         p_delta = p_losses/load_count
         for (i,load) in load_active
@@ -280,8 +280,8 @@ function check_contingency_violations(network;
 
 
 
-    gen_contingencies = compute_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
-    branch_contingencies = compute_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
+    gen_contingencies = calc_c1_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
+    branch_contingencies = calc_c1_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
 
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
@@ -338,7 +338,7 @@ function check_contingency_violations(network;
         _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations(network_lal, network_lal)
+        vio = calc_c1_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
@@ -380,7 +380,7 @@ function check_contingency_violations(network;
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
 
-        vio = compute_violations(network_lal, network_lal)
+        vio = calc_c1_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
@@ -411,15 +411,15 @@ end
 
 
 ""
-function check_contingencies_branch_power_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
-    if length(network_global) <= 0 || length(contingency_order_global) <= 0
-        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+function check_c1_contingencies_branch_power_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+    if length(c1_network_global) <= 0 || length(c1_contingency_order_global) <= 0
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_c1_network_global")
     end
 
-    sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
-    _PM.update_data!(network_global, sol)
+    sol = read_c1_solution1(c1_network_global, output_dir=output_dir, state_file=solution_file)
+    _PM.update_data!(c1_network_global, sol)
 
-    active_cuts = read_active_flow_cuts(output_dir=output_dir)
+    active_cuts = read_c1_active_flow_cuts(output_dir=output_dir)
     gen_flow_cuts = []
     branch_flow_cuts = []
     for cut in active_cuts
@@ -432,12 +432,12 @@ function check_contingencies_branch_power_remote(cont_range, output_dir, cut_lim
         end
     end
 
-    network = copy(network_global)
-    contingencies = contingency_order_global[cont_range]
+    network = copy(c1_network_global)
+    contingencies = c1_contingency_order_global[cont_range]
     network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
     network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
 
-    cuts = check_contingencies_branch_power(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
+    cuts = check_c1_contingencies_branch_power(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
 
     return cuts
 end
@@ -450,7 +450,7 @@ If a violation is found, computes a PTDF cut based on bus injections.  Uses the
 participation factor based generator response model from the ARPA-e GOC
 Challenge 1 specification.
 """
-function check_contingencies_branch_power(network;
+function check_c1_contingencies_branch_power(network;
         gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
         gen_flow_cuts=[], branch_flow_cuts=[]
@@ -490,7 +490,7 @@ function check_contingencies_branch_power(network;
     p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
     p_delta = 0.0
 
-    if p_losses > pg_loss_tol
+    if p_losses > c1_pg_loss_tol
         load_count = length(load_active)
         p_delta = p_losses/load_count
         for (i,load) in load_active
@@ -500,8 +500,8 @@ function check_contingencies_branch_power(network;
     end
 
 
-    gen_contingencies = compute_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
-    branch_contingencies = compute_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
+    gen_contingencies = calc_c1_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
+    branch_contingencies = calc_c1_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
 
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
@@ -558,12 +558,12 @@ function check_contingencies_branch_power(network;
         _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations(network_lal, network_lal)
+        vio = calc_c1_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vios = branch_violations_sorted(network_lal, network_lal)
+            branch_vios = branch_c1_violations_sorted(network_lal, network_lal)
             branch_vio = branch_vios[1]
 
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
@@ -572,7 +572,7 @@ function check_contingencies_branch_power(network;
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
+                bus_injection = calc_c1_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (gen_id=cont.idx, cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(gen_cuts, cut)
             else
@@ -614,19 +614,19 @@ function check_contingencies_branch_power(network;
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
 
-        vio = compute_violations(network_lal, network_lal)
+        vio = calc_c1_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vio = branch_violations_sorted(network_lal, network_lal)[1]
+            branch_vio = branch_c1_violations_sorted(network_lal, network_lal)[1]
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
                 info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
+                bus_injection = calc_c1_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(branch_cuts, cut)
             else
@@ -655,15 +655,15 @@ end
 
 
 ""
-function check_contingencies_branch_power_bpv_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
-    if length(network_global) <= 0 || length(contingency_order_global) <= 0
-        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_network_global")
+function check_c1_contingencies_branch_power_bpv_remote(cont_range, output_dir, cut_limit=1, solution_file="solution1.txt")
+    if length(c1_network_global) <= 0 || length(c1_contingency_order_global) <= 0
+        error(_LOGGER, "check_contingencies_branch_flow_remote called before load_c1_network_global")
     end
 
-    sol = read_solution1(network_global, output_dir=output_dir, state_file=solution_file)
-    _PM.update_data!(network_global, sol)
+    sol = read_c1_solution1(c1_network_global, output_dir=output_dir, state_file=solution_file)
+    _PM.update_data!(c1_network_global, sol)
 
-    active_cuts = read_active_flow_cuts(output_dir=output_dir)
+    active_cuts = read_c1_active_flow_cuts(output_dir=output_dir)
     gen_flow_cuts = []
     branch_flow_cuts = []
     for cut in active_cuts
@@ -676,12 +676,12 @@ function check_contingencies_branch_power_bpv_remote(cont_range, output_dir, cut
         end
     end
 
-    network = copy(network_global)
-    contingencies = contingency_order_global[cont_range]
+    network = copy(c1_network_global)
+    contingencies = c1_contingency_order_global[cont_range]
     network["gen_contingencies"] = [c for c in contingencies if c.type == "gen"]
     network["branch_contingencies"] = [c for c in contingencies if c.type == "branch"]
 
-    cuts = check_contingencies_branch_power_bpv(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
+    cuts = check_c1_contingencies_branch_power_bpv(network, total_cut_limit=cut_limit, gen_flow_cuts=gen_flow_cuts, branch_flow_cuts=branch_flow_cuts)
 
     return cuts
 end
@@ -693,7 +693,7 @@ participation factor based generator response model from the ARPA-e GOC
 Challenge 1 specification and instead injects active power equally at all buses
 in the network.
 """
-function check_contingencies_branch_power_bpv(network;
+function check_c1_contingencies_branch_power_bpv(network;
         gen_flow_cut_limit=10, branch_flow_cut_limit=10, total_cut_limit=typemax(Int64),
         gen_eval_limit=typemax(Int64), branch_eval_limit=typemax(Int64), sm_threshold=0.01,
         gen_flow_cuts=[], branch_flow_cuts=[]
@@ -756,7 +756,7 @@ function check_contingencies_branch_power_bpv(network;
     p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
     p_delta = 0.0
 
-    if p_losses > pg_loss_tol
+    if p_losses > c1_pg_loss_tol
         load_count = length(load_active)
         p_delta = p_losses/load_count
         for (i,load) in load_active
@@ -766,8 +766,8 @@ function check_contingencies_branch_power_bpv(network;
     end
 
 
-    gen_contingencies = compute_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
-    branch_contingencies = compute_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
+    gen_contingencies = calc_c1_gen_contingency_subset(network_lal, gen_eval_limit=gen_eval_limit)
+    branch_contingencies = calc_c1_branch_contingency_subset(network_lal, branch_eval_limit=branch_eval_limit)
 
     gen_cuts = []
     for (i,cont) in enumerate(gen_contingencies)
@@ -804,12 +804,12 @@ function check_contingencies_branch_power_bpv(network;
         _PM.update_data!(network_lal, flow)
 
 
-        vio = compute_violations(network_lal, network_lal)
+        vio = calc_c1_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vios = branch_violations_sorted(network_lal, network_lal)
+            branch_vios = branch_c1_violations_sorted(network_lal, network_lal)
             branch_vio = branch_vios[1]
 
             if !haskey(gen_cuts_active, cont.label) || !(branch_vio.branch_id in gen_cuts_active[cont.label])
@@ -818,7 +818,7 @@ function check_contingencies_branch_power_bpv(network;
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
+                bus_injection = calc_c1_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (gen_id=cont.idx, cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(gen_cuts, cut)
             else
@@ -865,19 +865,19 @@ function check_contingencies_branch_power_bpv(network;
         flow = _PM.calc_branch_flow_dc(network_lal)
         _PM.update_data!(network_lal, flow)
 
-        vio = compute_violations(network_lal, network_lal)
+        vio = calc_c1_violations(network_lal, network_lal)
 
         #info(_LOGGER, "$(cont.label) violations $(vio)")
         #if vio.vm > vm_threshold || vio.pg > pg_threshold || vio.qg > qg_threshold || vio.sm > sm_threshold
         if vio.sm > sm_threshold
-            branch_vio = branch_violations_sorted(network_lal, network_lal)[1]
+            branch_vio = branch_c1_violations_sorted(network_lal, network_lal)[1]
             if !haskey(branch_cuts_active, cont.label) || !(branch_vio.branch_id in branch_cuts_active[cont.label])
                 info(_LOGGER, "adding flow cut on cont $(cont.label) branch $(branch_vio.branch_id) due to constraint flow violations $(branch_vio.sm_vio)")
 
                 am = _PM.calc_susceptance_matrix(network_lal)
                 branch = network_lal["branch"]["$(branch_vio.branch_id)"]
 
-                bus_injection = compute_branch_ptdf_single(am, ref_bus_id, branch)
+                bus_injection = calc_c1_branch_ptdf_single(am, ref_bus_id, branch)
                 cut = (cont_label=cont.label, branch_id=branch_vio.branch_id, rating_level=1.0, bus_injection=bus_injection)
                 push!(branch_cuts, cut)
             else

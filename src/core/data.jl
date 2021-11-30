@@ -3,7 +3,7 @@
 transforms a contigency list into explicit multinetwork data with network 0
 being the base case
 """
-function build_scopf_multinetwork(network::Dict{String,<:Any})
+function build_c1_scopf_multinetwork(network::Dict{String,<:Any})
     if _IM.ismultinetwork(network)
         error(_LOGGER, "build scopf can only be used on single networks")
     end
@@ -112,7 +112,7 @@ end
 
 
 
-function tighten_constraints!(network::Dict{String,<:Any})
+function c1_tighten_constraints!(network::Dict{String,<:Any})
     for (i,bus) in network["bus"]
         if isapprox(bus["vmax"], bus["evhi"])
             bus["vmax_target"] = bus["vmax"] - 0.03
@@ -229,7 +229,7 @@ end
 
 
 "add start values to a data model"
-function set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
+function c1_set_start_values!(network::Dict{String,<:Any}; branch_flow=false)
     for (i,bus) in network["bus"]
         bus["va_start"] = bus["va"]
         bus["vm_start"] = bus["vm"]
@@ -284,7 +284,7 @@ function update_active_power_data!(network::Dict{String,<:Any}, data::Dict{Strin
 end
 
 
-function extract_solution(network::Dict{String,<:Any}; branch_flow=false)
+function c1_extract_solution(network::Dict{String,<:Any}; branch_flow=false)
     sol = Dict{String,Any}()
 
     sol["bus"] = Dict{String,Any}()
@@ -332,14 +332,14 @@ end
 
 
 "assumes a vaild ac solution is included in the data and computes the branch flow values"
-function calc_branch_flow_ac_goc(data::Dict{String,<:Any})
+function calc_c1_branch_flow_ac(data::Dict{String,<:Any})
     @assert("per_unit" in keys(data) && data["per_unit"])
     @assert(!haskey(data, "conductors"))
 
     if _IM.ismultinetwork(data)
         nws = Dict{String,Any}()
         for (i,nw_data) in data["nw"]
-            nws[i] = _calc_branch_flow_ac_goc(nw_data)
+            nws[i] = _calc_c1_branch_flow_ac(nw_data)
         end
         return Dict{String,Any}(
             "nw" => nws,
@@ -347,7 +347,7 @@ function calc_branch_flow_ac_goc(data::Dict{String,<:Any})
             "baseMVA" => data["baseMVA"]
         )
     else
-        flows = _calc_branch_flow_ac_goc(data)
+        flows = _calc_c1_branch_flow_ac(data)
         flows["per_unit"] = data["per_unit"]
         flows["baseMVA"] = data["baseMVA"]
         return flows
@@ -356,7 +356,7 @@ end
 
 
 "helper function for calc_branch_flow_ac"
-function _calc_branch_flow_ac_goc(data::Dict{String,<:Any})
+function _calc_c1_branch_flow_ac(data::Dict{String,<:Any})
     vm = Dict(bus["index"] => bus["vm"] for (i,bus) in data["bus"])
     va = Dict(bus["index"] => bus["va"] for (i,bus) in data["bus"])
 
@@ -409,8 +409,8 @@ function _calc_branch_flow_ac_goc(data::Dict{String,<:Any})
     return Dict{String,Any}("branch" => flows)
 end
 
-function compute_power_balance_deltas!(network::Dict{String,<:Any})
-    flows = calc_branch_flow_ac_goc(network)
+function calc_c1_power_balance_deltas!(network::Dict{String,<:Any})
+    flows = calc_c1_branch_flow_ac(network)
     _PM.update_data!(network, flows)
 
     balance = _PM.calc_power_balance(network)
@@ -429,7 +429,7 @@ end
 
 
 
-function compute_violations(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; vm_digits=3, rate_key="rate_c")
+function calc_c1_violations(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; vm_digits=3, rate_key="rate_c")
     vm_vio = 0.0
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
@@ -515,7 +515,7 @@ end
 
 
 "returns a sorted list of branch flow violations"
-function branch_violations_sorted(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; rate_key="rate_c")
+function branch_c1_violations_sorted(network::Dict{String,<:Any}, solution::Dict{String,<:Any}; rate_key="rate_c")
     branch_violations = []
 
     if haskey(solution, "branch")

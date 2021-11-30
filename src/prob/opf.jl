@@ -6,16 +6,16 @@ Power balance and branch flow constraints are strictly enforced.
 The primary departure from the PowerModels standard formulation is dispatchable
 bus shunts and a slight change in the transformer model.
 """
-function run_opf_shunt(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_shunt(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_c1_opf_shunt; ref_extensions=[ref_c1!], kwargs...)
 end
 
-function build_opf_shunt(pm::_PM.AbstractPowerModel)
+function build_c1_opf_shunt(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
 
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
     _PM.objective_min_fuel_cost(pm)
 
@@ -26,11 +26,11 @@ function build_opf_shunt(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
     for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
+        constraint_c1_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
@@ -47,18 +47,18 @@ Power balance are strictly enforced and the branch flow violations are
 penalized based on a conservative linear approximation of the formulation's
 flow violation penalty specification.
 """
-function run_opf_cheap(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_cheap(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_c1_opf_cheap; ref_extensions=[ref_c1!], kwargs...)
 end
 
 
-function build_opf_cheap(pm::_PM.AbstractPowerModel)
+function build_c1_opf_cheap(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm, bounded=false)
 
-    variable_branch_power_slack(pm)
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_branch_power_slack(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
     _PM.constraint_model_voltage(pm)
 
@@ -67,17 +67,17 @@ function build_opf_cheap(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
     for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
+        constraint_c1_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
 
-        constraint_thermal_limit_from_soft(pm, i)
-        constraint_thermal_limit_to_soft(pm, i)
+        constraint_c1_thermal_limit_from_soft(pm, i)
+        constraint_c1_thermal_limit_to_soft(pm, i)
     end
 
     ##### Setup Objective #####
@@ -99,20 +99,20 @@ AC Power Flow models in rectangular coordinates for faster derivative
 computations.  Support sparse collections of flow constrains for
 increased performance.
 """
-function run_opf_cheap_lazy_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_opf_cheap_lazy_acr; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_cheap_lazy_acr(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_opf_cheap_lazy_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
+function build_c1_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power(pm)
 
-    variable_branch_power_slack(pm)
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_branch_power_slack(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
-    variable_bus_voltage_magnitude_delta(pm)
-    variable_gen_power_real_delta(pm)
+    variable_c1_bus_voltage_magnitude_delta(pm)
+    variable_c1_gen_power_real_delta(pm)
 
     vvm = var(pm)[:vvm] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="vvm",
@@ -125,7 +125,7 @@ function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
     _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :branch)
-        expression_branch_power_ohms_yt_from_goc(pm, i)
+        expression_c1_branch_power_ohms_yt_from(pm, i)
         _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
 
@@ -176,7 +176,7 @@ function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
-        constraint_gen_power_real_deviation(pm, i)
+        constraint_c1_gen_power_real_deviation(pm, i)
     end
     #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
@@ -220,21 +220,21 @@ end
 
 
 ""
-function run_opf_cheap_target_acp(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_opf_cheap_target_acp; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_cheap_target_acp(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_c1_opf_cheap_target_acp; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
+function build_c1_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm, bounded=false)
 
-    variable_branch_power_slack(pm)
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_branch_power_slack(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
-    variable_bus_voltage_magnitude_delta(pm)
-    variable_gen_power_real_delta(pm)
+    variable_c1_bus_voltage_magnitude_delta(pm)
+    variable_c1_gen_power_real_delta(pm)
 
     _PM.constraint_model_voltage(pm)
 
@@ -252,15 +252,15 @@ function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
-        constraint_gen_power_real_deviation(pm, i)
+        constraint_c1_gen_power_real_deviation(pm, i)
     end
 
     for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
     for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
+        constraint_c1_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)

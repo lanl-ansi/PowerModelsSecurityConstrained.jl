@@ -1,10 +1,10 @@
 
 ""
-function ref_add_goc!(ref::Dict{Symbol,<:Any}, data::Dict{String,<:Any})
-    _PM.apply_pm!(_ref_add_goc!, ref, data)
+function ref_c1!(ref::Dict{Symbol,<:Any}, data::Dict{String,<:Any})
+    _PM.apply_pm!(_ref_c1!, ref, data)
 end
 
-function _ref_add_goc!(ref::Dict{Symbol,<:Any}, data::Dict{String,<:Any})
+function _ref_c1!(ref::Dict{Symbol,<:Any}, data::Dict{String,<:Any})
     ref[:branch_sm_active] = Dict(x for x in ref[:branch] if haskey(x.second, "rate_a"))
 
     ref[:shunt_const] = Dict(x for x in ref[:shunt] if (!haskey(x.second, "dispatchable") || !x.second["dispatchable"]))

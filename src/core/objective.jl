@@ -1,6 +1,6 @@
 
 "adds pg_cost variables and constraints for base case only"
-function objective_variable_pg_cost_basecase(pm::_PM.AbstractPowerModel, nw::Int=0, report::Bool=true)
+function objective_c1_variable_pg_cost_basecase(pm::_PM.AbstractPowerModel, nw::Int=0, report::Bool=true)
     pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
 
     for (i,gen) in ref(pm, nw, :gen)

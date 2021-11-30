@@ -1,5 +1,5 @@
 ""
-function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+function constraint_c1_power_balance_shunt_dispatch(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vm   = var(pm, n, :vm, i)
     p    = get(var(pm, n),    :p, Dict()); _PM._check_var_keys(p, bus_arcs, "active power", "branch")
     q    = get(var(pm, n),    :q, Dict()); _PM._check_var_keys(q, bus_arcs, "reactive power", "branch")
@@ -24,7 +24,7 @@ function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractACPModel, n::In
 end
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_storage, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+function constraint_c1_power_balance_shunt_dispatch_soft(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_storage, bus_gens, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vm   = var(pm, n, :vm, i)
     p    = get(var(pm, n),    :p, Dict()); _PM._check_var_keys(p, bus_arcs, "active power", "branch")
     q    = get(var(pm, n),    :q, Dict()); _PM._check_var_keys(q, bus_arcs, "reactive power", "branch")
@@ -53,7 +53,7 @@ function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractACPModel, 
 end
 
 ""
-function constraint_voltage_magnitude_link(pm::_PM.AbstractACPModel, n_1::Int, n_2::Int, i::Int)
+function constraint_c1_voltage_magnitude_link(pm::_PM.AbstractACPModel, n_1::Int, n_2::Int, i::Int)
     vm_1 = var(pm, n_1, :vm, i)
     vm_2 = var(pm, n_2, :vm, i)
 
@@ -61,7 +61,7 @@ function constraint_voltage_magnitude_link(pm::_PM.AbstractACPModel, n_1::Int, n
 end
 
 ""
-function constraint_ohms_yt_from_goc(pm::_PM.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function constraint_c1_ohms_yt_from(pm::_PM.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr  = var(pm, n,  :p, f_idx)
     q_fr  = var(pm, n,  :q, f_idx)
     vm_fr = var(pm, n, :vm, f_bus)
@@ -75,7 +75,7 @@ end
 
 
 ""
-function expression_bus_withdrawal(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
+function expression_c1_bus_withdrawal(pm::_PM.AbstractACPModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
     vm = var(pm, n, :vm, i)
     ps = get(var(pm, n), :ps, Dict()); _PM._check_var_keys(ps, bus_storage, "active power", "storage")
     qs = get(var(pm, n), :qs, Dict()); _PM._check_var_keys(ps, bus_storage, "reactive power", "storage")
@@ -111,7 +111,7 @@ end
 
 
 ""
-function expression_branch_power_ohms_yt_from_goc(pm::_PM.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function expression_c1_branch_power_ohms_yt_from(pm::_PM.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     vm_fr = var(pm, n, :vm, f_bus)
     vm_to = var(pm, n, :vm, t_bus)
     va_fr = var(pm, n, :va, f_bus)

@@ -1,16 +1,16 @@
-function run_scopf_contigency_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
-    goc_data = parse_goc_files(ini_file, scenario_id=scenario_id)
-    network = build_pm_model(goc_data)
-    return run_scopf_contigency_cuts(network, model_type, optimizer; kwargs...)
+function run_c1_scopf_contigency_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
+    goc_data = parse_c1_files(ini_file, scenario_id=scenario_id)
+    network = build_c1_pm_model(goc_data)
+    return run_c1_scopf_contigency_cuts(network, model_type, optimizer; kwargs...)
 end
 
 """
 Solves a SCOPF problem by iteratively checking for violated contingencies and
 resolving until a fixed-point is reached
 """
-function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
+function run_c1_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
     if _IM.ismultinetwork(network)
-        error(_LOGGER, "run_scopf_contigency_cuts can only be used on single networks")
+        error(_LOGGER, "run_c1_scopf_contigency_cuts can only be used on single networks")
     end
 
     time_start = time()
@@ -24,11 +24,11 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
     network_active["gen_contingencies"] = []
     network_active["branch_contingencies"] = []
 
-    multinetwork = build_scopf_multinetwork(network_active)
+    multinetwork = build_c1_scopf_multinetwork(network_active)
 
-    result = run_scopf(multinetwork, model_type, optimizer)
+    result = run_c1_scopf(multinetwork, model_type, optimizer)
     if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
-        error(_LOGGER, "base-case SCOPF solve failed in run_scopf_contigency_cuts, status $(result["termination_status"])")
+        error(_LOGGER, "base-case SCOPF solve failed in run_c1_scopf_contigency_cuts, status $(result["termination_status"])")
     end
     #_PM.print_summary(result["solution"])
     solution = result["solution"]["nw"]["0"]
@@ -44,7 +44,7 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
     while contingencies_found > 0
         time_start_iteration = time()
 
-        contingencies = check_contingency_violations(network_base, contingency_limit=iteration)
+        contingencies = check_c1_contingency_violations(network_base, contingency_limit=iteration)
         #println(contingencies)
 
         contingencies_found = 0
@@ -79,8 +79,8 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
         info(_LOGGER, "active contingencies: gen $(length(network_active["gen_contingencies"])), branch $(length(network_active["branch_contingencies"]))")
 
         time_solve_start = time()
-        multinetwork = build_scopf_multinetwork(network_active)
-        result = run_scopf(multinetwork, model_type, optimizer)
+        multinetwork = build_c1_scopf_multinetwork(network_active)
+        result = run_c1_scopf(multinetwork, model_type, optimizer)
         if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
             warn(_LOGGER, "scopf solve failed with status $(result["termination_status"]), terminating fixed-point early")
             break
@@ -113,10 +113,10 @@ function run_scopf_contigency_cuts(network::Dict{String,<:Any}, model_type::Type
 end
 
 
-function run_scopf_ptdf_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
-    goc_data = parse_goc_files(ini_file, scenario_id=scenario_id)
-    network = build_pm_model(goc_data)
-    return run_scopf_ptdf_cuts!(network, model_type, optimizer; kwargs...)
+function run_c1_scopf_ptdf_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
+    goc_data = parse_c1_files(ini_file, scenario_id=scenario_id)
+    network = build_c1_pm_model(goc_data)
+    return run_c1_scopf_ptdf_cuts!(network, model_type, optimizer; kwargs...)
 end
 
 """
@@ -126,9 +126,9 @@ constraints in contingencies and resolving until a fixed-point is reached.
 The base-case model is formulation agnostic.  The flow cuts are based on PTDF
 and utilize the DC Power Flow assumption.
 """
-function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
+function run_c1_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, optimizer; max_iter::Int=100, time_limit::Float64=Inf)
     if _IM.ismultinetwork(network)
-        error(_LOGGER, "run_scopf_ptdf_cuts can only be used on single networks")
+        error(_LOGGER, "run_c1_scopf_ptdf_cuts can only be used on single networks")
     end
 
     time_start = time()
@@ -138,7 +138,7 @@ function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, opt
 
     result = _PM.run_opf(network, model_type, optimizer)
     if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
-        error(_LOGGER, "base-case OPF solve failed in run_scopf_ptdf_cuts, status $(result["termination_status"])")
+        error(_LOGGER, "base-case OPF solve failed in run_c1_scopf_ptdf_cuts, status $(result["termination_status"])")
     end
     info(_LOGGER, "objective: $(result["objective"])")
     _PM.update_data!(network, result["solution"])
@@ -150,7 +150,7 @@ function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, opt
     while cuts_found > 0
         time_start_iteration = time()
 
-        cuts = check_contingencies_branch_power(network, total_cut_limit=iteration, gen_flow_cuts=[], branch_flow_cuts=[])
+        cuts = check_c1_contingencies_branch_power(network, total_cut_limit=iteration, gen_flow_cuts=[], branch_flow_cuts=[])
 
         cuts_found = length(cuts.gen_cuts)+length(cuts.branch_cuts)
         if cuts_found <= 0
@@ -166,7 +166,7 @@ function run_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, opt
         info(_LOGGER, "active cuts: gen $(length(network["gen_flow_cuts"])), branch $(length(network["branch_flow_cuts"]))")
 
         time_solve_start = time()
-        result = run_scopf_cuts(network, model_type, optimizer)
+        result = run_c1_scopf_cuts(network, model_type, optimizer)
         if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
             warn(_LOGGER, "scopf solve failed with status $(result["termination_status"]), terminating fixed-point early")
             break

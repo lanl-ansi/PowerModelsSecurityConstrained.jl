@@ -30,10 +30,10 @@ function __init__()
 end
 
 
-const vm_eq_tol = 1e-4
-const vm_bound_tol = 1e-4
-const qg_bound_tol = 1e-4
-const pg_loss_tol = 1e-6
+const c1_vm_eq_tol = 1e-4
+const c1_vm_bound_tol = 1e-4
+const c1_qg_bound_tol = 1e-4
+const c1_pg_loss_tol = 1e-6
 
 
 "Suppresses information and warning messages output by PMSC, for fine grained control use the Memento package"

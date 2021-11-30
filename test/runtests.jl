@@ -21,13 +21,13 @@ lp_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel"=>0)
 
 ini_file = "../test/data/inputfiles.ini"
 scenarios = ["scenario_01", "scenario_02"]
-cases = [parse_goc_files(ini_file, scenario_id=sid) for sid in scenarios]
+cases = [parse_c1_files(ini_file, scenario_id=sid) for sid in scenarios]
 
-networks = [build_pm_model(case) for case in cases]
-solutions = [read_solution1(networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(cases)]
+networks = [build_c1_pm_model(case) for case in cases]
+solutions = [read_c1_solution1(networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(cases)]
 
-case_infeasible = parse_goc_files(ini_file, scenario_id="scenario_03")
-network_infeasible = build_pm_model(case_infeasible)
+case_infeasible = parse_c1_files(ini_file, scenario_id="scenario_03")
+network_infeasible = build_c1_pm_model(case_infeasible)
 
 
 @testset "PowerModelsSecurityConstrained" begin

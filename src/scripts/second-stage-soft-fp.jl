@@ -1,8 +1,8 @@
 
-function compute_solution2(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none")
+function compute_c1_solution2(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none")
     time_data_start = time()
-    goc_data = parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
-    network = build_pm_model(goc_data)
+    goc_data = parse_c1_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
+    network = build_c1_pm_model(goc_data)
     load_time = time() - time_data_start
 
     ###### Prepare Solution 2 ######
@@ -13,7 +13,7 @@ function compute_solution2(con_file::String, inl_file::String, raw_file::String,
     branch_cont_total = length(network["branch_contingencies"])
     cont_total = gen_cont_total + branch_cont_total
 
-    cont_order = contingency_order(network)
+    cont_order = c1_contingency_order(network)
 
     #for cont in cont_order
     #    println(cont.label)
@@ -55,11 +55,11 @@ function compute_solution2(con_file::String, inl_file::String, raw_file::String,
     #end
 
 
-    solution2_files = pmap(solution2_solver, process_data)
+    solution2_files = pmap(c1_solution2_solver, process_data)
 
     # solution2_files = []
     # for pd in process_data
-    #     push!(solution2_files, solution2_solver(pd))
+    #     push!(solution2_files, c1_c1_solution2_solver(pd))
     # end
 
     sort!(solution2_files)
@@ -70,8 +70,8 @@ function compute_solution2(con_file::String, inl_file::String, raw_file::String,
     info(LOGGER, "contingency eval time: $(time_contingencies)")
 
     info(LOGGER, "combine $(length(solution2_files)) solution2 files")
-    combine_files(solution2_files, "solution2.txt"; output_dir=output_dir)
-    remove_files(solution2_files)
+    c1_combine_files(solution2_files, "solution2.txt"; output_dir=output_dir)
+    remove_c1_files(solution2_files)
 
     println("")
 
@@ -97,23 +97,23 @@ function compute_solution2(con_file::String, inl_file::String, raw_file::String,
     ]
     println(join(data, ", "))
 
-    write_file_paths(goc_data.files; output_dir=output_dir)
+    write_c1_file_paths(goc_data.files; output_dir=output_dir)
 
     #println("")
     #write_evaluation_summary(goc_data, network, objective_lb=-Inf, load_time=load_time, contingency_time=time_contingencies, output_dir=output_dir)
 end
 
 
-@everywhere function solution2_solver(process_data)
+@everywhere function c1_c1_solution2_solver(process_data)
     #println(process_data)
     time_data_start = time()
     PowerModels.silence()
-    goc_data = parse_goc_files(
+    goc_data = parse_c1_files(
         process_data.con_file, process_data.inl_file, process_data.raw_file,
         process_data.rop_file, scenario_id=process_data.scenario_id)
-    network = build_pm_model(goc_data)
+    network = build_c1_pm_model(goc_data)
 
-    sol = read_solution1(network, output_dir=process_data.output_dir)
+    sol = read_c1_solution1(network, output_dir=process_data.output_dir)
     PowerModels.update_data!(network, sol)
     time_data = time() - time_data_start
 
@@ -132,7 +132,7 @@ end
         end
     end
 
-    contingencies = contingency_order(network)[process_data.cont_range]
+    contingencies = c1_contingency_order(network)[process_data.cont_range]
 
     for (i,branch) in network["branch"]
         g, b = PowerModels.calc_branch_y(branch)
@@ -207,7 +207,7 @@ end
             network_tmp["response_gens"] = network_tmp["area_gens"][gen_bus["area"]]
 
             time_start = time()
-            result = run_fixpoint_pf_bqv!(network_tmp, pg_lost, nlp_solver, iteration_limit=10)
+            result = run_c1_fixpoint_pf_bqv!(network_tmp, pg_lost, nlp_solver, iteration_limit=10)
             debug(LOGGER, "second-stage contingency solve time: $(time() - time_start)")
 
             cont_sol = result["solution"]
@@ -224,9 +224,9 @@ end
             cont_sol["delta"] = 0.0
 
             #push!(contingency_solutions, result["solution"])
-            correct_contingency_solution!(network, cont_sol)
+            correct_c1_contingency_solution!(network, cont_sol)
             open(solution_path, "a") do sol_file
-                sol2 = write_solution2_contingency(sol_file, network, cont_sol)
+                sol2 = write_c1_solution2_contingency(sol_file, network, cont_sol)
             end
 
             network_tmp["gen"]["$(cont.idx)"]["gen_status"] = 1
@@ -250,7 +250,7 @@ end
             end
 
             time_start = time()
-            result = run_fixpoint_pf_bqv!(network_tmp, 0.0, nlp_solver, iteration_limit=10)
+            result = run_c1_fixpoint_pf_bqv!(network_tmp, 0.0, nlp_solver, iteration_limit=10)
             debug(LOGGER, "second-stage contingency solve time: $(time() - time_start)")
 
             cont_sol = result["solution"]
@@ -266,9 +266,9 @@ end
             cont_sol["delta"] = 0.0
 
             #push!(contingency_solutions, cont_sol)
-            correct_contingency_solution!(network, cont_sol)
+            correct_c1_contingency_solution!(network, cont_sol)
             open(solution_path, "a") do sol_file
-                sol2 = write_solution2_contingency(sol_file, network, cont_sol)
+                sol2 = write_c1_solution2_contingency(sol_file, network, cont_sol)
             end
 
             network_tmp["branch"]["$(cont.idx)"]["br_status"] = 1
