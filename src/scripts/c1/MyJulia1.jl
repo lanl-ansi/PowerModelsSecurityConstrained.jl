@@ -10,7 +10,7 @@ start_pkg = time()
 
 @everywhere using PowerModelsSecurityConstrained
 
-include("goc_challenge1_huristic.jl")
+include("goc_c1_huristic.jl")
 
 println("package load time: $(time() - start_pkg)")
 

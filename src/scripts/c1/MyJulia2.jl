@@ -17,7 +17,7 @@ start_pkg = time()
 @everywhere using Memento
 @everywhere const LOGGER = Memento.getlogger(PowerModelsSecurityConstrained)
 
-include("goc_challenge1_huristic.jl")
+include("goc_c1_huristic.jl")
 #include("second-stage-fp.jl")
 #include("second-stage-soft-fp.jl")
 include("second-stage-solution1.jl")
