@@ -17,6 +17,20 @@
 
         @test isapprox(result["termination_status"], LOCALLY_SOLVED)
         @test isapprox(result["objective"], 14676.89; atol = 1e0)
+
+        result["solution"]["label"] = "tmp"
+        result["solution"]["cont_type"] = "branch"
+        result["solution"]["cont_comp_id"] = 1
+        result["solution"]["delta"] = 0.0
+
+        correct_c1_contingency_solution!(pm_data, result["solution"])
+
+        result["solution"]["label"] = "tmp"
+        result["solution"]["cont_type"] = "gen"
+        result["solution"]["cont_comp_id"] = 1
+        result["solution"]["delta"] = 0.0
+
+        correct_c1_contingency_solution!(pm_data, result["solution"])
     end
 
 end
