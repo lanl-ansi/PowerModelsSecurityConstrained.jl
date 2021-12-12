@@ -230,7 +230,7 @@ function compute_c1_solution1(con_file::String, inl_file::String, raw_file::Stri
         cont_total = gen_cont_total + branch_cont_total
         cont_per_proc = cont_total/length(workers)
 
-        cont_order = c1_contingency_order(network)
+        cont_order = contingency_order(network)
         cont_range = []
         for p in 1:length(workers)
             cont_start = trunc(Int, ceil(1+(p-1)*cont_per_proc))

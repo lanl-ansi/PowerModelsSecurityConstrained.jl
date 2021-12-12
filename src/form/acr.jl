@@ -46,7 +46,7 @@ function constraint_c1_power_balance_shunt_dispatch(pm::_PM.AbstractACRModel, n:
 end
 
 
-function constraint_c1_ohms_yt_from(pm::_PM.AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function constraint_goc_ohms_yt_from(pm::_PM.AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr = var(pm, n, :p, f_idx)
     q_fr = var(pm, n, :q, f_idx)
     vr_fr = var(pm, n, :vr, f_bus)

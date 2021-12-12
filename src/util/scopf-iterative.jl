@@ -1,5 +1,5 @@
 function run_c1_scopf_contigency_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
-    goc_data = parse_c1_files(ini_file, scenario_id=scenario_id)
+    goc_data = parse_c1_case(ini_file, scenario_id=scenario_id)
     network = build_c1_pm_model(goc_data)
     return run_c1_scopf_contigency_cuts(network, model_type, optimizer; kwargs...)
 end
@@ -114,7 +114,7 @@ end
 
 
 function run_c1_scopf_ptdf_cuts(ini_file::String, model_type::Type, optimizer; scenario_id::String="", kwargs...)
-    goc_data = parse_c1_files(ini_file, scenario_id=scenario_id)
+    goc_data = parse_c1_case(ini_file, scenario_id=scenario_id)
     network = build_c1_pm_model(goc_data)
     return run_c1_scopf_ptdf_cuts!(network, model_type, optimizer; kwargs...)
 end

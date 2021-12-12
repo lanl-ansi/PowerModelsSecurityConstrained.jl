@@ -1,4 +1,68 @@
 
+
+"build a static ordering of all contingencies"
+function contingency_order(network)
+    gen_cont_order = sort(network["gen_contingencies"], by=(x) -> x.label)
+    branch_cont_order = sort(network["branch_contingencies"], by=(x) -> x.label)
+
+    gen_cont_total = length(gen_cont_order)
+    branch_cont_total = length(branch_cont_order)
+
+    gen_rate = 1.0
+    branch_rate = 1.0
+    steps = 1
+
+    if gen_cont_total == 0 && branch_cont_total == 0
+        # defaults are good
+    elseif gen_cont_total == 0 && branch_cont_total != 0
+        steps = branch_cont_total
+    elseif gen_cont_total != 0 && branch_cont_total == 0
+        steps = gen_cont_total
+    elseif gen_cont_total == branch_cont_total
+        steps = branch_cont_total
+    elseif gen_cont_total < branch_cont_total
+        gen_rate = 1.0
+        branch_rate = branch_cont_total/gen_cont_total
+        steps = gen_cont_total
+    elseif gen_cont_total > branch_cont_total
+        gen_rate = gen_cont_total/branch_cont_total
+        branch_rate = 1.0 
+        steps = branch_cont_total
+    end
+
+    #println(gen_cont_total)
+    #println(branch_cont_total)
+    #println(steps)
+
+    #println(gen_rate)
+    #println(branch_rate)
+    #println("")
+
+    cont_order = []
+    gen_cont_start = 1
+    branch_cont_start = 1
+    for s in 1:steps
+        gen_cont_end = min(gen_cont_total, trunc(Int,ceil(s*gen_rate)))
+        #println(gen_cont_start:gen_cont_end)
+        for j in gen_cont_start:gen_cont_end
+            push!(cont_order, gen_cont_order[j])
+        end
+        gen_cont_start = gen_cont_end+1
+
+        branch_cont_end = min(branch_cont_total, trunc(Int,ceil(s*branch_rate)))
+        #println("$(s) - $(branch_cont_start:branch_cont_end)")
+        for j in branch_cont_start:branch_cont_end
+            push!(cont_order, branch_cont_order[j])
+        end
+        branch_cont_start = branch_cont_end+1
+    end
+
+    @assert(length(cont_order) == gen_cont_total + branch_cont_total)
+
+    return cont_order
+end
+
+
 """
 transforms a contigency list into explicit multinetwork data with network 0
 being the base case
@@ -551,4 +615,119 @@ function branch_c1_violations_sorted(network::Dict{String,<:Any}, solution::Dict
     sort!(branch_violations, by=(x) -> -x.sm_vio)
 
     return branch_violations
+end
+
+
+
+
+
+
+
+"updates tap changing transformers to maintain nominal voltage values"
+function normalize_tm_values!(data)
+    bus_voltage_range = Dict{Int,Any}()
+    for (i,bus) in data["bus"]
+        bus_voltage_range[bus["index"]] = (vmin=bus["vmin"], vmax=bus["vmax"])
+    end
+
+    for (i,branch) in data["branch"]
+        if branch["transformer"] && abs(branch["control_mode"]) == 1
+            vm_target_fr = sum(bus_voltage_range[branch["f_bus"]])/2.0
+            vm_target_to = sum(bus_voltage_range[branch["t_bus"]])/2.0
+
+            tap_target = vm_target_fr/vm_target_to
+
+            if tap_target < branch["tm_min"]
+                info(_LOGGER, "transformer branch $(i) unable to hit tap target $(tap_target) -> $(branch["tm_min"])")
+                tap_target = branch["tm_min"]
+            end
+
+            if tap_target > branch["tm_max"]
+                info(_LOGGER, "transformer branch $(i) unable to hit tap target $(tap_target) -> $(branch["tm_max"])")
+                tap_target = branch["tm_max"]
+            end
+
+            tm_step, tm_value = closest_discrete_value(tap_target, branch["tm_min"], branch["tm_max"], branch["tm_steps"])
+
+            if tm_step != branch["tm_step"]
+                info(_LOGGER, "transformer branch $(i) tap, $(branch["tap"])/$(branch["tm_step"])  -> $(tm_value)/$(tm_step)")
+                branch["tap"] = tm_value
+                branch["tm_step"] = tm_step
+
+                if branch["tab1"] != 0
+                    ict = data["impedance_correction_table"][branch["tab1"]]
+                    correct_transformer_impedance!(branch, ict, branch["tap"])
+                end
+            end
+        end
+    end
+end
+
+"converts a continuous value to its nearest integer value"
+function closest_discrete_value(value::Real, range_lb::Real, range_ub::Real, steps::Int)
+    @assert(range_lb <= value && value <= range_ub)
+    @assert(steps >= 0.0)
+
+    mid_point = (range_lb + range_ub)/2.0
+    target_value = value - mid_point
+    step_size = (range_ub - range_lb)/(steps-1)
+    target_step = round(Int, target_value/step_size)
+
+    closest_value = mid_point + target_step*step_size
+
+    return target_step, closest_value
+end
+
+""
+function set_va_start_values!(data)
+    for (i,bus) in data["bus"]
+        bus["va_start"] = bus["va"]
+    end
+end
+
+
+"update branch impedance values based on the given impedance correction points and tap setting"
+function correct_transformer_impedance!(branch, impedance_correction_points, tap_setting::Real)
+    settings = comp_transformer_impedance!(branch, impedance_correction_points, tap_setting)
+
+    branch["br_r"] = settings["br_r"]
+    branch["br_x"] = settings["br_x"]
+end
+
+"compute the branch impedance values based on the given impedance correction points and tap setting"
+function comp_transformer_impedance!(branch, impedance_correction_points, tap_setting::Real)
+
+    if tap_setting < impedance_correction_points[1].t || tap_setting > impedance_correction_points[end].t
+        error(_LOGGER, "tap setting out of bounds of the impedance correction data")
+    end
+
+    icp1 = impedance_correction_points[1]
+    icp2 = impedance_correction_points[2]
+
+    for i in 1:(length(impedance_correction_points)-1)
+        icp1 = impedance_correction_points[i]
+        icp2 = impedance_correction_points[i+1]
+        if icp1.t <= tap_setting && tap_setting <= icp2.t
+            #println("$(icp1.t) - $(tap_setting) - $(icp2.t)  OK!")
+            break
+        else
+            #println("$(icp1.t) - $(tap_setting) - $(icp2.t)")
+        end
+    end
+
+    x1 = icp1.t
+    y1 = icp1.f
+    x2 = icp2.t
+    y2 = icp2.f
+
+    m = (y2 - y1)/(x2 - x1)
+    b = y1 - m * x1
+
+    scaling = m*tap_setting + b
+
+    #println(icp1, " ", icp2, " ", tap_setting, " ", scaling)
+    return Dict(
+        "br_r" => branch["br_r_nominal"]*scaling,
+        "br_x" => branch["br_x_nominal"]*scaling
+    )
 end

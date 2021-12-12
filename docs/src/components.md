@@ -12,6 +12,8 @@ PowerModels internal data model.
 ```@docs
 parse_c1_files
 build_c1_pm_model
+parse_c2_case
+build_c2_pm_model
 ```
 
 ## OPF Formulations
@@ -23,6 +25,24 @@ are used as sub-processes in building contingency constrained solutions.
 run_c1_opf_shunt
 run_c1_opf_cheap
 run_c1_opf_cheap_lazy_acr
+build_c2_opf_soft
+build_c2_opf_soft_ctg
+```
+
+## OPF with UC Formulations
+
+These are standard OPF formulations (i.e. without contingency constraints) with discrete variables for supporting the commitment of generation units.
+
+```@docs
+build_c2_opf_uc
+```
+
+## OTS Formulations
+
+These are standard transmission switching formulations (i.e. without contingency constraints) and are used to find economic improving topology changes in a network.
+
+```@docs
+build_c2_ots_soft_bus
 ```
 
 ## Contingency Filters

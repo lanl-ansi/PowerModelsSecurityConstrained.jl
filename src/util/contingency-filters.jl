@@ -23,75 +23,12 @@ function load_c1_network_global(con_file, inl_file, raw_file, rop_file, scenario
 
     goc_data = parse_c1_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
     global c1_network_global = build_c1_pm_model(goc_data)
-    global c1_contingency_order_global = c1_contingency_order(c1_network_global)
+    global c1_contingency_order_global = contingency_order(c1_network_global)
 
     setlevel!(getlogger(PowerModels), pm_logger_level)
     setlevel!(_LOGGER, goc_logger_level)
 
     return 0
-end
-
-
-"build a static ordering of all contingencies"
-function c1_contingency_order(network)
-    gen_cont_order = sort(network["gen_contingencies"], by=(x) -> x.label)
-    branch_cont_order = sort(network["branch_contingencies"], by=(x) -> x.label)
-
-    gen_cont_total = length(gen_cont_order)
-    branch_cont_total = length(branch_cont_order)
-
-    gen_rate = 1.0
-    branch_rate = 1.0
-    steps = 1
-
-    if gen_cont_total == 0 && branch_cont_total == 0
-        # defaults are good
-    elseif gen_cont_total == 0 && branch_cont_total != 0
-        steps = branch_cont_total
-    elseif gen_cont_total != 0 && branch_cont_total == 0
-        steps = gen_cont_total
-    elseif gen_cont_total == branch_cont_total
-        steps = branch_cont_total
-    elseif gen_cont_total < branch_cont_total
-        gen_rate = 1.0
-        branch_rate = branch_cont_total/gen_cont_total
-        steps = gen_cont_total
-    elseif gen_cont_total > branch_cont_total
-        gen_rate = gen_cont_total/branch_cont_total
-        branch_rate = 1.0 
-        steps = branch_cont_total
-    end
-
-    #println(gen_cont_total)
-    #println(branch_cont_total)
-    #println(steps)
-
-    #println(gen_rate)
-    #println(branch_rate)
-    #println("")
-
-    cont_order = []
-    gen_cont_start = 1
-    branch_cont_start = 1
-    for s in 1:steps
-        gen_cont_end = min(gen_cont_total, trunc(Int,ceil(s*gen_rate)))
-        #println(gen_cont_start:gen_cont_end)
-        for j in gen_cont_start:gen_cont_end
-            push!(cont_order, gen_cont_order[j])
-        end
-        gen_cont_start = gen_cont_end+1
-
-        branch_cont_end = min(branch_cont_total, trunc(Int,ceil(s*branch_rate)))
-        #println("$(s) - $(branch_cont_start:branch_cont_end)")
-        for j in branch_cont_start:branch_cont_end
-            push!(cont_order, branch_cont_order[j])
-        end
-        branch_cont_start = branch_cont_end+1
-    end
-
-    @assert(length(cont_order) == gen_cont_total + branch_cont_total)
-
-    return cont_order
 end
 
 

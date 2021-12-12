@@ -2,7 +2,8 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- nothing
+- ARPA-e Grid Optimization Competition Challenge 2, Final Event submission
+- Reorganize function names and file locations to support two competition solvers
 
 ### v0.8.2
 - Add support for Memento v1.3

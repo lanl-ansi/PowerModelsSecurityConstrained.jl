@@ -13,7 +13,7 @@ function compute_c1_solution2_fast(con_file::String, inl_file::String, raw_file:
     branch_cont_total = length(network["branch_contingencies"])
     cont_total = gen_cont_total + branch_cont_total
 
-    cont_order = c1_contingency_order(network)
+    cont_order = contingency_order(network)
 
     #for cont in cont_order
     #    println(cont.label)
@@ -121,7 +121,7 @@ end
         end
     end
 
-    contingencies = c1_contingency_order(network)[process_data.cont_range]
+    contingencies = contingency_order(network)[process_data.cont_range]
 
     pad_size = trunc(Int, ceil(log(10,process_data.processes)))
     padded_pid = lpad(string(process_data.pid), pad_size, "0")

@@ -13,14 +13,14 @@ end
 
 
 "generates variables for both `active` and `reactive` bus deltas"
-function variable_c1_bus_delta_abs(pm::_PM.AbstractPowerModel; kwargs...)
+function variable_bus_delta_abs(pm::_PM.AbstractPowerModel; kwargs...)
     variable_bus_delta_abs_power_real(pm; kwargs...)
     variable_bus_delta_abs_power_imaginary(pm; kwargs...)
 end
 
 
 ""
-function variable_c1_bus_delta_abs_power_real(pm::_PM.AbstractPowerModel; nw::Int=nw_id_default, bounded::Bool=true, report::Bool=true)
+function variable_bus_delta_abs_power_real(pm::_PM.AbstractPowerModel; nw::Int=nw_id_default, bounded::Bool=true, report::Bool=true)
     p_delta_abs = var(pm, nw)[:p_delta_abs] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="$(nw)_p_delta_abs",
         start = 0.0
@@ -37,7 +37,7 @@ function variable_c1_bus_delta_abs_power_real(pm::_PM.AbstractPowerModel; nw::In
 end
 
 ""
-function variable_c1_bus_delta_abs_power_imaginary(pm::_PM.AbstractPowerModel; nw::Int=nw_id_default, bounded::Bool=true, report::Bool=true)
+function variable_bus_delta_abs_power_imaginary(pm::_PM.AbstractPowerModel; nw::Int=nw_id_default, bounded::Bool=true, report::Bool=true)
      q_delta_abs = var(pm, nw)[:q_delta_abs] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="$(nw)_q_delta_abs",
         start = 0.0
@@ -181,3 +181,39 @@ function variable_c1_gen_contigency_capacity_violation(pm::_PM.AbstractPowerMode
     #report && _PM.sol_component_value(pm, nw, :gen, :pg_delta, ids(pm, nw, :gen), pg_delta)
 end
 
+
+""
+function variable_c2_load_power_factor_range(pm::_PM.AbstractPowerModel; nw::Int=nw_id_default, report::Bool=true)
+    z_demand = var(pm, nw)[:z_demand] = JuMP.@variable(pm.model,
+        [i in ids(pm, nw, :load)], base_name="$(nw)_z_demand",
+        upper_bound = ref(pm, nw, :load, i)["tmax"],
+        lower_bound = ref(pm, nw, :load, i)["tmin"],
+        start = _PM.comp_start_value(ref(pm, nw, :load, i), "z_demand_start", 1.0)
+    )
+
+    if report
+        _PM.sol_component_value(pm, nw, :load, :pf, ids(pm, nw, :load), z_demand)
+        sol_pd = Dict(i => z_demand[i]*ref(pm, nw, :load, i)["pd_nominal"] for i in ids(pm, nw, :load))
+        _PM.sol_component_value(pm, nw, :load, :pd, ids(pm, nw, :load), sol_pd)
+        sol_qd = Dict(i => z_demand[i]*ref(pm, nw, :load, i)["qd_nominal"] for i in ids(pm, nw, :load))
+        _PM.sol_component_value(pm, nw, :load, :qd, ids(pm, nw, :load), sol_qd)
+    end
+end
+
+""
+function variable_c2_branch_limit_slack(pm::_PM.AbstractPowerModel; nw::Int=nw_id_default, bounded::Bool=true, report::Bool=true)
+    sm_slack = var(pm, nw)[:sm_slack] = JuMP.@variable(pm.model,
+        [l in ids(pm, nw, :branch)], base_name="$(nw)_sm_slack",
+        start = _PM.comp_start_value(ref(pm, nw, :branch, l), "sm_slack_start")
+    )
+
+    if bounded
+        vio_ub = ref(pm, nw, :sm_vio_limit)
+        for (l,branch) in ref(pm, nw, :branch)
+            JuMP.set_lower_bound(sm_slack[l],    0.0)
+            JuMP.set_upper_bound(sm_slack[l], vio_ub)
+        end
+    end
+
+    report && _PM.sol_component_value(pm, nw, :branch, :sm_slack, ids(pm, nw, :branch), sm_slack)
+end

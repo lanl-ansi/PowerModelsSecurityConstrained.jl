@@ -44,7 +44,7 @@ end
 
 
 ""
-function constraint_c1_ohms_yt_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
+function constraint_goc_ohms_yt_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
     branch = ref(pm, nw, :branch, i)
     f_bus = branch["f_bus"]
     t_bus = branch["t_bus"]
@@ -58,7 +58,7 @@ function constraint_c1_ohms_yt_from(pm::_PM.AbstractPowerModel, i::Int; nw::Int=
     tm = branch["tap"]
 
     if branch["transformer"]
-        constraint_c1_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+        constraint_goc_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     else
         _PM.constraint_ohms_yt_from(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     end
@@ -174,4 +174,81 @@ end
 #         constraint_c1_gen_contingency_ptdf_thermal_limit_from_soft(pm, nw, i, cut.bus_injection, branch["rate_c"], gen_set, gen_alpha, gen_bus)
 #     end
 # end
+
+
+"nodal power balance with constant power factor load and shunt shedding"
+function constraint_c2_power_balance(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
+    bus = ref(pm, nw, :bus, i)
+    bus_arcs = ref(pm, nw, :bus_arcs, i)
+    #bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
+    #bus_arcs_sw = ref(pm, nw, :bus_arcs_sw, i)
+    bus_gens = ref(pm, nw, :bus_gens, i)
+    bus_loads = ref(pm, nw, :bus_loads, i)
+    bus_shunts = ref(pm, nw, :bus_shunts, i)
+    #bus_storage = ref(pm, nw, :bus_storage, i)
+
+    bus_pd = Dict(k => ref(pm, nw, :load, k, "pd_nominal") for k in bus_loads)
+    bus_qd = Dict(k => ref(pm, nw, :load, k, "qd_nominal") for k in bus_loads)
+
+    bus_gs = Dict(k => ref(pm, nw, :shunt, k, "gs") for k in bus_shunts)
+    bus_bs = Dict(k => ref(pm, nw, :shunt, k, "bs") for k in bus_shunts)
+
+    constraint_c2_power_balance(pm, nw, i, bus_arcs, bus_gens, bus_pd, bus_qd, bus_gs, bus_bs)
+end
+
+"nodal power balance with constant power factor load and shunt shedding"
+function constraint_c2_power_balance_soft_lin(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
+    bus = ref(pm, nw, :bus, i)
+    bus_arcs = ref(pm, nw, :bus_arcs, i)
+    #bus_arcs_dc = ref(pm, nw, :bus_arcs_dc, i)
+    #bus_arcs_sw = ref(pm, nw, :bus_arcs_sw, i)
+    bus_gens = ref(pm, nw, :bus_gens, i)
+    bus_loads = ref(pm, nw, :bus_loads, i)
+    bus_shunts = ref(pm, nw, :bus_shunts, i)
+    #bus_storage = ref(pm, nw, :bus_storage, i)
+
+    bus_pd = Dict(k => ref(pm, nw, :load, k, "pd_nominal") for k in bus_loads)
+    bus_qd = Dict(k => ref(pm, nw, :load, k, "qd_nominal") for k in bus_loads)
+
+    bus_gs = Dict(k => ref(pm, nw, :shunt, k, "gs") for k in bus_shunts)
+    bus_bs = Dict(k => ref(pm, nw, :shunt, k, "bs") for k in bus_shunts)
+
+    constraint_c2_power_balance_soft_lin(pm, nw, i, bus_arcs, bus_gens, bus_pd, bus_qd, bus_gs, bus_bs)
+end
+
+
+
+""
+function constraint_c2_flow_limit_from_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
+    branch = ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    f_idx = (i, f_bus, t_bus)
+
+    if haskey(branch, "rate_a")
+        if branch["transformer"]
+            constraint_c2_thermal_limit_from_soft(pm, nw, f_idx, branch["rate_a"])
+        else
+            constraint_c2_current_limit_from_soft(pm, nw, f_idx, branch["rate_a"])
+        end
+    end
+end
+
+
+""
+function constraint_c2_flow_limit_to_soft(pm::_PM.AbstractPowerModel, i::Int; nw::Int=nw_id_default)
+    branch = ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    t_idx = (i, t_bus, f_bus)
+
+    if haskey(branch, "rate_a")
+        if branch["transformer"]
+            constraint_c2_thermal_limit_to_soft(pm, nw, t_idx, branch["rate_a"])
+        else
+            constraint_c2_current_limit_to_soft(pm, nw, t_idx, branch["rate_a"])
+        end
+    end
+end
+
 

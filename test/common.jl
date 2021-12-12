@@ -72,7 +72,7 @@ end
 
 first_cont_id = [3, 203]
 @testset "contingency_order - $(i)" for (i,network) in enumerate(c1_networks)
-    order = c1_contingency_order(network)
+    order = contingency_order(network)
     @test isapprox(order[i].idx, first_cont_id[i]; atol = 1e0)
 end
 
@@ -81,7 +81,7 @@ first_gen_cont_id = [3, 60]
     network = deepcopy(network)
     network["branch_contingencies"] = []
 
-    order = c1_contingency_order(network)
+    order = contingency_order(network)
     @test isapprox(order[i].idx, first_gen_cont_id[i]; atol = 1e0)
 end
 
@@ -90,7 +90,7 @@ first_branch_cont_id = [9, 61]
     network = deepcopy(network)
     network["gen_contingencies"] = []
 
-    order = c1_contingency_order(network)
+    order = contingency_order(network)
     @test isapprox(order[i].idx, first_branch_cont_id[i]; atol = 1e0)
 end
 
@@ -109,7 +109,7 @@ end
 opf_p_delta_abs_max = [0.26746780838927353, 0.07392932526496376]
 opf_q_delta_abs_max = [0.41571449226280965, 1.1036712386853447]
 solution1_lines = [25,594]
-@testset "write_solution1 - $(i)" for (i,network) in enumerate(c1_networks)
+@testset "write_c1_solution1 - $(i)" for (i,network) in enumerate(c1_networks)
     network = deepcopy(network)
 
     #deactivate_rate_a!(network)
