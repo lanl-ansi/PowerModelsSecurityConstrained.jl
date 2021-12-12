@@ -42,7 +42,7 @@ function compute_c1_solution1(con_file::String, inl_file::String, raw_file::Stri
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    correct_c1_network_solution!(network)
+    correct_c1_solution!(network)
     write_c1_solution1(network, output_dir=output_dir)
 
     result = Dict(
@@ -98,7 +98,7 @@ function compute_c1_solution1(con_file::String, inl_file::String, raw_file::Stri
 
     write_c1_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
 
-    correct_c1_network_solution!(network)
+    correct_c1_solution!(network)
     write_c1_solution1(network, output_dir=output_dir)
 
     for (i,bus) in network["bus"]
@@ -171,7 +171,7 @@ function compute_c1_solution1(con_file::String, inl_file::String, raw_file::Stri
 
 
     #update_data!(network, result["solution"])
-    correct_c1_network_solution!(network)
+    correct_c1_solution!(network)
     write_c1_solution1(network, output_dir=output_dir)
 
     time_ac_opf = time() - time_ac_opf_start
@@ -388,7 +388,7 @@ function compute_c1_solution1(con_file::String, inl_file::String, raw_file::Stri
         gen_cost = calc_gen_cost(network)
         info(LOGGER, "generation cost: $(gen_cost)")
 
-        correct_c1_network_solution!(network)
+        correct_c1_solution!(network)
         write_c1_solution1(network, output_dir=output_dir)
     end
 

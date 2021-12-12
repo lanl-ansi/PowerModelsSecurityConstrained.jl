@@ -35,7 +35,7 @@ function scopf_c2_main(args)
 
     if args["remove-solutions"]
         @warn("removing solution 2 files")
-        goc_c2_remove_solution_files(output_dir=args["case"])
+        remove_c2_solution_files(output_dir=args["case"])
     end
 end
 

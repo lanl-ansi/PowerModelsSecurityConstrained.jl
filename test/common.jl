@@ -124,7 +124,7 @@ solution1_lines = [25,594]
     @test isapprox(balance.p_delta_abs_max, opf_p_delta_abs_max[i])
     @test isapprox(balance.q_delta_abs_max, opf_q_delta_abs_max[i])
 
-    correct_c1_network_solution!(network)
+    correct_c1_solution!(network)
     write_c1_solution1(network, solution_file="solution1-tmp.txt")
 
     open("solution1-tmp.txt", "r") do file

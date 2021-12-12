@@ -28,8 +28,8 @@ function code1(con_file::String, json_file::String, raw_file::String, reserved::
     pm_data = build_c2_pm_model(goc_data)
     #print_summary(pm_data)
 
-    goc_c2_correct_solution!(pm_data)
-    goc_c2_write_solution(pm_data, output_dir=output_dir)
+    correct_c2_solution!(pm_data)
+    write_c2_solution(pm_data, output_dir=output_dir)
 
     time_load = time() - time_load_start
 
@@ -51,8 +51,8 @@ function code1(con_file::String, json_file::String, raw_file::String, reserved::
         println("OPF objective: $(result["objective"])")
         update_data!(pm_data, result["solution"])
 
-        goc_c2_correct_solution!(pm_data)
-        goc_c2_write_solution(pm_data, output_dir=output_dir)
+        correct_c2_solution!(pm_data)
+        write_c2_solution(pm_data, output_dir=output_dir)
         objective_best = result["objective"]
     else
         warn(_LOGGER, "run_c2_opf_soft failed with status $(result["termination_status"])")
@@ -120,8 +120,8 @@ function code1(con_file::String, json_file::String, raw_file::String, reserved::
                     improvement_uc = result["objective"] - objective_best
                     update_data!(pm_data, result["solution"])
 
-                    goc_c2_correct_solution!(pm_data)
-                    goc_c2_write_solution(pm_data, output_dir=output_dir)
+                    correct_c2_solution!(pm_data)
+                    write_c2_solution(pm_data, output_dir=output_dir)
                     objective_best = result["objective"]
                 end
             else
@@ -204,8 +204,8 @@ function code1(con_file::String, json_file::String, raw_file::String, reserved::
                         improvement_ots =result["objective"] - objective_best
                         update_data!(pm_data, result["solution"])
 
-                        goc_c2_correct_solution!(pm_data)
-                        goc_c2_write_solution(pm_data, output_dir=output_dir)
+                        correct_c2_solution!(pm_data)
+                        write_c2_solution(pm_data, output_dir=output_dir)
                         objective_best = result["objective"]
                     end
                 else
@@ -322,7 +322,7 @@ function contingency_solver(process_data)
     goc_data = parse_c2_files(process_data.raw_file, process_data.con_file, process_data.json_file, case_id=process_data.case_id, scenario_id=process_data.scenario_id)
     pm_data = build_c2_pm_model(goc_data)
 
-    pm_sol = goc_c2_read_solution(pm_data, output_dir=process_data.output_dir)
+    pm_sol = read_c2_solution(pm_data, output_dir=process_data.output_dir)
     PowerModels.update_data!(pm_data, pm_sol)
     update_previous!(pm_data)
 
@@ -345,8 +345,8 @@ function contingency_solver(process_data)
             basecase_gen = pm_data["gen"]["$(cont.idx)"]
             basecase_gen["present"] = false
 
-            goc_c2_correct_solution!(pm_data, contingency=true)
-            goc_c2_write_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
+            correct_c2_solution!(pm_data, contingency=true)
+            write_c2_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
 
             basecase_gen["present"] = true
 
@@ -358,8 +358,8 @@ function contingency_solver(process_data)
             basecase_branch = pm_data["branch"]["$(cont.idx)"]
             basecase_branch["present"] = false
 
-            goc_c2_correct_solution!(pm_data, contingency=true)
-            goc_c2_write_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
+            correct_c2_solution!(pm_data, contingency=true)
+            write_c2_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
 
             basecase_branch["present"] = true
         else
@@ -437,8 +437,8 @@ function contingency_solver(process_data)
                     result["solution"]["gen"]["$(cont.idx)"] = Dict("pg" => 0.0, "qg" => 0.0)
                     update_data!(pm_data, result["solution"])
 
-                    goc_c2_correct_solution!(pm_data, contingency=true)
-                    goc_c2_write_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
+                    correct_c2_solution!(pm_data, contingency=true)
+                    write_c2_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
 
                     basecase_gen["pg"] = basecase_gen_pg
                     basecase_gen["qg"] = basecase_gen_qg
@@ -469,8 +469,8 @@ function contingency_solver(process_data)
 
                     update_data!(pm_data, result["solution"])
 
-                    goc_c2_correct_solution!(pm_data, contingency=true)
-                    goc_c2_write_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
+                    correct_c2_solution!(pm_data, contingency=true)
+                    write_c2_solution(pm_data, output_dir=process_data.output_dir, label=cont.label)
                 else
                     warn(_LOGGER, "run_c2_opf_soft_ctg failed with status $(result["termination_status"])")
                 end

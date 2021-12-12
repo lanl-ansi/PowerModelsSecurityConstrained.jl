@@ -1,3 +1,4 @@
+const C1_PG_LOSS_TOL = 1e-6
 
 function compute_susceptance_matrix_inv_size(network)
     b0 = Base.gc_bytes()
@@ -206,7 +207,7 @@ function check_c1_contingency_violations(network;
     p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
     p_delta = 0.0
 
-    if p_losses > c1_pg_loss_tol
+    if p_losses > C1_PG_LOSS_TOL
         load_count = length(load_active)
         p_delta = p_losses/load_count
         for (i,load) in load_active
@@ -427,7 +428,7 @@ function check_c1_contingencies_branch_power(network;
     p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
     p_delta = 0.0
 
-    if p_losses > c1_pg_loss_tol
+    if p_losses > C1_PG_LOSS_TOL
         load_count = length(load_active)
         p_delta = p_losses/load_count
         for (i,load) in load_active
@@ -693,7 +694,7 @@ function check_c1_contingencies_branch_power_bpv(network;
     p_losses = sum(gen["pg"] for (i,gen) in network_lal["gen"] if gen["gen_status"] != 0) - pd_total
     p_delta = 0.0
 
-    if p_losses > c1_pg_loss_tol
+    if p_losses > C1_PG_LOSS_TOL
         load_count = length(load_active)
         p_delta = p_losses/load_count
         for (i,load) in load_active

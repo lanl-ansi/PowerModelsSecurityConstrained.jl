@@ -609,7 +609,7 @@ end
 
 
 "checks feasibility criteria of network solution, corrects when possible"
-function goc_c2_correct_solution!(network; contingency=false)
+function correct_c2_solution!(network; contingency=false)
 
     delta_r = network["deltar"]
     if contingency
@@ -751,7 +751,7 @@ function goc_c2_correct_solution!(network; contingency=false)
 end
 
 
-function goc_c2_write_solution(network; output_dir="", label="BASECASE")
+function write_c2_solution(network; output_dir="", label="BASECASE")
     solution_file = "solution_$(label).txt"
     if length(output_dir) > 0
         solution_path = joinpath(output_dir, solution_file)
@@ -847,7 +847,7 @@ function goc_c2_write_solution(network; output_dir="", label="BASECASE")
 end
 
 
-function goc_c2_remove_solution_files(;output_dir="")
+function remove_c2_solution_files(; output_dir=".")
     for file in readdir(output_dir)
         if startswith(file, "solution_") && endswith(file, ".txt")
             info(_LOGGER, "deleting solution file: $(file) in $(output_dir)")
@@ -857,7 +857,7 @@ function goc_c2_remove_solution_files(;output_dir="")
 end
 
 
-function goc_c2_read_solution(network; output_dir="", label="BASECASE")
+function read_c2_solution(network; output_dir="", label="BASECASE")
     solution_file = "solution_$(label).txt"
     if length(output_dir) > 0
         solution_path = joinpath(output_dir, solution_file)
@@ -866,22 +866,22 @@ function goc_c2_read_solution(network; output_dir="", label="BASECASE")
     end
 
     info(_LOGGER, "loading solution file: $(solution_path)")
-    goc_sol = goc_c2_parse_solution_file(solution_path)
+    goc_sol = parse_c2_solution_file(solution_path)
 
     info(_LOGGER, "converting GOC solution to PowerModels solution")
-    pm_sol = goc_c2_build_pm_solution(network, goc_sol)
+    pm_sol = build_c2_pm_solution(network, goc_sol)
 
     return pm_sol
 end
 
 
-function goc_c2_parse_solution_file(file::String)
+function parse_c2_solution_file(file::String)
     open(file) do io
-        return goc_c2_parse_solution_file(io)
+        return parse_c2_solution_file(io)
     end
 end
 
-function goc_c2_parse_solution_file(io::IO)
+function parse_c2_solution_file(io::IO)
     bus_data_list = []
     load_data_list = []
     generator_data_list = []
@@ -973,7 +973,7 @@ function _parse_comma_seperated_line(line, names, types)
 end
 
 
-function goc_c2_build_pm_solution(network, goc_sol)
+function build_c2_pm_solution(network, goc_sol)
     bus_lookup = Dict(parse(Int, bus["source_id"][2]) => bus for (i,bus) in network["bus"])
     load_lookup = Dict((load["source_id"][2], strip(load["source_id"][3])) => load for (i,load) in network["load"])
     gen_lookup = Dict((gen["source_id"][2], strip(gen["source_id"][3])) => gen for (i,gen) in network["gen"])

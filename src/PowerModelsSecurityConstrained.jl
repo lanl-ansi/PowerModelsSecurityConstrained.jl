@@ -30,12 +30,6 @@ function __init__()
 end
 
 
-const c1_vm_eq_tol = 1e-4
-const c1_vm_bound_tol = 1e-4
-const c1_qg_bound_tol = 1e-4
-const c1_pg_loss_tol = 1e-6
-
-
 "Suppresses information and warning messages output by PMSC, for fine grained control use the Memento package"
 function silence()
     Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.  Use the Memento package for more fine-grained control of logging.")

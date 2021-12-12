@@ -35,8 +35,6 @@ c2_scenarios = ["scenario_01", "scenario_02", "scenario_03"]
 c2_cases = [parse_c2_case(c2_data_path*scenario) for scenario in c2_scenarios]
 
 c2_networks = [build_c2_pm_model(case) for case in c2_cases]
-#c1_solutions = [read_c1_solution1(c1_networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(c1_cases)]
-
 
 
 @testset "PowerModelsSecurityConstrained" begin
@@ -52,5 +50,7 @@ c2_networks = [build_c2_pm_model(case) for case in c2_cases]
     include("contingency-stage.jl")
 
     include("scopf.jl")
+
+    include("io.jl")
 
 end

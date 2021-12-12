@@ -1,6 +1,8 @@
 ##### GOC C1 Data Tools #####
 
 
+const C1_VM_EQ_TOL = 1e-4
+
 
 ##### Generic Helper Functions #####
 
@@ -801,7 +803,7 @@ end
 
 
 "checks feasibility criteria of network solution, corrects when possible"
-function correct_c1_network_solution!(network)
+function correct_c1_solution!(network)
 
     # default value is required for correctness of max and mean computations when no changes are made 
     vm_changes = [0.0]
@@ -955,7 +957,7 @@ function correct_c1_contingency_solution!(network, cont_sol; bus_gens = gens_by_
                 qmax = sum(gen["qmax"] for gen in bus_gens[i])
 
                 if !isapprox(abs(qmin - qmax), 0.0)
-                    if qg >= qmax && bus["vm"] - c1_vm_eq_tol/10 > nw_bus["vm"]
+                    if qg >= qmax && bus["vm"] - C1_VM_EQ_TOL/10 > nw_bus["vm"]
                         #println(qmin, " ", qg, " ", qmax)
                         #warn(_LOGGER, "update qg $(qmin) $(qg) $(qmax)")
                         warn(_LOGGER, "update vm on bus $(i) in contingency $(label) to match set-point $(bus["vm"]) -> $(nw_bus["vm"]) due to qg upper bound and vm direction")
@@ -963,7 +965,7 @@ function correct_c1_contingency_solution!(network, cont_sol; bus_gens = gens_by_
                         bus["vm"] = nw_bus["vm"]
                     end
 
-                    if qg <= qmin && bus["vm"] + c1_vm_eq_tol/10 < nw_bus["vm"]
+                    if qg <= qmin && bus["vm"] + C1_VM_EQ_TOL/10 < nw_bus["vm"]
                         #println(qmin, " ", qg, " ", qmax)
                         #warn(_LOGGER, "update qg $(qmin) $(qg) $(qmax)")
                         warn(_LOGGER, "update vm on bus $(i) in contingency $(label) to match set-point $(bus["vm"]) -> $(nw_bus["vm"]) due to qg lower bound and vm direction")
@@ -1049,7 +1051,7 @@ function correct_c1_contingency_solution!(network, cont_sol; bus_gens = gens_by_
             if gen["qg"] < nw_gen["qmax"] && gen["qg"] > nw_gen["qmin"]
                 bus = cont_sol["bus"]["$(bus_id)"]
                 #if !isapprox(bus["vm"], nw_bus["vm"])
-                if !isapprox(bus["vm"], nw_bus["vm"], atol=c1_vm_eq_tol/2)
+                if !isapprox(bus["vm"], nw_bus["vm"], atol=C1_VM_EQ_TOL/2)
                     #debug(_LOGGER, "bus $(bus_id) : vm_base $(nw_bus["vm"]) - vm $(bus["vm"]) : reactive bounds $(nw_gen["qmin"]) - $(gen["qg"]) - $(nw_gen["qmax"])")
                     warn(_LOGGER, "update vm on bus $(bus_id) in contingency $(label) to match base case $(bus["vm"]) -> $(nw_bus["vm"]) due to within reactive bounds")
                 end

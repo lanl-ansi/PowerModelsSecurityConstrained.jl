@@ -1,3 +1,7 @@
+const C1_VM_BOUND_TOL = 1e-4
+const C1_QG_BOUND_TOL = 1e-4
+
+
 "given delta, computes the total power response"
 function calc_c1_pg_response_total(network, gens::Set{Int}; delta=network["delta"])
     total_pg = 0.0
@@ -220,7 +224,7 @@ function run_c1_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typem
 
         vm_fixed = false
         for (i,bus) in network["bus"]
-            if bus["vm"] < bus["vmin"] - c1_vm_bound_tol || bus["vm"] > bus["vmax"] + c1_vm_bound_tol
+            if bus["vm"] < bus["vmin"] - C1_VM_BOUND_TOL || bus["vm"] > bus["vmax"] + C1_VM_BOUND_TOL
                 active_gens = 0
                 if length(bus_gens[i]) > 0
                     active_gens = sum(gen["gen_status"] != 0 for gen in bus_gens[i])
@@ -604,7 +608,7 @@ function run_c1_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=type
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
             bus_sol = final_result["solution"]["bus"][i]
-            if bus_sol["vm"] - c1_vm_bound_tol >= bus["vmax"] || bus_sol["vm"] + c1_vm_bound_tol <= bus["vmin"]
+            if bus_sol["vm"] - C1_VM_BOUND_TOL >= bus["vmax"] || bus_sol["vm"] + C1_VM_BOUND_TOL <= bus["vmin"]
                 vm_bound_vio = true
                 warn(_LOGGER, "$(network["cont_label"]) vm bound out of range on bus $(i): $(bus["vmin"]) - $(bus_sol["vm"]) - $(bus["vmax"])")
             end
@@ -615,7 +619,7 @@ function run_c1_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=type
     for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
             gen_sol = final_result["solution"]["gen"][i]
-            if gen_sol["qg"] - c1_qg_bound_tol >= gen["qmax"] || gen_sol["qg"] + c1_qg_bound_tol <= gen["qmin"]
+            if gen_sol["qg"] - C1_QG_BOUND_TOL >= gen["qmax"] || gen_sol["qg"] + C1_QG_BOUND_TOL <= gen["qmin"]
                 qg_bound_vio = true
                 warn(_LOGGER, "$(network["cont_label"]) qg bound out of range on gen $(i): $(gen["qmin"]) - $(gen_sol["qg"]) - $(gen["qmax"])")
             end
