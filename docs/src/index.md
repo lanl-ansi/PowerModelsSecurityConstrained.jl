@@ -7,9 +7,7 @@ CurrentModule = PowerModelsSecurityConstrained
 ## Overview
 
 This package provides an extension to PowerModels for Security-Constrained
-Optimization problems.  The original implementation developed an SCOPF solver
-that was used as the benchmark algorithm for ARPA-e's grid optimization
-competition challenge 1 in October 2019.
+Optimization problems.  The core routines provided in this software have been used in the benchmark algorithm of ARPA-e's grid optimization competitions.
 
 
 ## Installation
@@ -42,6 +40,5 @@ Test that the package works by running
 
 PowerModelsSecurityConstrained includes a variety of tools for solving problems
 with contingency constraints.  The `src/script` directory includes the
-specific algorithm that was submitted to the final event in ARPA-e's grid
-optimization competition challenge 1 in October 2019.
-
+specific algorithms that were submitted to the final event in ARPA-e's Grid
+Optimization Competition Challenge 1 in October 2019 and Challenge 2 in September 2021.

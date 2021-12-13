@@ -1,7 +1,7 @@
 # Tests formulations in prob/security-stage
 @testset "test security-stage" begin
 
-function contingency_stage_data(network)
+function c1_contingency_stage_data(network)
     network = deepcopy(network)
 
     network["cont_label"] = "testing"
@@ -43,8 +43,8 @@ end
 
 
 solution2_lines = [31,600]
-@testset "write_solution2 - $(i)" for (i,network) in enumerate(networks)
-    network = contingency_stage_data(network)
+@testset "write_solution2 - $(i)" for (i,network) in enumerate(c1_networks)
+    network = c1_contingency_stage_data(network)
 
     bus_gens = gens_by_bus(network)
     cont = network["gen_contingencies"][1]
@@ -59,7 +59,7 @@ solution2_lines = [31,600]
         gen_bus["vm_fixed"] = false
     end
 
-    result = run_fixpoint_pf_bqv!(network, pg_lost, nlp_solver)
+    result = run_c1_fixpoint_pf_bqv!(network, pg_lost, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
@@ -73,7 +73,7 @@ solution2_lines = [31,600]
     cont_sol["gen"]["$(cont.idx)"] = Dict("pg" => 0.0, "qg" => 0.0)
     cont_sol["delta"] = 0.0
 
-    write_solution2(network, [cont_sol], solution_file="solution2-tmp.txt")
+    write_c1_solution2(network, [cont_sol], solution_file="solution2-tmp.txt")
 
     open("solution2-tmp.txt", "r") do file
         lines = countlines(file)
@@ -83,47 +83,47 @@ solution2_lines = [31,600]
 end
 
 
-@testset "pf soft rect - $(i)" for (i,network) in enumerate(networks)
-    network = contingency_stage_data(network)
+@testset "pf soft rect - $(i)" for (i,network) in enumerate(c1_networks)
+    network = c1_contingency_stage_data(network)
 
-    result = run_pf_bqv_acr(network, nlp_solver)
+    result = run_c1_pf_bqv_acr(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
-@testset "pf soft rect fixedpoint - $(i)" for (i,network) in enumerate(networks)
-    network = contingency_stage_data(network)
+@testset "pf soft rect fixedpoint - $(i)" for (i,network) in enumerate(c1_networks)
+    network = c1_contingency_stage_data(network)
     pg_lost = 0.0
 
-    result = run_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
+    result = run_c1_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
 @testset "pf soft rect fixedpoint - infeasible" begin
-    network = contingency_stage_data(network_infeasible)
+    network = c1_contingency_stage_data(c1_network_infeasible)
     pg_lost = 0.0
 
-    result = run_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
+    result = run_c1_fixpoint_pf_bqv!(network, pg_lost, nlp_solver, iteration_limit=10)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
 
-@testset "pf fixed nbf rect2 - $(i)" for (i,network) in enumerate(networks)
-    network = contingency_stage_data(network)
+@testset "pf fixed nbf rect2 - $(i)" for (i,network) in enumerate(c1_networks)
+    network = c1_contingency_stage_data(network)
 
-    result = run_pf_fixed_acr(network, nlp_solver)
+    result = run_c1_pf_fixed_acr(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
-@testset "pf fixed nbf rect2 ds- $(i)" for (i,network) in enumerate(networks)
-    network = contingency_stage_data(network)
+@testset "pf fixed nbf rect2 ds- $(i)" for (i,network) in enumerate(c1_networks)
+    network = c1_contingency_stage_data(network)
 
     for (i,gen) in network["gen"]
         if gen["index"] in network["response_gens"]
@@ -131,27 +131,27 @@ end
         end
     end
 
-    result = run_pf_fixed_bp_slack_acr(network, nlp_solver)
+    result = run_c1_pf_fixed_bp_slack_acr(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
-@testset "pf v2_3 fixpoint - $(i)" for (i,network) in enumerate(networks)
-    network = contingency_stage_data(network)
+@testset "pf v2_3 fixpoint - $(i)" for (i,network) in enumerate(c1_networks)
+    network = c1_contingency_stage_data(network)
     pg_lost = 0.0
 
-    result = run_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)
+    result = run_c1_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], 0.0; atol = 1e0)
 end
 
 @testset "pf v2_3 fixpoint - infeasible" begin
-    network = contingency_stage_data(network_infeasible)
+    network = c1_contingency_stage_data(c1_network_infeasible)
     pg_lost = 0.0
 
-    result = run_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)
+    result = run_c1_fixpoint_pf_pvpq!(network, pg_lost, nlp_solver, iteration_limit=5)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
 end

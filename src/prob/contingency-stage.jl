@@ -1,5 +1,9 @@
+const C1_VM_BOUND_TOL = 1e-4
+const C1_QG_BOUND_TOL = 1e-4
+
+
 "given delta, computes the total power response"
-function comp_pg_response_total(network, gens::Set{Int}; delta=network["delta"])
+function calc_c1_pg_response_total(network, gens::Set{Int}; delta=network["delta"])
     total_pg = 0.0
 
     for (i,gen) in network["gen"]
@@ -19,9 +23,9 @@ function comp_pg_response_total(network, gens::Set{Int}; delta=network["delta"])
 end
 
 
-apply_pg_response!(network, pg_delta::Real) = apply_pg_response!(network, network["response_gens"], pg_delta::Real)
+apply_c1_pg_response!(network, pg_delta::Real) = apply_c1_pg_response!(network, network["response_gens"], pg_delta::Real)
 
-function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
+function apply_c1_pg_response!(network, gens::Set{Int}, pg_delta::Real)
     for (i,gen) in network["gen"]
         gen["pg_fixed"] = false
     end
@@ -86,7 +90,7 @@ function apply_pg_response!(network, gens::Set{Int}, pg_delta::Real)
             end
         end
 
-        #pg_comp = comp_pg_response_total(network, delta=delta_est)
+        #pg_comp = calc_c1_pg_response_total(network, delta=delta_est)
         #info(_LOGGER, "detla: $(delta_est)")
         #info(_LOGGER, "total gen comp $(pg_comp) - gen inc $(pg_total)")
         #info(_LOGGER, "total gen $(pg_total) - target gen $(pg_target)")
@@ -111,7 +115,7 @@ end
 
 
 "fixes solution degeneracy issues when qg is a free variable, as is the case in PowerFlow"
-function correct_qg!(network, solution; bus_gens=gens_by_bus(network))
+function c1_correct_qg!(network, solution; bus_gens=gens_by_bus(network))
     for (i,gens) in bus_gens
         if length(gens) > 1
             gen_ids = [gen["index"] for gen in gens]
@@ -148,7 +152,7 @@ function correct_qg!(network, solution; bus_gens=gens_by_bus(network))
 end
 
 
-gen_default = Dict(
+const c1_gen_default = Dict(
 #    "gen_bus" => 0,
 #    "index" => 0,
     "pg" => 0.0,
@@ -178,17 +182,17 @@ Instead conducting PV/PQ bus switching address disjunctive constraints, this
 solver simply adds extra reactive capability on buses where the voltage
 bounds cannot be enforced and takes an associated power balance penalty.
 """
-function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(Int64))
+function run_c1_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
 
-    #delta = apply_pg_response!(network, pg_lost)
+    #delta = apply_c1_pg_response!(network, pg_lost)
     #delta = 0.0
 
     #info(_LOGGER, "pg lost: $(pg_lost)")
     #info(_LOGGER, "delta: $(network["delta"])")
     #info(_LOGGER, "pre-solve time: $(time() - time_start)")
 
-    base_solution = extract_solution(network)
+    base_solution = c1_extract_solution(network)
     base_solution["delta"] = network["delta"]
     result = Dict(
         "termination_status" => _PM.LOCALLY_SOLVED,
@@ -207,11 +211,11 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
         info(_LOGGER, "pf soft fixpoint iteration: $iteration")
 
         time_start = time()
-        result = run_pf_bqv_acr(network, solver, solution_processors=[_PM.sol_data_model!])
+        result = run_c1_pf_bqv_acr(network, solver, solution_processors=[_PM.sol_data_model!])
         info(_LOGGER, "solve pf time: $(time() - time_start)")
 
         if result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED
-            correct_qg!(network, result["solution"], bus_gens=bus_gens)
+            c1_correct_qg!(network, result["solution"], bus_gens=bus_gens)
             _PM.update_data!(network, result["solution"])
         else
             warn(_LOGGER, "solve issue with run_pf_bqv_acr, $(result["termination_status"])")
@@ -220,7 +224,7 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
 
         vm_fixed = false
         for (i,bus) in network["bus"]
-            if bus["vm"] < bus["vmin"] - vm_bound_tol || bus["vm"] > bus["vmax"] + vm_bound_tol
+            if bus["vm"] < bus["vmin"] - C1_VM_BOUND_TOL || bus["vm"] > bus["vmax"] + C1_VM_BOUND_TOL
                 active_gens = 0
                 if length(bus_gens[i]) > 0
                     active_gens = sum(gen["gen_status"] != 0 for gen in bus_gens[i])
@@ -239,7 +243,7 @@ function run_fixpoint_pf_bqv!(network, pg_lost, solver; iteration_limit=typemax(
                 end
 
                 warn(_LOGGER, "bus $(i) voltage out of bounds $(current_vm) -> $(bus["vm"]), adding virtual generator $(gen_idx)")
-                gen_virtual = deepcopy(gen_default)
+                gen_virtual = deepcopy(c1_gen_default)
                 gen_virtual["index"] = gen_idx
                 gen_virtual["gen_bus"] = bus["index"]
                 push!(bus_gens[i], gen_virtual)
@@ -271,12 +275,12 @@ end
 
 
 ""
-function run_pf_bqv_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_pf_bqv_acr; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_pf_bqv_acr(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_pf_bqv_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_pf_bqv_acr(pm::_PM.AbstractPowerModel)
+function build_c1_pf_bqv_acr(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power_real(pm, bounded=false)
     _PM.variable_gen_power_imaginary(pm, bounded=false)
@@ -310,7 +314,7 @@ function build_pf_bqv_acr(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_ohms_yt_from_goc(pm, i)
+        expression_c1_branch_power_ohms_yt_from(pm, i)
         _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
@@ -362,12 +366,12 @@ A power flow solver conforming to the ARPA-e GOC Challenge 1 contingency-stage
 specification.  The solver conducts multiple rounds of PV/PQ bus switching
 to heuristically enforce the disjunctive constraints.
 """
-function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax(Int64))
+function run_c1_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
 
     network_backup = deepcopy(network)
 
-    response_status = apply_pg_response!(network, pg_lost)
+    response_status = apply_c1_pg_response!(network, pg_lost)
 
     debug(_LOGGER, "pg lost: $(pg_lost)")
     debug(_LOGGER, "delta: $(network["delta"])")
@@ -375,7 +379,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
     debug(_LOGGER, "pre-solve time: $(time() - time_start)")
 
 
-    base_solution = extract_solution(network)
+    base_solution = c1_extract_solution(network)
     base_solution["delta"] = network["delta"]
     final_result = Dict(
         "termination_status" => _PM.LOCALLY_SOLVED,
@@ -422,13 +426,13 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
     time_start = time()
     #result = run_fixed_pf_nbf_rect(network, solver)
     if !pf_fixed_all
-        result = run_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
+        result = run_c1_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
     else
-        result = run_pf_fixed_bp_slack_acr(network, solver, solution_processors=[_PM.sol_data_model!])
+        result = run_c1_pf_fixed_bp_slack_acr(network, solver, solution_processors=[_PM.sol_data_model!])
     end
     debug(_LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED
-        correct_qg!(network, result["solution"], bus_gens=bus_gens)
+        c1_correct_qg!(network, result["solution"], bus_gens=bus_gens)
         _PM.update_data!(network, result["solution"])
         final_result = result
     else
@@ -574,13 +578,13 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
             #result = run_fixed_pf_nbf_rect(network, solver, solution_processors=[_PM.sol_data_model!])
             #result = run_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
             if !pf_fixed_all
-                result = run_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
+                result = run_c1_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
             else
-                result = run_pf_fixed_bp_slack_acr(network, solver, solution_processors=[_PM.sol_data_model!])
+                result = run_c1_pf_fixed_bp_slack_acr(network, solver, solution_processors=[_PM.sol_data_model!])
             end
             debug(_LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED
-                correct_qg!(network, result["solution"], bus_gens=bus_gens)
+                c1_correct_qg!(network, result["solution"], bus_gens=bus_gens)
                 _PM.update_data!(network, result["solution"])
                 final_result = result
             else
@@ -604,7 +608,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
     for (i,bus) in network["bus"]
         if bus["bus_type"] != 4
             bus_sol = final_result["solution"]["bus"][i]
-            if bus_sol["vm"] - vm_bound_tol >= bus["vmax"] || bus_sol["vm"] + vm_bound_tol <= bus["vmin"]
+            if bus_sol["vm"] - C1_VM_BOUND_TOL >= bus["vmax"] || bus_sol["vm"] + C1_VM_BOUND_TOL <= bus["vmin"]
                 vm_bound_vio = true
                 warn(_LOGGER, "$(network["cont_label"]) vm bound out of range on bus $(i): $(bus["vmin"]) - $(bus_sol["vm"]) - $(bus["vmax"])")
             end
@@ -615,7 +619,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
     for (i,gen) in network["gen"]
         if gen["gen_status"] != 0
             gen_sol = final_result["solution"]["gen"][i]
-            if gen_sol["qg"] - qg_bound_tol >= gen["qmax"] || gen_sol["qg"] + qg_bound_tol <= gen["qmin"]
+            if gen_sol["qg"] - C1_QG_BOUND_TOL >= gen["qmax"] || gen_sol["qg"] + C1_QG_BOUND_TOL <= gen["qmin"]
                 qg_bound_vio = true
                 warn(_LOGGER, "$(network["cont_label"]) qg bound out of range on gen $(i): $(gen["qmin"]) - $(gen_sol["qg"]) - $(gen["qmax"])")
             end
@@ -624,7 +628,7 @@ function run_fixpoint_pf_pvpq!(network, pg_lost, solver; iteration_limit=typemax
 
     if vm_bound_vio || qg_bound_vio
         warn(_LOGGER, "$(network["cont_label"]) running voltage profile correction")
-        result = run_fixpoint_opf!(network_backup, pg_lost, solver, iteration_limit=iteration_limit)
+        result = run_c1_fixpoint_opf!(network_backup, pg_lost, solver, iteration_limit=iteration_limit)
         if result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED
             _PM.update_data!(network, result["solution"])
             final_result = result
@@ -640,12 +644,12 @@ end
 
 
 ""
-function run_pf_fixed_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_pf_fixed_acr; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_pf_fixed_acr(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_pf_fixed_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_pf_fixed_acr(pm::_PM.AbstractPowerModel)
+function build_c1_pf_fixed_acr(pm::_PM.AbstractPowerModel)
     start_time = time()
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power_real(pm, bounded=false)
@@ -681,7 +685,7 @@ function build_pf_fixed_acr(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_ohms_yt_from_goc(pm, i)
+        expression_c1_branch_power_ohms_yt_from(pm, i)
         _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
@@ -725,12 +729,12 @@ end
 
 
 "a variant of fixed_pf_nbf_rect2 with a distributed active power slack"
-function run_pf_fixed_bp_slack_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_pf_fixed_bp_slack_acr; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_pf_fixed_bp_slack_acr(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_pf_fixed_bp_slack_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_pf_fixed_bp_slack_acr(pm::_PM.AbstractPowerModel)
+function build_c1_pf_fixed_bp_slack_acr(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power_real(pm, bounded=false)
     _PM.variable_gen_power_imaginary(pm, bounded=false)
@@ -774,7 +778,7 @@ function build_pf_fixed_bp_slack_acr(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_ohms_yt_from_goc(pm, i)
+        expression_c1_branch_power_ohms_yt_from(pm, i)
         _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
@@ -839,17 +843,17 @@ end
 
 
 
-function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int64))
+function run_c1_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int64))
     time_start = time()
 
-    delta = apply_pg_response!(network, pg_lost)
+    delta = apply_c1_pg_response!(network, pg_lost)
     #delta = 0.0
 
     debug(_LOGGER, "pg lost: $(pg_lost)")
     debug(_LOGGER, "delta: $(network["delta"])")
     debug(_LOGGER, "pre-solve time: $(time() - time_start)")
 
-    base_solution = extract_solution(network)
+    base_solution = c1_extract_solution(network)
     base_solution["delta"] = delta
     final_result = Dict(
         "termination_status" => _PM.LOCALLY_SOLVED,
@@ -879,7 +883,7 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
 
 
     time_start = time()
-    result = run_opf_contingency_acp(network, solver, solution_processors=[_PM.sol_data_model!])
+    result = run_c1_opf_contingency_acp(network, solver, solution_processors=[_PM.sol_data_model!])
     debug(_LOGGER, "pf solve time: $(time() - time_start)")
     if result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED
         warn(_LOGGER, "$(network["cont_label"]) voltage profile correction objective: $(result["objective"])")
@@ -1003,10 +1007,10 @@ function run_fixpoint_opf!(network, pg_lost, solver; iteration_limit=typemax(Int
             debug(_LOGGER, "bus or gen swtiched: $iteration")
             time_start = time()
             #result = run_fixed_pf_nbf_rect(network, solver, solution_processors=[_PM.sol_data_model!])
-            result = run_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
+            result = run_c1_pf_fixed_acr(network, solver, solution_processors=[_PM.sol_data_model!])
             debug(_LOGGER, "pf solve time: $(time() - time_start)")
             if result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED
-                correct_qg!(network, result["solution"], bus_gens=bus_gens)
+                c1_correct_qg!(network, result["solution"], bus_gens=bus_gens)
                 _PM.update_data!(network, result["solution"])
                 final_result = result
             else
@@ -1036,18 +1040,18 @@ end
 # this approach has a minor ipopt runtime performance hit, but extracting branch flow values is much faster
 
 "attempts to correct voltage profile only"
-function run_opf_contingency_acp(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_opf_contingency; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_contingency_acp(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_c1_opf_contingency; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_opf_contingency(pm::_PM.AbstractPowerModel)
+function build_c1_opf_contingency(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power_real(pm, bounded=false)
     _PM.variable_gen_power_imaginary(pm, bounded=false)
     #_PM.variable_branch_power(pm, bounded=false)
 
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
     qg_vio = @variable(pm.model,
         [i in ids(pm, :gen)], base_name="qg_vio",
@@ -1102,7 +1106,7 @@ function build_opf_contingency(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for i in ids(pm, :branch)
-        expression_branch_power_ohms_yt_from_goc(pm, i)
+        expression_c1_branch_power_ohms_yt_from(pm, i)
         _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
     #Memento.info(_LOGGER, "flow expr time: $(time() - start_time)")
@@ -1133,7 +1137,7 @@ function build_opf_contingency(pm::_PM.AbstractPowerModel)
 
 
     for (i,bus) in ref(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
 end

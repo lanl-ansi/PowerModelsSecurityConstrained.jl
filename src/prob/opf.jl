@@ -6,16 +6,16 @@ Power balance and branch flow constraints are strictly enforced.
 The primary departure from the PowerModels standard formulation is dispatchable
 bus shunts and a slight change in the transformer model.
 """
-function run_opf_shunt(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_opf_shunt; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_shunt(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_c1_opf_shunt; ref_extensions=[ref_c1!], kwargs...)
 end
 
-function build_opf_shunt(pm::_PM.AbstractPowerModel)
+function build_c1_opf_shunt(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm)
 
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
     _PM.objective_min_fuel_cost(pm)
 
@@ -26,11 +26,11 @@ function build_opf_shunt(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
     for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
+        constraint_goc_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
@@ -47,18 +47,18 @@ Power balance are strictly enforced and the branch flow violations are
 penalized based on a conservative linear approximation of the formulation's
 flow violation penalty specification.
 """
-function run_opf_cheap(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_opf_cheap; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_cheap(file, model_constructor, solver; kwargs...)
+    return _PM.run_model(file, model_constructor, solver, build_c1_opf_cheap; ref_extensions=[ref_c1!], kwargs...)
 end
 
 
-function build_opf_cheap(pm::_PM.AbstractPowerModel)
+function build_c1_opf_cheap(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm, bounded=false)
 
-    variable_branch_power_slack(pm)
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_branch_power_slack(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
     _PM.constraint_model_voltage(pm)
 
@@ -67,17 +67,17 @@ function build_opf_cheap(pm::_PM.AbstractPowerModel)
     end
 
     for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
     for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
+        constraint_goc_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
 
-        constraint_thermal_limit_from_soft(pm, i)
-        constraint_thermal_limit_to_soft(pm, i)
+        constraint_c1_thermal_limit_from_soft(pm, i)
+        constraint_c1_thermal_limit_to_soft(pm, i)
     end
 
     ##### Setup Objective #####
@@ -99,20 +99,20 @@ AC Power Flow models in rectangular coordinates for faster derivative
 computations.  Support sparse collections of flow constrains for
 increased performance.
 """
-function run_opf_cheap_lazy_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_opf_cheap_lazy_acr; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_cheap_lazy_acr(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_opf_cheap_lazy_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
+function build_c1_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power(pm)
 
-    variable_branch_power_slack(pm)
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_branch_power_slack(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
-    variable_bus_voltage_magnitude_delta(pm)
-    variable_gen_power_real_delta(pm)
+    variable_c1_bus_voltage_magnitude_delta(pm)
+    variable_c1_gen_power_real_delta(pm)
 
     vvm = var(pm)[:vvm] = @variable(pm.model,
         [i in ids(pm, :bus)], base_name="vvm",
@@ -125,7 +125,7 @@ function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
     _PM.constraint_model_voltage(pm)
 
     for i in ids(pm, :branch)
-        expression_branch_power_ohms_yt_from_goc(pm, i)
+        expression_c1_branch_power_ohms_yt_from(pm, i)
         _PM.expression_branch_power_ohms_yt_to(pm, i)
     end
 
@@ -176,7 +176,7 @@ function build_opf_cheap_lazy_acr(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
-        constraint_gen_power_real_deviation(pm, i)
+        constraint_c1_gen_power_real_deviation(pm, i)
     end
     #Memento.info(_LOGGER, "gen expr time: $(time() - start_time)")
 
@@ -220,21 +220,21 @@ end
 
 
 ""
-function run_opf_cheap_target_acp(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_opf_cheap_target_acp; ref_extensions=[ref_add_goc!], kwargs...)
+function run_c1_opf_cheap_target_acp(file, solver; kwargs...)
+    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_c1_opf_cheap_target_acp; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
-function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
+function build_c1_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage(pm)
     _PM.variable_gen_power(pm)
     _PM.variable_branch_power(pm, bounded=false)
 
-    variable_branch_power_slack(pm)
-    variable_shunt_admittance_imaginary(pm)
+    variable_c1_branch_power_slack(pm)
+    variable_c1_shunt_admittance_imaginary(pm)
 
-    variable_bus_voltage_magnitude_delta(pm)
-    variable_gen_power_real_delta(pm)
+    variable_c1_bus_voltage_magnitude_delta(pm)
+    variable_c1_gen_power_real_delta(pm)
 
     _PM.constraint_model_voltage(pm)
 
@@ -252,15 +252,15 @@ function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
 
     start_time = time()
     for (i,gen) in ref(pm, :gen)
-        constraint_gen_power_real_deviation(pm, i)
+        constraint_c1_gen_power_real_deviation(pm, i)
     end
 
     for i in ids(pm, :bus)
-        constraint_power_balance_shunt_dispatch(pm, i)
+        constraint_c1_power_balance_shunt_dispatch(pm, i)
     end
 
     for (i,branch) in ref(pm, :branch)
-        constraint_ohms_yt_from_goc(pm, i)
+        constraint_goc_ohms_yt_from(pm, i)
         _PM.constraint_ohms_yt_to(pm, i)
 
         _PM.constraint_voltage_angle_difference(pm, i)
@@ -280,3 +280,373 @@ function build_opf_cheap_target_acp(pm::_PM.AbstractPowerModel)
         sum( 1e5*pg_delta[i]^2 for (i,gen) in ref(pm, :gen))
     )
 end
+
+
+
+"""
+An OPF formulation conforming to the ARPA-e GOC Challenge 2 specification.
+
+The primary departure from the PowerModels standard formulations are: (1) the
+addition of price sensitive loads with a corresponding value maximizing
+objective; (2) ramping constraints from a previous operating points; (3) the
+addition of penalized slack values that are used for power balance and branch
+flow limits, i.e. soft constraints.
+"""
+function run_c2_opf_soft(file, model_type::Type, optimizer; kwargs...)
+    return _PM.run_model(file, model_type, optimizer, build_c2_opf_soft; kwargs...)
+end
+
+""
+function build_c2_opf_soft(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    variable_bus_delta_abs(pm)
+    _PM.variable_gen_power(pm)
+    variable_c2_load_power_factor_range(pm)
+    _PM.variable_branch_power(pm)
+    variable_c2_branch_limit_slack(pm)
+
+
+    _PM.constraint_model_voltage(pm)
+    for i in ids(pm, :ref_buses)
+        _PM.constraint_theta_ref(pm, i)
+    end
+
+    delta_r = ref(pm, :deltar)
+
+    for (i, load) in ref(pm, :load)
+        z_demand = var(pm, :z_demand, i)
+        
+        pd_min = load["pd_nominal"]*JuMP.lower_bound(z_demand)
+        pd_max = load["pd_nominal"]*JuMP.upper_bound(z_demand)
+
+        ramping_lb = load["pd_prev"] - load["prdmax"]*delta_r
+        ramping_ub = load["pd_prev"] + load["prumax"]*delta_r
+
+        if pd_min < ramping_lb
+            #println("update lower bound $(pd_min) -> $(ramping_lb)")
+            JuMP.set_lower_bound(z_demand, ramping_lb/load["pd_nominal"])
+        end
+
+        if pd_max > ramping_ub
+            #println("update upper bound $(pd_max) -> $(ramping_ub)")
+            JuMP.set_upper_bound(z_demand, ramping_ub/load["pd_nominal"])
+        end
+    end
+
+    for (i, gen) in ref(pm, :gen)
+        pg = var(pm, :pg, i)
+
+        pg_prev = gen["pg_prev"]
+        if gen["status_prev"] == 0 # starting up
+           pg_prev = gen["pmin"]
+           warn(_LOGGER, "generator $(i) startung up setting previous value to $(pg_prev)")
+        end
+
+        ramping_lb = pg_prev - delta_r*gen["prdmax"]
+        ramping_ub = pg_prev + delta_r*gen["prumax"]
+        if JuMP.lower_bound(pg) < ramping_lb
+            #println("update lower bound $(lower_bound(pg)) -> $(ramping_lb)")
+            JuMP.set_lower_bound(pg, ramping_lb)
+        end
+
+        if JuMP.upper_bound(pg) > ramping_ub
+            #println("update upper bound $(upper_bound(pg)) -> $(ramping_ub)")
+            JuMP.set_upper_bound(pg, ramping_ub)
+        end
+    end
+
+
+    for i in ids(pm, :bus)
+        constraint_c2_power_balance_soft_lin(pm, i)
+    end
+
+    for (i, branch) in ref(pm, :branch)
+        constraint_goc_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
+
+        va_fr = get(ref(pm, :bus, branch["f_bus"]), "va_start", 0.0)
+        va_to = get(ref(pm, :bus, branch["t_bus"]), "va_start", 0.0)
+        va_detla = va_fr - va_to
+        if va_detla <= branch["angmax"] && va_detla >= branch["angmin"]
+            _PM.constraint_voltage_angle_difference(pm, i)
+        else
+            warn(_LOGGER, "skipping constraint_voltage_angle_difference on branch $(i) due to va delta of $(va_detla) for given bounds $(branch["angmin"]) - $(branch["angmax"])")
+        end
+
+        constraint_c2_flow_limit_from_soft(pm, i)
+        constraint_c2_flow_limit_to_soft(pm, i)
+    end
+
+
+    _PM.objective_variable_pg_cost(pm)
+    objective_c2_variable_pd_value(pm)
+
+    p_vio_cost = ref(pm, :p_delta_cost_approx)
+    q_vio_cost = ref(pm, :q_delta_cost_approx)
+    sm_vio_cost = ref(pm, :sm_cost_approx)
+
+    delta = ref(pm, :delta)
+
+    @objective(pm.model, Max,
+        delta * sum(
+            sum( var(pm, n, :pd_value, i) for (i,load) in nw_ref[:load])
+            - sum( var(pm, n, :pg_cost, i) + gen["oncost"] for (i,gen) in nw_ref[:gen])
+            - sum( sm_vio_cost*var(pm, n, :sm_slack, i) for (i,branch) in nw_ref[:branch])
+            - sum( p_vio_cost*var(pm, n, :p_delta_abs, i) for (i,bus) in nw_ref[:bus])
+            - sum( q_vio_cost*var(pm, n, :q_delta_abs, i) for (i,bus) in nw_ref[:bus])
+        for (n, nw_ref) in _PM.nws(pm))
+    )
+
+end
+
+
+"""
+An OPF formulation conforming to the ARPA-e GOC Challenge 2 specification.
+
+This formulation is design for optimizing the second-stage contingency problems
+It is identical to `run_c2_opf_soft` except for the using different data
+parameters which may change between the basecase and contingencies, most
+notably the ramping constraints and time passage constant `delta`.
+"""
+function run_c2_opf_soft_ctg(file, model_type::Type, optimizer; kwargs...)
+    return _PM.run_model(file, model_type, optimizer, build_c2_opf_soft_ctg; kwargs...)
+end
+
+""
+function build_c2_opf_soft_ctg(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    variable_bus_delta_abs(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
+    variable_c2_branch_limit_slack(pm)
+    variable_c2_load_power_factor_range(pm)
+
+
+    _PM.constraint_model_voltage(pm)
+    for i in ids(pm, :ref_buses)
+        _PM.constraint_theta_ref(pm, i)
+    end
+
+    delta_r = ref(pm, :deltarctg)
+
+    for (i, load) in ref(pm, :load)
+        z_demand = var(pm, :z_demand, i)
+
+        pd_min = load["pd_nominal"]*JuMP.lower_bound(z_demand)
+        pd_max = load["pd_nominal"]*JuMP.upper_bound(z_demand)
+
+        ramping_lb = load["pd_prev"] - load["prdmaxctg"]*delta_r
+        ramping_ub = load["pd_prev"] + load["prumaxctg"]*delta_r
+
+        if pd_min < ramping_lb
+            #println("update lower bound $(pd_min) -> $(ramping_lb)")
+            JuMP.set_lower_bound(z_demand, ramping_lb/load["pd_nominal"])
+        end
+
+        if pd_max > ramping_ub
+            #println("update upper bound $(pd_max) -> $(ramping_ub)")
+            JuMP.set_upper_bound(z_demand, ramping_ub/load["pd_nominal"])
+        end
+    end
+
+    for (i, gen) in ref(pm, :gen)
+        pg = var(pm, :pg, i)
+        pg_prev = gen["pg_prev"]
+
+        ramping_lb = pg_prev - delta_r*gen["prdmaxctg"]
+        ramping_ub = pg_prev + delta_r*gen["prumaxctg"]
+        if JuMP.lower_bound(pg) < ramping_lb
+            #println("update lower bound $(lower_bound(pg)) -> $(ramping_lb)")
+            JuMP.set_lower_bound(pg, ramping_lb)
+        end
+
+        if JuMP.upper_bound(pg) > ramping_ub
+            #println("update upper bound $(upper_bound(pg)) -> $(ramping_ub)")
+            JuMP.set_upper_bound(pg, ramping_ub)
+        end
+    end
+
+    for i in ids(pm, :bus)
+        constraint_c2_power_balance_soft_lin(pm, i)
+    end
+
+    for (i,branch) in ref(pm, :branch)
+        constraint_goc_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
+
+        #constraint_voltage_angle_difference(pm, i)
+        va_fr = get(ref(pm, :bus, branch["f_bus"]), "va_start", 0.0)
+        va_to = get(ref(pm, :bus, branch["t_bus"]), "va_start", 0.0)
+        va_detla = va_fr - va_to
+        if va_detla <= branch["angmax"] && va_detla >= branch["angmin"]
+            _PM.constraint_voltage_angle_difference(pm, i)
+        else
+            warn(_LOGGER, "skipping constraint_voltage_angle_difference on branch $(i) due to va delta of $(va_detla) for given bounds $(branch["angmin"]) - $(branch["angmax"])")
+        end
+
+        constraint_c2_flow_limit_from_soft(pm, i)
+        constraint_c2_flow_limit_to_soft(pm, i)
+    end
+
+
+    _PM.objective_variable_pg_cost(pm)
+    objective_c2_variable_pd_value(pm)
+
+    p_vio_cost = ref(pm, :p_delta_cost_approx)
+    q_vio_cost = ref(pm, :q_delta_cost_approx)
+    sm_vio_cost = ref(pm, :sm_cost_approx)
+
+    delta = ref(pm, :deltactg)
+
+    @objective(pm.model, Max,
+        delta * sum(
+            sum( var(pm, n, :pd_value, i) for (i,load) in nw_ref[:load])
+            - sum( var(pm, n, :pg_cost, i) + gen["oncost"] for (i,gen) in nw_ref[:gen])
+            - sum( sm_vio_cost*var(pm, n, :sm_slack, i) for (i,branch) in nw_ref[:branch])
+            - sum( p_vio_cost*var(pm, n, :p_delta_abs, i) for (i,bus) in nw_ref[:bus])
+            - sum( q_vio_cost*var(pm, n, :q_delta_abs, i) for (i,bus) in nw_ref[:bus])
+        for (n, nw_ref) in _PM.nws(pm))
+    )
+end
+
+
+
+"""
+An OPF formulation with generator unit commitment conforming to the ARPA-e GOC
+Challenge 2 specification.
+
+The primary departure from the PowerModels standard formulations are: (1) the
+addition of price sensitive loads with a corresponding value maximizing
+objective; (2) ramping constraints from a previous operating points; (3) the
+addition of penalized slack values for branch flow limits, i.e. soft
+constraints.
+
+This model differs from the `c2_opf_soft` model by strictly enforcing power
+balance at the network buses.
+"""
+function run_c2_opf_uc(file, model_type::Type, optimizer; kwargs...)
+    return _PM.run_model(file, model_type, optimizer, build_c2_opf_uc; kwargs...)
+end
+
+""
+function build_c2_opf_uc(pm::_PM.AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+
+    _PM.variable_gen_indicator(pm)
+    _PM.variable_gen_power_on_off(pm)
+    nw=nw_id_default
+    gen_su = var(pm, nw)[:gen_su] = JuMP.@variable(pm.model,
+        [i in ids(pm, nw, :gen)], base_name="$(nw)_gen_su",
+        binary = true,
+        start = _PM.comp_start_value(ref(pm, nw, :gen, i), "gen_su_start", 0.0)
+    )
+    _PM.sol_component_value(pm, nw, :gen, :gen_su, ids(pm, nw, :gen), gen_su)
+
+    gen_sd = var(pm, nw)[:gen_sd] = JuMP.@variable(pm.model,
+        [i in ids(pm, nw, :gen)], base_name="$(nw)_gen_sd",
+        binary = true,
+        start = _PM.comp_start_value(ref(pm, nw, :gen, i), "gen_sd_start", 0.0)
+    )
+    _PM.sol_component_value(pm, nw, :gen, :gen_sd, ids(pm, nw, :gen), gen_sd)
+
+
+    variable_c2_load_power_factor_range(pm)
+    _PM.variable_branch_power(pm)
+    variable_c2_branch_limit_slack(pm)
+
+
+    _PM.constraint_model_voltage(pm)
+    for i in ids(pm, :ref_buses)
+        _PM.constraint_theta_ref(pm, i)
+    end
+
+    delta_r = ref(pm, :deltar)
+
+    for (i, load) in ref(pm, :load)
+        z_demand = var(pm, :z_demand, i)
+        
+        @constraint(pm.model, load["pd_nominal"]*z_demand <= load["pd_prev"] + load["prumax"]*delta_r)
+        @constraint(pm.model, load["pd_nominal"]*z_demand >= load["pd_prev"] - load["prdmax"]*delta_r)
+    end
+
+    for (i, gen) in ref(pm, :gen)
+        _PM.constraint_gen_power_on_off(pm, i)
+
+        pg = var(pm, :pg, i)
+        pg_prev = var(pm, :z_gen, i)*gen["pg_prev"]
+        if gen["status_prev"] == 0 # starting up
+           pg_prev = var(pm, :z_gen, i)*gen["pmin"]
+        end
+
+        @constraint(pm.model, pg <= pg_prev + delta_r*gen["prumax"])
+        @constraint(pm.model, pg >= pg_prev - delta_r*gen["prdmax"])
+
+        @constraint(pm.model, var(pm, :z_gen, i) - gen["status_prev"] == var(pm, :gen_su, i) - var(pm, :gen_sd, i))
+        @constraint(pm.model, var(pm, :gen_su, i) + var(pm, :gen_sd, i) <= 1)
+
+        if gen["status_prev"] == 0 && gen["suqual"] == 0
+            @constraint(pm.model, var(pm, :z_gen, i) == 0)
+        end
+
+        if gen["status_prev"] == 1 && gen["sdqual"] == 0
+            @constraint(pm.model, var(pm, :z_gen, i) == 1)
+        end
+
+        # if haskey(gen, "gen_status_fixed")
+        #     @constraint(pm.model, var(pm, :z_gen, i) == gen["gen_status_fixed"])
+        # end
+    end
+
+    for i in ids(pm, :bus)
+        constraint_c2_power_balance(pm, i)
+    end
+
+    for (i, branch) in ref(pm, :branch)
+        constraint_goc_ohms_yt_from(pm, i)
+        _PM.constraint_ohms_yt_to(pm, i)
+
+        #constraint_voltage_angle_difference(pm, i)
+        va_fr = get(ref(pm, :bus, branch["f_bus"]), "va_start", 0.0)
+        va_to = get(ref(pm, :bus, branch["t_bus"]), "va_start", 0.0)
+        va_detla = va_fr - va_to
+        if va_detla <= branch["angmax"] && va_detla >= branch["angmin"]
+            _PM.constraint_voltage_angle_difference(pm, i)
+        else
+            warn(_LOGGER, "skipping constraint_voltage_angle_difference on branch $(i) due to va delta of $(va_detla) for given bounds $(branch["angmin"]) - $(branch["angmax"])")
+        end
+
+        constraint_c2_flow_limit_from_soft(pm, i)
+        constraint_c2_flow_limit_to_soft(pm, i)
+    end
+
+
+    _PM.objective_variable_pg_cost(pm)
+    objective_c2_variable_pd_value(pm)
+
+    #p_vio_cost = ref(pm, :p_delta_cost_approx)
+    #q_vio_cost = ref(pm, :q_delta_cost_approx)
+    sm_vio_cost = ref(pm, :sm_cost_approx)
+
+    delta = ref(pm, :delta)
+
+    gen_on_cost = Dict(i => 1.0*gen["oncost"] for (i, gen) in ref(pm, :gen))
+
+    @objective(pm.model, Max,
+        delta * sum(
+            sum( var(pm, n, :pd_value, i) for (i,load) in nw_ref[:load])
+            - sum( 
+                var(pm, n, :pg_cost, i) + gen_on_cost[i]*var(pm, :z_gen, i) +
+                (gen["sucost"]/delta)*var(pm, n, :gen_su, i) + 
+                (gen["sdcost"]/delta)*var(pm, n, :gen_sd, i) 
+            for (i,gen) in nw_ref[:gen])
+            - sum( sm_vio_cost*var(pm, n, :sm_slack, i) for (i,branch) in nw_ref[:branch])
+            #- sum( p_vio_cost*var(pm, n, :p_delta_abs, i) for (i,bus) in nw_ref[:bus])
+            #- sum( q_vio_cost*var(pm, n, :q_delta_abs, i) for (i,bus) in nw_ref[:bus])
+        for (n, nw_ref) in _PM.nws(pm))
+    )
+end
+
+
+
+
+

@@ -19,15 +19,22 @@ lp_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel"=>0)
 #lp_solver = optimizer_with_attributes(Cbc.Optimizer)
 
 
-ini_file = "../test/data/inputfiles.ini"
-scenarios = ["scenario_01", "scenario_02"]
-cases = [parse_goc_files(ini_file, scenario_id=sid) for sid in scenarios]
+c1_ini_file = "../test/data/c1/inputfiles.ini"
+c1_scenarios = ["scenario_01", "scenario_02"]
+c1_cases = [parse_c1_case(c1_ini_file, scenario_id=sid) for sid in c1_scenarios]
 
-networks = [build_pm_model(case) for case in cases]
-solutions = [read_solution1(networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(cases)]
+c1_networks = [build_c1_pm_model(case) for case in c1_cases]
+c1_solutions = [read_c1_solution1(c1_networks[i], output_dir=dirname(case.files["raw"])) for (i,case) in enumerate(c1_cases)]
 
-case_infeasible = parse_goc_files(ini_file, scenario_id="scenario_03")
-network_infeasible = build_pm_model(case_infeasible)
+c1_case_infeasible = parse_c1_case(c1_ini_file, scenario_id="scenario_03")
+c1_network_infeasible = build_c1_pm_model(c1_case_infeasible)
+
+
+c2_data_path = "../test/data/c2/"
+c2_scenarios = ["scenario_01", "scenario_02", "scenario_03"]
+c2_cases = [parse_c2_case(c2_data_path*scenario) for scenario in c2_scenarios]
+
+c2_networks = [build_c2_pm_model(case) for case in c2_cases]
 
 
 @testset "PowerModelsSecurityConstrained" begin
@@ -36,10 +43,14 @@ network_infeasible = build_pm_model(case_infeasible)
 
     include("opf.jl")
 
+    include("ots.jl")
+
     include("contingency.jl")
 
     include("contingency-stage.jl")
 
     include("scopf.jl")
+
+    include("io.jl")
 
 end

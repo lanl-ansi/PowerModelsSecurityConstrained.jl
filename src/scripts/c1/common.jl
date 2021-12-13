@@ -1,5 +1,5 @@
 
-function write_scopf_summary(scenario_id, network, objective; branch_flow_cuts=0, objective_lb=-Inf, load_time=-1.0, solve_time=-1.0, filter_time=-1.0, total_time=load_time+solve_time+filter_time)
+function write_c1_scopf_summary(scenario_id, network, objective; branch_flow_cuts=0, objective_lb=-Inf, load_time=-1.0, solve_time=-1.0, filter_time=-1.0, total_time=load_time+solve_time+filter_time)
     println("")
 
     data = [
@@ -49,7 +49,7 @@ function write_scopf_summary(scenario_id, network, objective; branch_flow_cuts=0
 end
 
 
-function write_power_balance_summary(scenario_id, p_delta_abs_max, q_delta_abs_max, p_delta_abs_mean, q_delta_abs_mean)
+function write_c1_power_balance_summary(scenario_id, p_delta_abs_max, q_delta_abs_max, p_delta_abs_mean, q_delta_abs_mean)
     println("")
 
     data = [

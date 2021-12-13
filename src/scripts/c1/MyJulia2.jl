@@ -17,8 +17,11 @@ start_pkg = time()
 @everywhere using Memento
 @everywhere const LOGGER = Memento.getlogger(PowerModelsSecurityConstrained)
 
-include("goc_challenge1_huristic.jl")
+include("goc_c1_huristic.jl")
+#include("second-stage-fp.jl")
+#include("second-stage-soft-fp.jl")
 include("second-stage-solution1.jl")
+
 
 println("package load time: $(time() - start_pkg)")
 
@@ -35,7 +38,7 @@ function MyJulia2(InFile1::String, InFile2::String, InFile3::String, InFile4::St
     println("  $(ScoringMethod)")
     println("  $(NetworkModel)")
 
-    compute_solution2_fast(InFile1, InFile2, InFile3, InFile4, TimeLimitInSeconds, ScoringMethod, NetworkModel)
+    compute_c1_solution2_fast(InFile1, InFile2, InFile3, InFile4, TimeLimitInSeconds, ScoringMethod, NetworkModel)
 
-    compute_solution2(InFile1, InFile2, InFile3, InFile4, TimeLimitInSeconds, ScoringMethod, NetworkModel)
+    compute_c1_solution2(InFile1, InFile2, InFile3, InFile4, TimeLimitInSeconds, ScoringMethod, NetworkModel)
 end

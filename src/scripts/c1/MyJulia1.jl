@@ -10,7 +10,7 @@ start_pkg = time()
 
 @everywhere using PowerModelsSecurityConstrained
 
-include("goc_challenge1_huristic.jl")
+include("goc_c1_huristic.jl")
 
 println("package load time: $(time() - start_pkg)")
 
@@ -29,7 +29,7 @@ function MyJulia1(InFile1::String, InFile2::String, InFile3::String, InFile4::St
 
     startup_time = 60
 
-    compute_solution1(InFile1, InFile2, InFile3, InFile4, TimeLimitInSeconds-startup_time, ScoringMethod, NetworkModel)
+    compute_c1_solution1(InFile1, InFile2, InFile3, InFile4, TimeLimitInSeconds-startup_time, ScoringMethod, NetworkModel)
 end
 
 

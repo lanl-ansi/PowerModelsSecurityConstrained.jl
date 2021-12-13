@@ -1,7 +1,5 @@
-
-
 ""
-function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractWRModels, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+function constraint_c1_power_balance_shunt_dispatch(pm::_PM.AbstractWRModels, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     w   = var(pm, n, :w, i)
     p    = get(var(pm, n),    :p, Dict()); _PM._check_var_keys(p, bus_arcs, "active power", "branch")
     q    = get(var(pm, n),    :q, Dict()); _PM._check_var_keys(q, bus_arcs, "reactive power", "branch")
@@ -32,7 +30,7 @@ end
 
 
 ""
-function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractWRModels, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+function constraint_c1_power_balance_shunt_dispatch_soft(pm::_PM.AbstractWRModels, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     w = var(pm, n, :w, i)
     p_delta_abs = var(pm, n, :p_delta_abs, i)
     q_delta_abs = var(pm, n, :q_delta_abs, i)
@@ -61,7 +59,7 @@ function constraint_power_balance_shunt_dispatch_soft(pm::_PM.AbstractWRModels, 
 end
 
 
-function constraint_ohms_yt_from_goc(pm::_PM.AbstractWRModels, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function constraint_goc_ohms_yt_from(pm::_PM.AbstractWRModels, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr = var(pm, n, :p, f_idx)
     q_fr = var(pm, n, :q, f_idx)
     w_fr = var(pm, n, :w, f_bus)

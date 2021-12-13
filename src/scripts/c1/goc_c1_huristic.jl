@@ -33,21 +33,21 @@ end
 #println("script startup time: $(time() - start_init)")
 
 
-function compute_solution1(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none", gurobi=false)
+function compute_c1_solution1(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none", gurobi=false)
     time_start = time()
     info(LOGGER, "time remaining: $(time_limit)")
 
-    goc_data = parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
-    network = build_pm_model(goc_data)
+    goc_data = parse_c1_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
+    network = build_c1_pm_model(goc_data)
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    correct_network_solution!(network)
-    write_solution1(network, output_dir=output_dir)
+    correct_c1_solution!(network)
+    write_c1_solution1(network, output_dir=output_dir)
 
     result = Dict(
         "termination_status" => LOCALLY_SOLVED,
-        "solution" => extract_solution(network)
+        "solution" => c1_extract_solution(network)
     )
 
     time_data = time() - time_start
@@ -76,16 +76,16 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     network_apo = deepcopy(network)
 
-    result = run_opf_cheap(network_apo, DCPPowerModel, lp_solver)
+    result = run_c1_opf_cheap(network_apo, DCPPowerModel, lp_solver)
     if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
         warn(LOGGER, "base case DC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
 
-        result = run_opf_cheap(network_apo, DCPPowerModel, qp_solver_relaxed)
+        result = run_c1_opf_cheap(network_apo, DCPPowerModel, qp_solver_relaxed)
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             warn(LOGGER, "relaxed base case DC-OPF solve failed with status $(result["termination_status"])")
             result = Dict(
                 "termination_status" => LOCALLY_SOLVED,
-                "solution" => extract_solution(network)
+                "solution" => c1_extract_solution(network)
             )
         else
             warn(LOGGER, "relaxed base case DC-OPF solve status $(result["termination_status"])")
@@ -96,10 +96,10 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     update_active_power_data!(network, result["solution"])
 
 
-    write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
+    write_c1_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
 
-    correct_network_solution!(network)
-    write_solution1(network, output_dir=output_dir)
+    correct_c1_solution!(network)
+    write_c1_solution1(network, output_dir=output_dir)
 
     for (i,bus) in network["bus"]
         bus["vm"] = (bus["vmax"] + bus["vmin"])/2.0 + 0.04
@@ -126,7 +126,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     time_ac_opf_start = time()
 
-    #result = run_opf_cheap(network, ACPPowerModel, nlp_solver)
+    #result = run_c1_opf_cheap(network, ACPPowerModel, nlp_solver)
     # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED || result["termination_status"] == :Suboptimal)
     #     error(LOGGER, "voltage profile solver failed")
     # end
@@ -137,11 +137,11 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     line_flow_vio = true
     while line_flow_vio
 
-        result = run_opf_cheap_lazy_acr(network, nlp_solver, solution_processors=[sol_data_model!])
+        result = run_c1_opf_cheap_lazy_acr(network, nlp_solver, solution_processors=[sol_data_model!])
         if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
             warn(LOGGER, "base case AC-OPF solve failed with status $(result["termination_status"]), try with relaxed convergence tolerance")
             break
-            # result = run_opf_cheap_lazy_acr(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
+            # result = run_c1_opf_cheap_lazy_acr(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
             # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
             #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
             #     break
@@ -166,13 +166,13 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
     end
     #activate_rate_a!(network)
 
-    balance = compute_power_balance_deltas!(network)
+    balance = calc_c1_power_balance_deltas!(network)
     info(LOGGER, "power balance cost: $(balance)")
 
 
     #update_data!(network, result["solution"])
-    correct_network_solution!(network)
-    write_solution1(network, output_dir=output_dir)
+    correct_c1_solution!(network)
+    write_c1_solution1(network, output_dir=output_dir)
 
     time_ac_opf = time() - time_ac_opf_start
     info(LOGGER, "ac opf phase time: $(time_ac_opf)")
@@ -196,7 +196,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     ###### Memory Check######
     scopf_comp = true
-    inverse_size = compute_inverse_size(network)
+    inverse_size = compute_susceptance_matrix_inv_size(network)
     workers = Distributed.workers()
 
     if 2*length(workers)*inverse_size > Sys.total_memory()
@@ -220,7 +220,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         info(LOGGER, "start warmup on $(length(workers)) workers")
         worker_futures = []
         for wid in workers
-            future = remotecall(load_network_global, wid, con_file, inl_file, raw_file, rop_file, scenario_id)
+            future = remotecall(load_c1_network_global, wid, con_file, inl_file, raw_file, rop_file, scenario_id)
             push!(worker_futures, future)
         end
 
@@ -241,7 +241,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
         for (i,rng) in enumerate(cont_range)
             info(LOGGER, "task $(i): $(length(rng)) / $(rng)")
         end
-        #pmap(filter_network_global_contingencies, cont_range)
+        #pmap(filter_c1_network_global_contingencies, cont_range)
         output_dirs = [output_dir for i in 1:length(workers)]
 
         info(LOGGER, "waiting for worker warmup to complete: $(time() - time_start)")
@@ -273,9 +273,9 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             iteration += 1
             info(LOGGER, "cut enumeration iteration: $(iteration)")
 
-            write_active_flow_cuts(network_apo, output_dir=output_dir)
-            #cuts = pmap(check_contingencies_branch_power_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
-            cuts = pmap(check_contingencies_branch_power_bpv_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
+            write_c1_active_flow_cuts(network_apo, output_dir=output_dir)
+            #cuts = pmap(check_c1_contingencies_branch_power_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], [true for p in 1:length(workers)], solution_file_apo)
+            cuts = pmap(check_c1_contingencies_branch_power_bpv_remote, cont_range, output_dirs, [iteration for p in 1:length(workers)], solution_file_apo)
             time_filter += time() - time_filter_start
 
             cuts_found = sum(length(c.gen_cuts)+length(c.branch_cuts) for c in cuts)
@@ -304,12 +304,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             #end
 
             time_solve_start = time()
-            #result = run_scopf_cuts_soft(network_apo, DCPPowerModel, qp_solver)
-            result = run_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver)
+            #result = run_c1_scopf_cuts_soft(network_apo, DCPPowerModel, qp_solver)
+            result = run_c1_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver)
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 warn(LOGGER, "scopf solve failed with status $(result["termination_status"])")
 
-                result = run_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver_relaxed)
+                result = run_c1_scopf_cuts_soft_bpv(network_apo, DCPPowerModel, qp_solver_relaxed)
                 if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                     warn(LOGGER, "relaxed scopf solve failed with status $(result["termination_status"])")
                     break
@@ -321,9 +321,9 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             time_solve += time() - time_solve_start
             update_active_power_data!(network_apo, result["solution"])
             update_active_power_data!(network, result["solution"])
-            write_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
+            write_c1_solution1(network_apo, output_dir=output_dir, solution_file="solution1_apo.txt")
 
-            balance = compute_power_balance_deltas!(network)
+            balance = calc_c1_power_balance_deltas!(network)
             info(LOGGER, "power balance cost: $(balance)")
 
             gen_cost = calc_gen_cost(network)
@@ -353,12 +353,12 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
         line_flow_vio = true
         while line_flow_vio
-            result = run_opf_cheap_lazy_acr(network, nlp_solver, solution_processors=[sol_data_model!])
+            result = run_c1_opf_cheap_lazy_acr(network, nlp_solver, solution_processors=[sol_data_model!])
 
             if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED)
                 warn(LOGGER, "base case AC polish solve failed with status $(result["termination_status"])")
                 break
-                # result = run_opf_cheap_lazy_acr(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
+                # result = run_c1_opf_cheap_lazy_acr(network, nlp_solver_relaxed, solution_processors=[sol_data_model!])
                 # if !(result["termination_status"] == OPTIMAL || result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == ALMOST_LOCALLY_SOLVED)
                 #     warn(LOGGER, "relaxed base case AC-OPF solve failed with status $(result["termination_status"])")
                 #     break
@@ -382,14 +382,14 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
             line_flow_vio = activate_rate_a_violations!(network)
         end
 
-        balance = compute_power_balance_deltas!(network)
+        balance = calc_c1_power_balance_deltas!(network)
         info(LOGGER, "power balance cost: $(balance)")
 
         gen_cost = calc_gen_cost(network)
         info(LOGGER, "generation cost: $(gen_cost)")
 
-        correct_network_solution!(network)
-        write_solution1(network, output_dir=output_dir)
+        correct_c1_solution!(network)
+        write_c1_solution1(network, output_dir=output_dir)
     end
 
     ###### Results Summary ######
@@ -400,7 +400,7 @@ function compute_solution1(con_file::String, inl_file::String, raw_file::String,
 
     total_cuts = length(network["gen_flow_cuts"]) + length(network["branch_flow_cuts"])
 
-    write_contingencies(network, output_dir=output_dir)
+    write_c1_contingencies(network, output_dir=output_dir)
 
-    write_scopf_summary(goc_data.scenario, network, gen_cost, branch_flow_cuts=total_cuts, load_time=time_data, solve_time=time_solve, filter_time=time_filter, total_time = time() - time_start)
+    write_c1_scopf_summary(goc_data.scenario, network, gen_cost, branch_flow_cuts=total_cuts, load_time=time_data, solve_time=time_solve, filter_time=time_filter, total_time = time() - time_start)
 end

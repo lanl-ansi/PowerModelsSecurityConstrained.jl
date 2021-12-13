@@ -12,7 +12,7 @@ function scopf_main(parsed_args)
     remove_solutions = parsed_args["remove-solutions"]
     gurobi = parsed_args["gurobi"]
 
-    files, scenario_id = find_goc_files(ini_file, scenario_id=scenario)
+    files, scenario_id = find_c1_files(ini_file, scenario_id=scenario)
 
     ini_dir = dirname(ini_file)
     output_dir = joinpath(ini_dir, scenario_id)
@@ -20,16 +20,16 @@ function scopf_main(parsed_args)
     info(LOGGER, "output dir: $(output_dir)")
 
     time_sol1_start = time()
-    compute_solution1(files["con"], files["inl"], files["raw"], files["rop"], time_limit_sol1-60, scoring_method, "network name"; output_dir=output_dir, scenario_id=scenario_id, gurobi=gurobi)
+    compute_c1_solution1(files["con"], files["inl"], files["raw"], files["rop"], time_limit_sol1-60, scoring_method, "network name"; output_dir=output_dir, scenario_id=scenario_id, gurobi=gurobi)
     time_sol1 = time() - time_sol1_start
 
     if !skip_solution2
-        compute_solution2(files["con"], files["inl"], files["raw"], files["rop"], trunc(Int, time_limit_total-time_sol1-60), scoring_method, "network name"; output_dir=output_dir, scenario_id=scenario_id)
+        compute_c1_solution2(files["con"], files["inl"], files["raw"], files["rop"], trunc(Int, time_limit_total-time_sol1-60), scoring_method, "network name"; output_dir=output_dir, scenario_id=scenario_id)
     end
 
     if remove_solutions
-        remove_solution_files(output_dir=output_dir)
-        remove_detail_file(output_dir=output_dir)
+        remove_c1_solution_files(output_dir=output_dir)
+        remove_c1_detail_file(output_dir=output_dir)
     end
 end
 

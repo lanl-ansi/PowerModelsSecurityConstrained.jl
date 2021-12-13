@@ -1,8 +1,8 @@
 
-function compute_solution2_fast(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none")
+function compute_c1_solution2_fast(con_file::String, inl_file::String, raw_file::String, rop_file::String, time_limit::Int, scoring_method::Int, network_model::String; output_dir::String="", scenario_id::String="none")
     time_data_start = time()
-    goc_data = parse_goc_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
-    network = build_pm_model(goc_data)
+    goc_data = parse_c1_files(con_file, inl_file, raw_file, rop_file, scenario_id=scenario_id)
+    network = build_c1_pm_model(goc_data)
     load_time = time() - time_data_start
 
     ###### Prepare Solution 2 ######
@@ -55,7 +55,7 @@ function compute_solution2_fast(con_file::String, inl_file::String, raw_file::St
     #end
 
 
-    solution2_files = pmap(solution2_solver_fast, process_data)
+    solution2_files = pmap(c1_solution2_solver_fast, process_data)
 
     sort!(solution2_files)
 
@@ -65,8 +65,8 @@ function compute_solution2_fast(con_file::String, inl_file::String, raw_file::St
     info(LOGGER, "contingency eval time: $(time_contingencies)")
 
     info(LOGGER, "combine $(length(solution2_files)) solution2 files")
-    combine_files(solution2_files, "solution2.txt"; output_dir=output_dir)
-    remove_files(solution2_files)
+    c1_combine_files(solution2_files, "solution2.txt"; output_dir=output_dir)
+    remove_c1_files(solution2_files)
 
     println("")
 
@@ -92,23 +92,23 @@ function compute_solution2_fast(con_file::String, inl_file::String, raw_file::St
     ]
     println(join(data, ", "))
 
-    write_file_paths(goc_data.files; output_dir=output_dir)
+    write_c1_file_paths(goc_data.files; output_dir=output_dir)
 
     #println("")
     #write_evaluation_summary(goc_data, network, objective_lb=-Inf, load_time=load_time, contingency_time=time_contingencies, output_dir=output_dir)
 end
 
 
-@everywhere function solution2_solver_fast(process_data)
+@everywhere function c1_solution2_solver_fast(process_data)
     #println(process_data)
     time_data_start = time()
     PowerModels.silence()
-    goc_data = parse_goc_files(
+    goc_data = parse_c1_files(
         process_data.con_file, process_data.inl_file, process_data.raw_file,
         process_data.rop_file, scenario_id=process_data.scenario_id)
-    network = build_pm_model(goc_data)
+    network = build_c1_pm_model(goc_data)
 
-    sol = read_solution1(network, output_dir=process_data.output_dir)
+    sol = read_c1_solution1(network, output_dir=process_data.output_dir)
     PowerModels.update_data!(network, sol)
     time_data = time() - time_data_start
 
@@ -158,9 +158,9 @@ end
             sol_cont["gen"]["$(cont.idx)"]["pg"] = 0.0
             sol_cont["gen"]["$(cont.idx)"]["qg"] = 0.0
 
-            correct_contingency_solution!(network, sol_cont)
+            correct_c1_contingency_solution!(network, sol_cont)
             open(solution_path, "a") do sol_file
-                sol2 = write_solution2_contingency(sol_file, network, sol_cont)
+                sol2 = write_c1_solution2_contingency(sol_file, network, sol_cont)
             end
         elseif cont.type == "branch"
             info(LOGGER, "working on: $(cont.label)")
@@ -176,9 +176,9 @@ end
 
             sol_cont["delta"] = 0.0
 
-            correct_contingency_solution!(network, sol_cont)
+            correct_c1_contingency_solution!(network, sol_cont)
             open(solution_path, "a") do sol_file
-                sol2 = write_solution2_contingency(sol_file, network, sol_cont)
+                sol2 = write_c1_solution2_contingency(sol_file, network, sol_cont)
             end
         else
             @assert("contingency type $(cont.type) not known")

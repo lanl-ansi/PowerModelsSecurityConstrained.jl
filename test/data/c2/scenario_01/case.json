@@ -1,0 +1,495 @@
+{
+  "systemparameters": {
+    "delta": 1.0,
+    "deltactg": 1.0,
+    "deltar": 0.1666667,
+    "deltarctg": 0.16666667
+  },
+  "loads": [
+    {
+      "bus": 2,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 2.0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 1000.0
+        }
+      ]
+    },
+    {
+      "bus": 3,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 0.5,
+      "prumax": 1000.0,
+      "prdmax": 1000.0,
+      "prumaxctg": 1000.0,
+      "prdmaxctg": 1000.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 1000.0
+        }
+      ]
+    },
+    {
+      "bus": 4,
+      "id": "1",
+      "tmin": 1.5,
+      "tmax": 2.0,
+      "prumax": 1000.0,
+      "prdmax": 1000.0,
+      "prumaxctg": 1000.0,
+      "prdmaxctg": 1000.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 1000.0
+        }
+      ]
+    },
+    {
+      "bus": 5,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 2.0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "cblocks": [
+        {
+          "pmax": 1.0,
+          "c": 1000.0
+        },
+        {
+          "pmax": 2.0,
+          "c": 100.0
+        },
+        {
+          "pmax": 4.0,
+          "c": 10.0
+        },
+        {
+          "pmax": 8.0,
+          "c": 1.0
+        },
+        {
+          "pmax": 16.0,
+          "c": 0.1
+        }
+      ]
+    },
+    {
+      "bus": 6,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 2000.0
+        }
+      ]
+    },
+    {
+      "bus": 9,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 1000.0,
+      "prdmaxctg": 1000.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 3000.0
+        }
+      ]
+    },
+    {
+      "bus": 10,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 10.0,
+      "prdmax": 10.0,
+      "prumaxctg": 10.0,
+      "prdmaxctg": 10.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 4000.0
+        }
+      ]
+    },
+    {
+      "bus": 11,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 1.0,
+      "prdmax": 1.0,
+      "prumaxctg": 1.0,
+      "prdmaxctg": 1.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 5000.0
+        }
+      ]
+    },
+    {
+      "bus": 12,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 0.1,
+      "prdmax": 0.1,
+      "prumaxctg": 0.1,
+      "prdmaxctg": 0.1,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 6000.0
+        }
+      ]
+    },
+    {
+      "bus": 13,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 10.0,
+      "prdmaxctg": 10.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 7000.0
+        }
+      ]
+    },
+    {
+      "bus": 14,
+      "id": "1",
+      "tmin": 0.0,
+      "tmax": 1.0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "cblocks": [
+        {
+          "pmax": 1000.0,
+          "c": 8000.0
+        }
+      ]
+    }
+  ],
+  "generators": [
+    {
+      "bus": 1,
+      "id": "1",
+      "suqual": 0,
+      "sdqual": 1,
+      "suqualctg": 1,
+      "sdqualctg": 1,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "oncost": 100.0,
+      "sucost": 100.0,
+      "sdcost": 100.0,
+      "cblocks": [
+        {
+          "pmax": 200.0,
+          "c": 10.0
+        },
+        {
+          "pmax": 50.0,
+          "c": 15.0
+        },
+        {
+          "pmax": 100000.0,
+          "c": 20.0
+        }
+      ]
+    },
+    {
+      "bus": 2,
+      "id": "1",
+      "suqual": 1,
+      "sdqual": 0,
+      "suqualctg": 1,
+      "sdqualctg": 1,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 1000.0,
+      "prdmaxctg": 1000.0,
+      "oncost": 100.0,
+      "sucost": 100.0,
+      "sdcost": 100.0,
+      "cblocks": [
+        {
+          "pmax": 20.0,
+          "c": 10.0
+        },
+        {
+          "pmax": 100000.0,
+          "c": 30.0
+        }
+      ]
+    },
+    {
+      "bus": 3,
+      "id": "1",
+      "suqual": 1,
+      "sdqual": 1,
+      "suqualctg": 0,
+      "sdqualctg": 1,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 10.0,
+      "prdmaxctg": 10.0,
+      "oncost": 100.0,
+      "sucost": 100.0,
+      "sdcost": 100.0,
+      "cblocks": [
+        {
+          "pmax": 100000.0,
+          "c": 80.0
+        }
+      ]
+    },
+    {
+      "bus": 6,
+      "id": "1",
+      "suqual": 1,
+      "sdqual": 1,
+      "suqualctg": 1,
+      "sdqualctg": 0,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "oncost": 100.0,
+      "sucost": 100.0,
+      "sdcost": 100.0,
+      "cblocks": [
+        {
+          "pmax": 100000.0,
+          "c": 90.0
+        }
+      ]
+    },
+    {
+      "bus": 8,
+      "id": "1",
+      "suqual": 1,
+      "sdqual": 1,
+      "suqualctg": 1,
+      "sdqualctg": 1,
+      "prumax": 100.0,
+      "prdmax": 100.0,
+      "prumaxctg": 100.0,
+      "prdmaxctg": 100.0,
+      "oncost": 100.0,
+      "sucost": 100.0,
+      "sdcost": 100.0,
+      "cblocks": [
+        {
+          "pmax": 100000.0,
+          "c": 100.0
+        }
+      ]
+    }
+  ],
+  "lines": [
+    {
+      "origbus": 1,
+      "destbus": 2,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 1,
+      "destbus": 5,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 2,
+      "destbus": 3,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 2,
+      "destbus": 4,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 2,
+      "destbus": 5,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 3,
+      "destbus": 4,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 4,
+      "destbus": 5,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 6,
+      "destbus": 11,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 6,
+      "destbus": 12,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 6,
+      "destbus": 13,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 7,
+      "destbus": 8,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 7,
+      "destbus": 9,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 9,
+      "destbus": 10,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 9,
+      "destbus": 14,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 10,
+      "destbus": 11,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 12,
+      "destbus": 13,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 13,
+      "destbus": 14,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    }
+  ],
+  "transformers": [
+    {
+      "origbus": 4,
+      "destbus": 7,
+      "id": "1",
+      "swqual": 0,
+      "csw": 100.0
+    },
+    {
+      "origbus": 4,
+      "destbus": 9,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    },
+    {
+      "origbus": 5,
+      "destbus": 6,
+      "id": "1",
+      "swqual": 1,
+      "csw": 100.0
+    }
+  ],
+  "pcblocks": [
+    {
+      "pmax": 1000000000001.0,
+      "c": 10000.0
+    }
+  ],
+  "qcblocks": [
+    {
+      "qmax": 1000000000001.0,
+      "c": 10000.0
+    }
+  ],
+  "scblocks": [
+    {
+      "tmax": 0.05,
+      "c": 50.0
+    },
+    {
+      "tmax": 0.05,
+      "c": 200.0
+    },
+    {
+      "tmax": 0.2,
+      "c": 1000.0
+    },
+    {
+      "tmax": 1000000000001.0,
+      "c": 1000000.0
+    }
+  ]
+}

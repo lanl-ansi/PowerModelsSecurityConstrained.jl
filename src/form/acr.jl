@@ -1,6 +1,6 @@
 
 ""
-function constraint_voltage_magnitude_link(pm::_PM.AbstractACRModel, n_1::Int, n_2::Int, i::Int)
+function constraint_c1_voltage_magnitude_link(pm::_PM.AbstractACRModel, n_1::Int, n_2::Int, i::Int)
     vr_1 = var(pm, n_1, :vr, i)
     vi_1 = var(pm, n_1, :vi, i)
 
@@ -12,7 +12,7 @@ end
 
 
 ""
-function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractACRModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
+function constraint_c1_power_balance_shunt_dispatch(pm::_PM.AbstractACRModel, n::Int, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_shunts_var, bus_pd, bus_qd, bus_gs_const, bus_bs_const)
     vi = var(pm, n, :vi, i)
     vr = var(pm, n, :vr, i)
     p    = get(var(pm, n),    :p, Dict()); _PM._check_var_keys(p, bus_arcs, "active power", "branch")
@@ -46,7 +46,7 @@ function constraint_power_balance_shunt_dispatch(pm::_PM.AbstractACRModel, n::In
 end
 
 
-function constraint_ohms_yt_from_goc(pm::_PM.AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function constraint_goc_ohms_yt_from(pm::_PM.AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     p_fr = var(pm, n, :p, f_idx)
     q_fr = var(pm, n, :q, f_idx)
     vr_fr = var(pm, n, :vr, f_bus)
@@ -62,7 +62,7 @@ end
 
 
 ""
-function expression_branch_power_ohms_yt_from_goc(pm::_PM.AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function expression_c1_branch_power_ohms_yt_from(pm::_PM.AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     vr_fr = var(pm, n, :vr, f_bus)
     vr_to = var(pm, n, :vr, t_bus)
     vi_fr = var(pm, n, :vi, f_bus)
@@ -74,7 +74,7 @@ end
 
 
 ""
-function expression_bus_withdrawal(pm::_PM.AbstractACRModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
+function expression_c1_bus_withdrawal(pm::_PM.AbstractACRModel, n::Int, i::Int, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
     vr = var(pm, n, :vr, i)
     vi = var(pm, n, :vi, i)
     ps = get(var(pm, n), :ps, Dict()); _PM._check_var_keys(ps, bus_storage, "active power", "storage")
