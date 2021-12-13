@@ -162,7 +162,7 @@ function code1(con_file::String, json_file::String, raw_file::String, reserved::
             warn(_LOGGER, "updated $(costs_updated) branch costs to 100.0")
         end
 
-        result = run_c2_ots_soft_bus(pm_data, ACPPowerModel, nlp_solver, relax_integrality=true)
+        result = run_c2_ots_soft(pm_data, ACPPowerModel, nlp_solver, relax_integrality=true)
 
         if (result["termination_status"] == LOCALLY_SOLVED || result["termination_status"] == OPTIMAL)
             println("OTS objective: $(result["objective"])")

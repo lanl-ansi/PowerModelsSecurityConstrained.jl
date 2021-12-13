@@ -7,12 +7,12 @@ This model is similar in spirit to `c2_opf_soft`, however, branch flow limits
 are strictly enforced to improve the reliability of solving the non-convex
 optimization problems.
 """
-function run_c2_ots_soft_bus(file, model_type::Type, optimizer; kwargs...)
-    return _PM.run_model(file, model_type, optimizer, build_c2_ots_soft_bus; ref_extensions=[_PM.ref_add_on_off_va_bounds!], kwargs...)
+function run_c2_ots_soft(file, model_type::Type, optimizer; kwargs...)
+    return _PM.run_model(file, model_type, optimizer, build_c2_ots_soft; ref_extensions=[_PM.ref_add_on_off_va_bounds!], kwargs...)
 end
 
 ""
-function build_c2_ots_soft_bus(pm::_PM.AbstractPowerModel)
+function build_c2_ots_soft(pm::_PM.AbstractPowerModel)
     _PM.variable_bus_voltage_on_off(pm)
     variable_bus_delta_abs(pm)
     _PM.variable_gen_power(pm)
@@ -113,7 +113,6 @@ function build_c2_ots_soft_bus(pm::_PM.AbstractPowerModel)
         else
             warn(_LOGGER, "skipping constraint_voltage_angle_difference_on_off on branch $(i) due to va delta of $(va_detla) for given bounds $(branch["angmin"]) - $(branch["angmax"])")
         end
-
 
         _PM.constraint_thermal_limit_from_on_off(pm, i)
         _PM.constraint_thermal_limit_to_on_off(pm, i)

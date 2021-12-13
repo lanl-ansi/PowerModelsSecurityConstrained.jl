@@ -8,6 +8,13 @@ const C2_GEN_COST_TOL = 9999.0
 const C2_LOAD_VAL_TOL = 9999.0
 
 
+"""
+Given an a directory path looks for and parses the files from ARPA-e GOC
+Challenge 2 data format.
+* `.raw`  network model
+* `.con`  contingency set
+* `.json` additional model data
+"""
 function parse_c2_case(case_directory)
     files = find_c2_case_files(case_directory)
 
