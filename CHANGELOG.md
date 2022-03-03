@@ -4,6 +4,10 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.9.1
+- Add support for JuMP v0.23
+- Update minimum Julia version to v1.6 (LTS)
+
 ### v0.9.0
 - ARPA-e Grid Optimization Competition Challenge 2, Final Event submission (#34)
 - Reorganize function names and file locations to support multiple competition solvers
