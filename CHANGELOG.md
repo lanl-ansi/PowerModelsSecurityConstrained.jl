@@ -2,6 +2,9 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- nothing
+
+### v0.10.0
 - Drop support for JuMP v0.21
 - Replace CBC with HiGHS in tests
 
