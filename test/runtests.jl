@@ -6,7 +6,7 @@ using Memento
 using Test
 
 using Ipopt
-using Cbc
+using HiGHS
 
 Memento.setlevel!(Memento.getlogger(PowerModels.InfrastructureModels), "error")
 Memento.setlevel!(Memento.getlogger(PowerModels), "error")
@@ -15,8 +15,8 @@ Memento.setlevel!(Memento.getlogger(PowerModelsSecurityConstrained), "error")
 
 nlp_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
 #nlp_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6)
-lp_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel"=>0)
-#lp_solver = optimizer_with_attributes(Cbc.Optimizer)
+lp_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
+#lp_solver = optimizer_with_attributes(HiGHS.Optimizer)
 
 
 c1_ini_file = "../test/data/c1/inputfiles.ini"

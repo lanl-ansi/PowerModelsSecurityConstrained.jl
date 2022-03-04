@@ -16,7 +16,7 @@ using JuMP
 using PowerModels
 
 using Ipopt
-using Cbc
+using HiGHS
 
 try
     using Gurobi
@@ -63,7 +63,7 @@ function compute_c1_solution1(con_file::String, inl_file::String, raw_file::Stri
         qp_solver = optimizer_with_attributes(Gurobi.Optimizer, "OptimalityTol"=>1e-6, "Method"=>2, "Crossover"=>0)
         qp_solver_relaxed = optimizer_with_attributes(Gurobi.Optimizer, "OptimalityTol"=>1e-6, "Method"=>2, "Crossover"=>0, "BarConvTol"=>5e-3)
     else
-        qp_solver = optimizer_with_attributes(Cbc.Optimizer)
+        qp_solver = optimizer_with_attributes(HiGHS.Optimizer)
         qp_solver_relaxed = qp_solver
     end
     lp_solver = qp_solver

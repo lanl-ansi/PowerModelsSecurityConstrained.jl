@@ -5,7 +5,7 @@ These scripts implement the SCOPF benchmark solvers that were used in the final 
 These scripts also include the tooling to run the solver on the grid optimization
 competition's platform, i.e. `MyJulia1.jl` and `MyJulia2.jl`.
 
-Note that `goc_c1_huristic_cli.jl` is configured to use `Cbc` for
+Note that `goc_c1_huristic_cli.jl` is configured to use `HiGHS` for
 solving LP problems. Commercial solvers like Gurobi and CPlex are highly
 recommended if a license is available. Gurobi v8 was used by this software
 during the final event of the grid optimization competition challenge 1.

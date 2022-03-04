@@ -4,6 +4,10 @@ PowerModelsSecurityConstrained.jl Change Log
 ### Staged
 - nothing
 
+### v0.10.0
+- Drop support for JuMP v0.21
+- Replace CBC with HiGHS in tests
+
 ### v0.9.1
 - Add support for JuMP v0.23
 - Update minimum Julia version to v1.6 (LTS)
