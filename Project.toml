@@ -2,7 +2,7 @@ name = "PowerModelsSecurityConstrained"
 uuid = "53333297-f92c-5019-980b-942fc744b407"
 authors = ["Carleton Coffrin"]
 repo = "https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl.git"
-version = "0.10.0"
+version = "0.10.1"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -19,7 +19,7 @@ HiGHS = "0.3, 1"
 InfrastructureModels = "0.6, 0.7"
 Ipopt = "0.8, 0.9, 1"
 JSON = "0.18, 0.19, 0.20, 0.21"
-JuMP = "0.22, 0.23"
+JuMP = "0.22, 0.23, 1"
 Memento = "1"
 PowerModels = "~0.18.4, 0.19"
 julia = "1.6"
