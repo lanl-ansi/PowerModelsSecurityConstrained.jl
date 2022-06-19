@@ -19,6 +19,17 @@ lp_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
 #lp_solver = optimizer_with_attributes(HiGHS.Optimizer)
 
 
+pm_path = joinpath(dirname(pathof(PowerModels)), "..")
+pm_network = parse_file("$(pm_path)/test/data/matpower/case5.m")
+pm_network["area_gens"] = Dict()
+pm_network["gen_contingencies"] = []
+contingencies = []
+for (i, branch) in pm_network["branch"]
+    push!(contingencies, (idx=parse(Int,i), label="LINE-$(i)", type="branch"))
+end
+pm_network["branch_contingencies"] = contingencies
+
+
 c1_ini_file = "../test/data/c1/inputfiles.ini"
 c1_scenarios = ["scenario_01", "scenario_02"]
 c1_cases = [parse_c1_case(c1_ini_file, scenario_id=sid) for sid in c1_scenarios]

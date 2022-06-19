@@ -2,6 +2,13 @@
 @testset "test scopf" begin
 
 
+@testset "scopf contigency cuts dc, pm data" begin
+    result = run_c1_scopf_contigency_cuts(pm_network, DCPPowerModel, lp_solver)
+
+    @test isapprox(result["termination_status"], OPTIMAL)
+    @test isapprox(result["objective"], 22309; atol = 1e0)
+end
+
 scopf_cont_cuts_dc_objective = [14642.16, 32887.05]
 @testset "scopf contigency cuts dc, from file - $(i)" for (i,network) in enumerate(c1_networks)
     result = run_c1_scopf_contigency_cuts(c1_ini_file, DCPPowerModel, lp_solver, scenario_id=c1_scenarios[i])
@@ -39,6 +46,16 @@ end
     @test isapprox(result["objective"], scopf_cont_cuts_ac_objective[i]; atol = 1e0)
 end
 
+
+
+@testset "scopf ptdf cuts dc, pm data" begin
+    network = deepcopy(pm_network)
+
+    result = run_c1_scopf_ptdf_cuts!(network, DCPPowerModel, lp_solver)
+
+    @test isapprox(result["termination_status"], OPTIMAL)
+    @test isapprox(result["objective"], 22309; atol = 1e0)
+end
 
 scopf_ptdf_cuts_dc_objective = [14642.16, 37233.43]
 @testset "scopf ptdf cuts dc, from file - $(i)" for (i,network) in enumerate(c1_networks)

@@ -1,6 +1,58 @@
+""
+function objective_c1_variable_pg_cost(pm::_PM.AbstractPowerModel; kwargs...)
+    model = _PM.check_gen_cost_models(pm)
+
+    if model == 1
+        return _PM.objective_variable_pg_cost(pm; kwargs...)
+    elseif model == 2
+        return objective_variable_pg_cost_polynomial_linquad(pm; kwargs...)
+    else
+        Memento.error(_LOGGER, "Only cost models of types 1 and 2 are supported at this time, given cost model type of $(model)")
+    end
+
+end
+
+"adds pg_cost variables and constraints"
+function objective_variable_pg_cost_polynomial_linquad(pm::_PM.AbstractPowerModel, report::Bool=true)
+    for (nw, nw_ref) in _PM.nws(pm)
+        pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
+
+        for (i,gen) in ref(pm, nw, :gen)
+            pg = sum(var(pm, nw, :pg, i)[c] for c in _PM.conductor_ids(pm, nw))
+
+            if length(gen["cost"]) == 1
+                pg_cost[i] = gen["cost"][1]
+            elseif length(gen["cost"]) == 2
+                pg_cost[i] = gen["cost"][1]*pg + gen["cost"][2]
+            elseif length(gen["cost"]) == 3
+                pg_cost[i] = gen["cost"][1]*pg^2 + gen["cost"][2]*pg + gen["cost"][3]
+            else
+                pg_cost[i] = 0.0
+            end
+        end
+
+        report && _PM.sol_component_value(pm, nw, :gen, :pg_cost, ids(pm, nw, :gen), pg_cost)
+    end
+end
+
+
+
+""
+function objective_c1_variable_pg_cost_basecase(pm::_PM.AbstractPowerModel; kwargs...)
+    model = _PM.check_gen_cost_models(pm)
+
+    if model == 1
+        return objective_c1_variable_pg_cost_basecase_pwl(pm; kwargs...)
+    elseif model == 2
+        return objective_c1_variable_pg_cost_basecase_polynomial_linquad(pm; kwargs...)
+    else
+        Memento.error(_LOGGER, "Only cost models of types 1 and 2 are supported at this time, given cost model type of $(model)")
+    end
+
+end
 
 "adds pg_cost variables and constraints for base case only"
-function objective_c1_variable_pg_cost_basecase(pm::_PM.AbstractPowerModel, nw::Int=0, report::Bool=true)
+function objective_c1_variable_pg_cost_basecase_pwl(pm::_PM.AbstractPowerModel, nw::Int=0, report::Bool=true)
     pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
 
     for (i,gen) in ref(pm, nw, :gen)
@@ -26,6 +78,28 @@ function objective_c1_variable_pg_cost_basecase(pm::_PM.AbstractPowerModel, nw::
         end
         JuMP.@constraint(pm.model, pg_expr == sum(pg_vars))
         pg_cost[i] = pg_cost_expr
+    end
+
+    report && _PM.sol_component_value(pm, nw, :gen, :pg_cost, ids(pm, nw, :gen), pg_cost)
+end
+
+
+"adds pg_cost variables and constraints for base case only"
+function objective_c1_variable_pg_cost_basecase_polynomial_linquad(pm::_PM.AbstractPowerModel, nw::Int=0, report::Bool=true)
+    pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
+
+    for (i,gen) in ref(pm, nw, :gen)
+        pg = sum(var(pm, nw, :pg, i)[c] for c in _PM.conductor_ids(pm, nw))
+
+        if length(gen["cost"]) == 1
+            pg_cost[i] = gen["cost"][1]
+        elseif length(gen["cost"]) == 2
+            pg_cost[i] = gen["cost"][1]*pg + gen["cost"][2]
+        elseif length(gen["cost"]) == 3
+            pg_cost[i] = gen["cost"][1]*pg^2 + gen["cost"][2]*pg + gen["cost"][3]
+        else
+            pg_cost[i] = 0.0
+        end
     end
 
     report && _PM.sol_component_value(pm, nw, :gen, :pg_cost, ids(pm, nw, :gen), pg_cost)
