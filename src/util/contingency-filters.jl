@@ -312,6 +312,7 @@ function check_c1_contingency_violations(network;
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
+            cont_branch["br_status"] = 1
             continue
         end
 
@@ -546,6 +547,7 @@ function check_c1_contingencies_branch_power(network;
             _PM.update_data!(network_lal, solution)
         catch exception
             warn(_LOGGER, "linear solve failed on $(cont.label)")
+            cont_branch["br_status"] = 1
             continue
         end
 
