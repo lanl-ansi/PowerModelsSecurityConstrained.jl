@@ -271,7 +271,7 @@ function build_c2_pm_model(goc_data)
 
         pmax = gen["pmax"]*mva_base
         for cblock in gen["cblocks"]
-            if cblock["pmax"] > pmax && pmax*1.1 < cblock["pmax"]
+            if cblock["pmax"] > pmax*1.1
                 warn(_LOGGER, "update cost model data on gen $(i), $(gen["source_id"]), reduce cost block max from $(cblock["pmax"]) to $(pmax*1.1)")
                 if isapprox(pmax, 0.0)
                     cblock["pmax"] = 1.0
