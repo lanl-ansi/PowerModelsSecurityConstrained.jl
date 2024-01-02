@@ -2,12 +2,10 @@
 
 A PowerModels extension for Security-Constrained optimization problems.
 
-Release: [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://lanl-ansi.github.io/PowerModelsSecurityConstrained.jl/stable/)
-
-Dev:
-[![Build Status](https://travis-ci.org/lanl-ansi/PowerModelsSecurityConstrained.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/PowerModelsSecurityConstrained.jl)
+Status:
+[![Build Status](https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl/workflows/CI/badge.svg)](https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl/actions/workflows/ci.yml?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/lanl-ansi/PowerModelsSecurityConstrained.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/PowerModelsSecurityConstrained.jl)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://lanl-ansi.github.io/PowerModelsSecurityConstrained.jl/dev/)
+[![Documentation](https://github.com/lanl-ansi/PowerModelsSecurityConstrained.jl/workflows/Documentation/badge.svg)](https://lanl-ansi.github.io/PowerModelsSecurityConstrained.jl/stable/)
 
 
 ## Notes
