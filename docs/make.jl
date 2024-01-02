@@ -1,6 +1,7 @@
 using Documenter, PowerModelsSecurityConstrained
 
 makedocs(
+    warnonly = Documenter.except(:linkcheck),
     modules = [PowerModelsSecurityConstrained],
     sitename = "PowerModelsSecurityConstrained",
     authors = "Carleton Coffrin",

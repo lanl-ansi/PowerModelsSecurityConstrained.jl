@@ -2,8 +2,12 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
+- nothing
+
+### v0.10.1
 - Add support for polynomial generator costs
 - Fixed bug when linear solve failed during contingency checking
+- Fixed PowerModels deprecation warnings (update `run_*` to `solve_*`)
 
 ### v0.10.0
 - Add support for JuMP v1.0

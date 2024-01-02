@@ -4,7 +4,7 @@ c1_networks_opf = [build_c1_pm_opf_model(case) for case in c1_cases]
 opf_ac_objective = [14676.9, 27564.91]
 @testset "opf ac - $(i)" for (i,network) in enumerate(c1_networks_opf)
 
-    result = run_ac_opf(network, nlp_solver)
+    result = solve_ac_opf(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_ac_objective[i]; atol = 1e0)
@@ -15,7 +15,7 @@ end
     network = deepcopy(network)
 
     c1_set_start_values!(network)
-    result = run_ac_opf(network, nlp_solver)
+    result = solve_ac_opf(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_ac_objective[i]; atol = 1e0)
@@ -27,7 +27,7 @@ opf_ac_tight_objective = [14676.9, 28347.12]
     network = deepcopy(network)
 
     c1_tighten_constraints!(network)
-    result = run_ac_opf(network, nlp_solver)
+    result = solve_ac_opf(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_ac_tight_objective[i]; atol = 1e0)
@@ -39,7 +39,7 @@ opf_ac_no_rate_a_objective = [14676.9, 27546.46]
     network = deepcopy(network)
 
     deactivate_rate_a!(network)
-    result = run_ac_opf(network, nlp_solver)
+    result = solve_ac_opf(network, nlp_solver)
 
     @test isapprox(result["termination_status"], LOCALLY_SOLVED)
     @test isapprox(result["objective"], opf_ac_no_rate_a_objective[i]; atol = 1e0)
@@ -114,8 +114,7 @@ solution1_lines = [25,594]
 
     #deactivate_rate_a!(network)
 
-    result = run_dc_opf(network, lp_solver)
-    #result = run_dc_opf(network, lp_solver)
+    result = solve_dc_opf(network, lp_solver)
     @test isapprox(result["termination_status"], OPTIMAL)
 
     update_active_power_data!(network, result["solution"])

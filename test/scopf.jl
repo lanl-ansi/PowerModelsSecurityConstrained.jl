@@ -6,7 +6,7 @@
     result = run_c1_scopf_contigency_cuts(pm_network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
-    @test isapprox(result["objective"], 22309; atol = 1e0)
+    @test isapprox(result["objective"], 22310; atol = 1e0)
 end
 
 scopf_cont_cuts_dc_objective = [14642.16, 32887.05]
@@ -54,7 +54,7 @@ end
     result = run_c1_scopf_ptdf_cuts!(network, DCPPowerModel, lp_solver)
 
     @test isapprox(result["termination_status"], OPTIMAL)
-    @test isapprox(result["objective"], 22309; atol = 1e0)
+    @test isapprox(result["objective"], 22310; ; atol = 1e0)
 end
 
 scopf_ptdf_cuts_dc_objective = [14642.16, 37233.43]

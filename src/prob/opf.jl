@@ -7,7 +7,7 @@ The primary departure from the PowerModels standard formulation is dispatchable
 bus shunts and a slight change in the transformer model.
 """
 function run_c1_opf_shunt(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_c1_opf_shunt; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, model_constructor, solver, build_c1_opf_shunt; ref_extensions=[ref_c1!], kwargs...)
 end
 
 function build_c1_opf_shunt(pm::_PM.AbstractPowerModel)
@@ -48,7 +48,7 @@ penalized based on a conservative linear approximation of the formulation's
 flow violation penalty specification.
 """
 function run_c1_opf_cheap(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_c1_opf_cheap; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, model_constructor, solver, build_c1_opf_cheap; ref_extensions=[ref_c1!], kwargs...)
 end
 
 
@@ -100,7 +100,7 @@ computations.  Support sparse collections of flow constrains for
 increased performance.
 """
 function run_c1_opf_cheap_lazy_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_opf_cheap_lazy_acr; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, _PM.ACRPowerModel, solver, build_c1_opf_cheap_lazy_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
@@ -221,7 +221,7 @@ end
 
 ""
 function run_c1_opf_cheap_target_acp(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_c1_opf_cheap_target_acp; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, _PM.ACPPowerModel, solver, build_c1_opf_cheap_target_acp; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
@@ -293,7 +293,7 @@ addition of penalized slack values that are used for power balance and branch
 flow limits, i.e. soft constraints.
 """
 function run_c2_opf_soft(file, model_type::Type, optimizer; kwargs...)
-    return _PM.run_model(file, model_type, optimizer, build_c2_opf_soft; kwargs...)
+    return _PM.solve_model(file, model_type, optimizer, build_c2_opf_soft; kwargs...)
 end
 
 ""
@@ -409,7 +409,7 @@ parameters which may change between the basecase and contingencies, most
 notably the ramping constraints and time passage constant `delta`.
 """
 function run_c2_opf_soft_ctg(file, model_type::Type, optimizer; kwargs...)
-    return _PM.run_model(file, model_type, optimizer, build_c2_opf_soft_ctg; kwargs...)
+    return _PM.solve_model(file, model_type, optimizer, build_c2_opf_soft_ctg; kwargs...)
 end
 
 ""
@@ -525,7 +525,7 @@ This model differs from the `c2_opf_soft` model by strictly enforcing power
 balance at the network buses.
 """
 function run_c2_opf_uc(file, model_type::Type, optimizer; kwargs...)
-    return _PM.run_model(file, model_type, optimizer, build_c2_opf_uc; kwargs...)
+    return _PM.solve_model(file, model_type, optimizer, build_c2_opf_uc; kwargs...)
 end
 
 ""
