@@ -7,7 +7,7 @@ This formulation is best used in conjunction with the contingency filters that
 find violated contingencies.
 """
 function run_c1_scopf(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_c1_scopf; multinetwork=true, kwargs...)
+    return _PM.solve_model(file, model_constructor, solver, build_c1_scopf; multinetwork=true, kwargs...)
 end
 
 # enables support for v[1], required for objective_variable_pg_cost when pg is an expression
@@ -116,7 +116,7 @@ This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
 function run_c1_scopf_cuts(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_c1_scopf_cuts; kwargs...)
+    return _PM.solve_model(file, model_constructor, solver, build_c1_scopf_cuts; kwargs...)
 end
 
 ""
@@ -209,7 +209,7 @@ This formulation is used in conjunction with the contingency filters that
 generate PTDF cuts.
 """
 function run_c1_scopf_cuts_soft(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_c1_scopf_cuts_soft; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, model_constructor, solver, build_c1_scopf_cuts_soft; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
@@ -319,7 +319,7 @@ end
 
 "a variant of `run_c1_scopf_cuts_dc_soft` with a different generator response function"
 function run_c1_scopf_cuts_soft_bpv(file, model_constructor, solver; kwargs...)
-    return _PM.run_model(file, model_constructor, solver, build_c1_scopf_cuts_soft_bpv; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, model_constructor, solver, build_c1_scopf_cuts_soft_bpv; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""

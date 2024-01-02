@@ -136,7 +136,7 @@ function run_c1_scopf_ptdf_cuts!(network::Dict{String,<:Any}, model_type::Type, 
     network["gen_flow_cuts"] = []
     network["branch_flow_cuts"] = []
 
-    result = _PM.run_opf(network, model_type, optimizer)
+    result = _PM.solve_opf(network, model_type, optimizer)
     if !(result["termination_status"] == _PM.OPTIMAL || result["termination_status"] == _PM.LOCALLY_SOLVED || result["termination_status"] == _PM.ALMOST_LOCALLY_SOLVED)
         error(_LOGGER, "base-case OPF solve failed in run_c1_scopf_ptdf_cuts, status $(result["termination_status"])")
     end

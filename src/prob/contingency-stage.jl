@@ -276,7 +276,7 @@ end
 
 ""
 function run_c1_pf_bqv_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_pf_bqv_acr; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, _PM.ACRPowerModel, solver, build_c1_pf_bqv_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
@@ -645,7 +645,7 @@ end
 
 ""
 function run_c1_pf_fixed_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_pf_fixed_acr; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, _PM.ACRPowerModel, solver, build_c1_pf_fixed_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
@@ -730,7 +730,7 @@ end
 
 "a variant of fixed_pf_nbf_rect2 with a distributed active power slack"
 function run_c1_pf_fixed_bp_slack_acr(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACRPowerModel, solver, build_c1_pf_fixed_bp_slack_acr; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, _PM.ACRPowerModel, solver, build_c1_pf_fixed_bp_slack_acr; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
@@ -1041,7 +1041,7 @@ end
 
 "attempts to correct voltage profile only"
 function run_c1_opf_contingency_acp(file, solver; kwargs...)
-    return _PM.run_model(file, _PM.ACPPowerModel, solver, build_c1_opf_contingency; ref_extensions=[ref_c1!], kwargs...)
+    return _PM.solve_model(file, _PM.ACPPowerModel, solver, build_c1_opf_contingency; ref_extensions=[ref_c1!], kwargs...)
 end
 
 ""
