@@ -118,7 +118,7 @@ function build_c2_ots_soft(pm::_PM.AbstractPowerModel)
         _PM.constraint_thermal_limit_to_on_off(pm, i)
     end
 
-    _PM.objective_variable_pg_cost(pm)
+    _PM.expression_pg_cost(pm)
     objective_c2_variable_pd_value(pm)
 
     p_vio_cost = ref(pm, :p_delta_cost_approx)
