@@ -81,7 +81,7 @@ function build_c1_opf_cheap(pm::_PM.AbstractPowerModel)
     end
 
     ##### Setup Objective #####
-    _PM.objective_variable_pg_cost(pm)
+    _PM.expression_pg_cost(pm)
     # explicit network id needed because of conductor-less
     pg_cost = var(pm, :pg_cost)
     sm_slack = var(pm, :sm_slack)
@@ -378,7 +378,7 @@ function build_c2_opf_soft(pm::_PM.AbstractPowerModel)
     end
 
 
-    _PM.objective_variable_pg_cost(pm)
+    _PM.expression_pg_cost(pm)
     objective_c2_variable_pd_value(pm)
 
     p_vio_cost = ref(pm, :p_delta_cost_approx)
@@ -489,7 +489,7 @@ function build_c2_opf_soft_ctg(pm::_PM.AbstractPowerModel)
     end
 
 
-    _PM.objective_variable_pg_cost(pm)
+    _PM.expression_pg_cost(pm)
     objective_c2_variable_pd_value(pm)
 
     p_vio_cost = ref(pm, :p_delta_cost_approx)
@@ -620,7 +620,7 @@ function build_c2_opf_uc(pm::_PM.AbstractPowerModel)
     end
 
 
-    _PM.objective_variable_pg_cost(pm)
+    _PM.expression_pg_cost(pm)
     objective_c2_variable_pd_value(pm)
 
     #p_vio_cost = ref(pm, :p_delta_cost_approx)

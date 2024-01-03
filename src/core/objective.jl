@@ -1,9 +1,75 @@
+"""
+Checks that all generator cost models are of the same type
+
+adapted from the implementation in PowerModels <= v0.19
+"""
+function _check_gen_cost_models(pm::_PM.AbstractPowerModel)
+    model = nothing
+
+    for (n, nw_ref) in _PM.nws(pm)
+        for (i,gen) in nw_ref[:gen]
+            if haskey(gen, "cost")
+                if model == nothing
+                    model = gen["model"]
+                else
+                    if gen["model"] != model
+                        Memento.error(_LOGGER, "cost models are inconsistent, the typical model is $(model) however model $(gen["model"]) is given on generator $(i)")
+                    end
+                end
+            else
+                Memento.error(_LOGGER, "no cost given for generator $(i)")
+            end
+        end
+    end
+
+    return model
+end
+
+
+"""
+adds pg_cost variables and constraints
+
+adapted from the implementation in PowerModels <= v0.19
+"""
+function _objective_variable_pg_cost(pm::_PM.AbstractPowerModel, report::Bool=true)
+    for (n, nw_ref) in _PM.nws(pm)
+        pg_cost = var(pm, n)[:pg_cost] = Dict{Int,Any}()
+
+        for (i,gen) in ref(pm, n, :gen)
+            pg_var = var(pm, n, :pg, i)
+            pmin = JuMP.lower_bound(pg_var)
+            pmax = JuMP.upper_bound(pg_var)
+
+            points = _PM.calc_pwl_points(gen["ncost"], gen["cost"], pmin, pmax)
+
+            pg_cost_lambda = JuMP.@variable(pm.model,
+                [i in 1:length(points)], base_name="$(n)_pg_cost_lambda",
+                lower_bound = 0.0,
+                upper_bound = 1.0
+            )
+            JuMP.@constraint(pm.model, sum(pg_cost_lambda) == 1.0)
+
+            pg_expr = 0.0
+            pg_cost_expr = 0.0
+            for (i,point) in enumerate(points)
+                pg_expr += point.mw*pg_cost_lambda[i]
+                pg_cost_expr += point.cost*pg_cost_lambda[i]
+            end
+            JuMP.@constraint(pm.model, pg_expr == pg_var)
+            pg_cost[i] = pg_cost_expr
+        end
+
+        report && _PM.sol_component_value(pm, n, :gen, :pg_cost, ids(pm, n, :gen), pg_cost)
+    end
+end
+
+
 ""
 function objective_c1_variable_pg_cost(pm::_PM.AbstractPowerModel; kwargs...)
-    model = _PM.check_gen_cost_models(pm)
+    model = _check_gen_cost_models(pm)
 
     if model == 1
-        return _PM.objective_variable_pg_cost(pm; kwargs...)
+        return _objective_variable_pg_cost(pm; kwargs...)
     elseif model == 2
         return objective_variable_pg_cost_polynomial_linquad(pm; kwargs...)
     else
@@ -18,7 +84,7 @@ function objective_variable_pg_cost_polynomial_linquad(pm::_PM.AbstractPowerMode
         pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
 
         for (i,gen) in ref(pm, nw, :gen)
-            pg = sum(var(pm, nw, :pg, i)[c] for c in _PM.conductor_ids(pm, nw))
+            pg = var(pm, nw, :pg, i)
 
             if length(gen["cost"]) == 1
                 pg_cost[i] = gen["cost"][1]
@@ -39,7 +105,7 @@ end
 
 ""
 function objective_c1_variable_pg_cost_basecase(pm::_PM.AbstractPowerModel; kwargs...)
-    model = _PM.check_gen_cost_models(pm)
+    model = _check_gen_cost_models(pm)
 
     if model == 1
         return objective_c1_variable_pg_cost_basecase_pwl(pm; kwargs...)
@@ -56,9 +122,9 @@ function objective_c1_variable_pg_cost_basecase_pwl(pm::_PM.AbstractPowerModel, 
     pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
 
     for (i,gen) in ref(pm, nw, :gen)
-        pg_vars = [var(pm, nw, :pg, i)[c] for c in _PM.conductor_ids(pm, nw)]
-        pmin = sum(JuMP.lower_bound.(pg_vars))
-        pmax = sum(JuMP.upper_bound.(pg_vars))
+        pg_var = var(pm, nw, :pg, i)
+        pmin = JuMP.lower_bound(pg_var)
+        pmax = JuMP.upper_bound(pg_var)
 
         # note pmin/pmax may be different from gen["pmin"]/gen["pmax"] in the on/off case
         points = _PM.calc_pwl_points(gen["ncost"], gen["cost"], pmin, pmax)
@@ -76,7 +142,7 @@ function objective_c1_variable_pg_cost_basecase_pwl(pm::_PM.AbstractPowerModel, 
             pg_expr += point.mw*pg_cost_lambda[i]
             pg_cost_expr += point.cost*pg_cost_lambda[i]
         end
-        JuMP.@constraint(pm.model, pg_expr == sum(pg_vars))
+        JuMP.@constraint(pm.model, pg_expr == pg_var)
         pg_cost[i] = pg_cost_expr
     end
 
@@ -89,7 +155,7 @@ function objective_c1_variable_pg_cost_basecase_polynomial_linquad(pm::_PM.Abstr
     pg_cost = var(pm, nw)[:pg_cost] = Dict{Int,Any}()
 
     for (i,gen) in ref(pm, nw, :gen)
-        pg = sum(var(pm, nw, :pg, i)[c] for c in _PM.conductor_ids(pm, nw))
+        pg = var(pm, nw, :pg, i)
 
         if length(gen["cost"]) == 1
             pg_cost[i] = gen["cost"][1]
