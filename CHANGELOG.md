@@ -2,7 +2,7 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- nothing
+- Add compat entry for Statistics
 
 ### v0.11.0
 - Update to PowerModels v0.20
