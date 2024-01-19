@@ -14,8 +14,8 @@ function constraint_c1_power_balance_shunt_dispatch(pm::_PM.AbstractACPModel, n:
 
     bs = get(var(pm, n), :bs, Dict()); _PM._check_var_keys(bs, bus_shunts_var, "reactive power", "shunt")
 
-    cstr_p = JuMP.@NLconstraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
-    cstr_q = JuMP.@NLconstraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bs[s]*vm^2 for s in bus_shunts_var))
+    cstr_p = JuMP.@constraint(pm.model, 0 == - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
+    cstr_q = JuMP.@constraint(pm.model, 0 == - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bs[s]*vm^2 for s in bus_shunts_var))
 
     if _IM.report_duals(pm)
         sol(pm, n, :bus, i)[:lam_kcl_r] = cstr_p
@@ -42,14 +42,14 @@ function constraint_c1_power_balance_shunt_dispatch_soft(pm::_PM.AbstractACPMode
     p_delta_abs = var(pm, n, :p_delta_abs, i)
     q_delta_abs = var(pm, n, :q_delta_abs, i)
 
-    p_delta = @NLexpression(pm.model, - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
-    q_delta = @NLexpression(pm.model, - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bs[s]*vm^2 for s in bus_shunts_var))
+    p_delta = @expression(pm.model, - sum(p[a] for a in bus_arcs) + sum(pg[g] for g in bus_gens) - sum(pd for pd in values(bus_pd)) - sum(gs for gs in values(bus_gs_const))*vm^2)
+    q_delta = @expression(pm.model, - sum(q[a] for a in bus_arcs) + sum(qg[g] for g in bus_gens) - sum(qd for qd in values(bus_qd)) + sum(bs for bs in values(bus_bs_const))*vm^2 + sum(bs[s]*vm^2 for s in bus_shunts_var))
 
-    @NLconstraint(pm.model,  p_delta_abs >= p_delta)
-    @NLconstraint(pm.model, -p_delta_abs <= p_delta)
+    @constraint(pm.model,  p_delta_abs >= p_delta)
+    @constraint(pm.model, -p_delta_abs <= p_delta)
 
-    @NLconstraint(pm.model,  q_delta_abs >= q_delta)
-    @NLconstraint(pm.model, -q_delta_abs <= q_delta)
+    @constraint(pm.model,  q_delta_abs >= q_delta)
+    @constraint(pm.model, -q_delta_abs <= q_delta)
 end
 
 ""
@@ -69,8 +69,8 @@ function constraint_goc_ohms_yt_from(pm::_PM.AbstractACPModel, n::Int, f_bus, t_
     va_fr = var(pm, n, :va, f_bus)
     va_to = var(pm, n, :va, t_bus)
 
-    JuMP.@NLconstraint(pm.model, p_fr ==  (g/tm^2+g_fr)*vm_fr^2 + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
-    JuMP.@NLconstraint(pm.model, q_fr == -(b/tm^2+b_fr)*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+    JuMP.@constraint(pm.model, p_fr ==  (g/tm^2+g_fr)*vm_fr^2 + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+    JuMP.@constraint(pm.model, q_fr == -(b/tm^2+b_fr)*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
 end
 
 
@@ -117,8 +117,8 @@ function expression_c1_branch_power_ohms_yt_from(pm::_PM.AbstractACPModel, n::In
     va_fr = var(pm, n, :va, f_bus)
     va_to = var(pm, n, :va, t_bus)
 
-    var(pm, n, :p)[f_idx] = @NLexpression(pm.model,  (g/tm^2+g_fr)*vm_fr^2 + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
-    var(pm, n, :q)[f_idx] = @NLexpression(pm.model, -(b/tm^2+b_fr)*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+    var(pm, n, :p)[f_idx] = @expression(pm.model,  (g/tm^2+g_fr)*vm_fr^2 + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
+    var(pm, n, :q)[f_idx] = @expression(pm.model, -(b/tm^2+b_fr)*vm_fr^2 - (-b*tr-g*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*sin(va_fr-va_to)) )
 end
 
 

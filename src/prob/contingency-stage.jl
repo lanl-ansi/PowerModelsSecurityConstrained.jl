@@ -1119,7 +1119,7 @@ function build_c1_opf_contingency(pm::_PM.AbstractPowerModel)
             pg[i] = gen["pg"]
         else
             @constraint(pm.model, var(pm, :pg, i) == gen["pg_base"] + gen["alpha"]*delta)
-            pg[i] = @NLexpression(pm.model, gen["pg_base"] + gen["alpha"]*delta)
+            pg[i] = @expression(pm.model, gen["pg_base"] + gen["alpha"]*delta)
         end
 
         if gen["qg_fixed"]

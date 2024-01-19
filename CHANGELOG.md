@@ -2,7 +2,10 @@ PowerModelsSecurityConstrained.jl Change Log
 ============================================
 
 ### Staged
-- Add compat entry for Statistics
+
+### v0.12.0
+- Update to PowerModels v0.21 and JuMP's new nonlinear interface (breaking)
+- Add compat entry for Statistics (breaking)
 
 ### v0.11.0
 - Update to PowerModels v0.20
