@@ -8,7 +8,7 @@ using Memento
 using JSON
 
 import JuMP
-import JuMP: @variable, @constraint, @NLconstraint, @objective, @NLobjective, @expression, @NLexpression
+import JuMP: @variable, @constraint, @objective, @expression
 
 import InfrastructureModels
 const _IM = InfrastructureModels
